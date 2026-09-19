@@ -384,15 +384,17 @@ function filteredRenders(){
   })
 }
 function renderRenders(){
-  const root=$('rendersTable');root.innerHTML='';const t=table(['Клиент','Проект','Статус','Прогресс','Stage / ETA','Encoder','Результат','Время','Действия']),tb=t.tBodies[0];
+  const root=$('rendersTable');root.innerHTML='';const t=table(['Клиент','Проект','Path / Audio','Статус','Прогресс','Stage / ETA','Encoder / Codec','Результат','Render / Final','Время','Действия']),tb=t.tBodies[0];
   filteredRenders().forEach(x=>{
     const l=(data.licenses||[]).find(y=>y.id===x.license_id),a=artifactFor(x.id),r=tb.insertRow();
     r.insertCell().textContent=l?.customer_name||'—';r.insertCell().innerHTML='<b>'+esc(x.project_name||x.project_id||'—')+'</b><br><span class="muted">'+esc(x.job_id||'')+'</span>';
+    const pathLabel=x.fast_path===true?'FAST':x.fast_path===false?'GENERIC':'LEGACY';r.insertCell().innerHTML='<b>'+pathLabel+'</b><br><span class="muted">'+esc(x.fast_path_reason||'—')+'</span><br><span class="tag">'+esc(x.audio_mode||'—')+'</span>';
     r.insertCell().innerHTML='<span class="status"><i class="dot '+(x.status==='completed'?'on':x.status==='failed'?'off':'warn')+'"></i>'+esc(x.status)+'</span>';
     const p=Number(x.progress||0);r.insertCell().innerHTML=p.toFixed(1)+'%<div class="progress"><i style="width:'+Math.max(0,Math.min(100,p))+'%"></i></div>';
     r.insertCell().innerHTML=esc(x.stage||'—')+'<br><span class="muted">ETA '+(x.eta_seconds==null?'—':Math.round(x.eta_seconds)+'s')+'</span>';
-    r.insertCell().innerHTML=esc(x.encoder||'—')+'<br><span class="muted">'+(x.width||'—')+'×'+(x.height||'—')+' @ '+(x.fps||'—')+'</span>';
-    r.insertCell().innerHTML=esc(x.output_filename||'—')+'<br><span class="muted">'+bytes(x.output_bytes)+' • '+dur(x.duration_seconds)+'</span><br><span class="tag">'+esc(a?.status||'local only')+'</span>';
+    r.insertCell().innerHTML=esc(x.encoder||'—')+'<br><span class="muted">'+esc(x.video_codec||x.codec||'—')+' / '+esc(x.audio_codec||'—')+' • '+(x.width||'—')+'×'+(x.height||'—')+' @ '+(x.fps||'—')+'</span>';
+    r.insertCell().innerHTML=esc(x.output_filename||'—')+'<br><span class="muted">'+bytes(x.output_bytes)+'</span><br><span class="tag">'+esc(a?.status||'local only')+'</span>';
+    const wall=x.render_wall_seconds==null?(x.duration_seconds==null?'—':'legacy '+dur(x.duration_seconds)):dur(x.render_wall_seconds);const finalDur=x.final_video_duration_seconds==null?'—':dur(x.final_video_duration_seconds);r.insertCell().innerHTML='<b>'+wall+'</b><br><span class="muted">final '+finalDur+'</span>';
     r.insertCell().textContent=dt(x.updated_at);const ac=r.insertCell();ac.appendChild(actionBtn('Подробнее','secondary',()=>openRender(x.id)));
   });root.appendChild(t)
 }
@@ -434,7 +436,8 @@ async function openRender(id){
   const art=j.artifact;
   const cloud=data.systemSettings?.artifact_service||{};
   const cloudReady=!!(art&&art.status==='ready'&&cloud.enabled&&cloud.base_url);
-  $('renderModalInfo').innerHTML='<div class="grid3"><div class="mini"><small>СТАТУС</small><b>'+esc(r.status)+'</b></div><div class="mini"><small>РАЗМЕР</small><b>'+bytes(r.output_bytes)+'</b></div><div class="mini"><small>ДЛИТЕЛЬНОСТЬ</small><b>'+dur(r.duration_seconds)+'</b></div></div><p><b>Файл:</b> '+esc(r.output_filename||'—')+'</p><p><b>Видео:</b> '+esc(r.codec||'—')+' • '+(r.width||'—')+'×'+(r.height||'—')+' @ '+(r.fps||'—')+' • '+esc(r.encoder||'—')+'</p><p><b>Cloud artifact:</b> '+esc(art?.status||'не загружен — файл пока хранится только на компьютере клиента')+'</p><div class="actions"><button id="artifactDownloadBtn" class="btn green" '+(cloudReady?'':'disabled')+'>СКАЧАТЬ MP4</button><button id="artifactDeleteBtn" class="btn danger" '+(cloudReady?'':'disabled')+'>УДАЛИТЬ ИЗ ОБЛАКА</button></div>';
+  const wall=r.render_wall_seconds==null?(r.duration_seconds==null?'—':'legacy '+dur(r.duration_seconds)):dur(r.render_wall_seconds);const finalDur=r.final_video_duration_seconds==null?'—':dur(r.final_video_duration_seconds);const pathLabel=r.fast_path===true?'FAST':r.fast_path===false?'GENERIC':'LEGACY';
+  $('renderModalInfo').innerHTML='<div class="grid3"><div class="mini"><small>СТАТУС</small><b>'+esc(r.status)+'</b></div><div class="mini"><small>РАЗМЕР</small><b>'+bytes(r.output_bytes)+'</b></div><div class="mini"><small>RENDER WALL</small><b>'+wall+'</b></div></div><div class="grid3"><div class="mini"><small>FINAL DURATION</small><b>'+finalDur+'</b></div><div class="mini"><small>FAST PATH</small><b>'+pathLabel+'</b></div><div class="mini"><small>AUDIO MODE</small><b>'+esc(r.audio_mode||'—')+'</b></div></div><p><b>Fast reason:</b> '+esc(r.fast_path_reason||'—')+'</p><p><b>Файл:</b> '+esc(r.output_filename||'—')+'</p><p><b>Видео:</b> '+esc(r.video_codec||r.codec||'—')+' • '+(r.width||'—')+'×'+(r.height||'—')+' @ '+(r.fps||'—')+' • '+esc(r.encoder||'—')+'</p><p><b>Аудио:</b> '+esc(r.audio_codec||'—')+'</p><p><b>Cloud artifact:</b> '+esc(art?.status||'не загружен — файл пока хранится только на компьютере клиента')+'</p><div class="actions"><button id="artifactDownloadBtn" class="btn green" '+(cloudReady?'':'disabled')+'>СКАЧАТЬ MP4</button><button id="artifactDeleteBtn" class="btn danger" '+(cloudReady?'':'disabled')+'>УДАЛИТЬ ИЗ ОБЛАКА</button></div>';
   if(cloudReady){
     $('artifactDownloadBtn').onclick=()=>downloadArtifact(r.id);
     $('artifactDeleteBtn').onclick=()=>deleteArtifact(r.id);
