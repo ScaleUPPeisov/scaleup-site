@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow,noarchive">
-<title>ScaleUP Control • ENDLUME + VYRON</title>
+<title>Owner Control • ENDLUME + VYRON</title>
 <style>
 :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#eef1ff;background:#070812;color-scheme:dark}
 *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 15% 0,#212859 0,transparent 28%),#070812;color:#eef1ff}button,input,select,textarea{font:inherit}.hidden{display:none!important}
@@ -31,7 +31,7 @@ button{cursor:pointer}.app{max-width:1520px;margin:auto;padding:22px}.card{backg
 </head>
 <body>
 <div id="login" class="login card">
-  <div class="brand"><div class="logo">∞</div><div><b>ScaleUP Control</b><small>ENDLUME • VYRON • Owner Console</small></div></div>
+  <div class="brand"><div class="logo">∞</div><div><b>Owner Control</b><small>ENDLUME • VYRON • Owner Console</small></div></div>
   <h1>Вход владельца</h1>
   <p class="muted">Единая owner-панель для ENDLUME и VYRON: лицензии, устройства, статусы, рендеры и диагностика.</p>
   <div class="field"><label>Email</label><input id="email" type="email" autocomplete="username" value="peisov.business@gmail.com"></div>
@@ -47,7 +47,7 @@ button{cursor:pointer}.app{max-width:1520px;margin:auto;padding:22px}.card{backg
 </div>
 
 <div id="mfaLogin" class="login card hidden">
-  <div class="brand"><div class="logo">∞</div><div><b>ScaleUP Control</b><small>ENDLUME • VYRON • 2FA verification</small></div></div>
+  <div class="brand"><div class="logo">∞</div><div><b>Owner Control</b><small>ENDLUME • VYRON • 2FA verification</small></div></div>
   <h2>Код из Authenticator</h2>
   <p class="muted">Для Owner Control включена дополнительная защита.</p>
   <div class="field"><label>6-значный код</label><input id="mfaLoginCode" inputmode="numeric" autocomplete="one-time-code"></div>
@@ -57,7 +57,7 @@ button{cursor:pointer}.app{max-width:1520px;margin:auto;padding:22px}.card{backg
 
 <div id="mainApp" class="app hidden">
   <div class="top">
-    <div class="brand"><div class="logo">∞</div><div><b>ScaleUP Owner Control</b><small>ENDLUME • VYRON • Managed Access</small></div></div>
+    <div class="brand"><div class="logo">∞</div><div><b>Owner Control</b><small>ENDLUME • VYRON • Managed Access</small></div></div>
     <div class="topActions"><span id="updated" class="pill">—</span><button id="refreshBtn" class="btn secondary">Обновить</button><button id="logoutBtn" class="btn secondary">Выйти</button></div>
   </div>
   <div class="productSwitch" id="productSwitch">
@@ -773,7 +773,7 @@ $('forgotBtn').onclick=async()=>{try{const r=await supabase.auth.resetPasswordFo
 $('recoverySave').onclick=async()=>{try{const p=$('recoveryPassword').value;if(p.length<12)throw new Error('Минимум 12 символов');const r=await supabase.auth.updateUser({password:p});if(r.error)throw r.error;$('recoveryMsg').className='ok';$('recoveryMsg').textContent='Пароль изменён.';history.replaceState(null,'',location.pathname);await bootstrap()}catch(e){$('recoveryMsg').className='error';$('recoveryMsg').textContent=e.message}};
 $('mfaLoginBtn').onclick=async()=>{try{const r=await supabase.auth.mfa.verify({factorId:mfaLoginFactor,challengeId:mfaLoginChallenge,code:$('mfaLoginCode').value.trim()});if(r.error)throw r.error;await bootstrap()}catch(e){$('mfaLoginErr').textContent=e.message}};
 
-$('setupMfaBtn').onclick=async()=>{try{const r=await supabase.auth.mfa.enroll({factorType:'totp',friendlyName:'ScaleUP Control'});if(r.error)throw r.error;mfaEnroll=r.data;$('mfaQrWrap').innerHTML='<img class="qr" src="'+esc(r.data.totp.qr_code)+'"><p class="muted">Secret: <code>'+esc(r.data.totp.secret)+'</code></p>';$('mfaSetupMsg').textContent='';$('mfaSetupBack').classList.remove('hidden')}catch(e){toast(e.message,true)}};
+$('setupMfaBtn').onclick=async()=>{try{const r=await supabase.auth.mfa.enroll({factorType:'totp',friendlyName:'Owner Control'});if(r.error)throw r.error;mfaEnroll=r.data;$('mfaQrWrap').innerHTML='<img class="qr" src="'+esc(r.data.totp.qr_code)+'"><p class="muted">Secret: <code>'+esc(r.data.totp.secret)+'</code></p>';$('mfaSetupMsg').textContent='';$('mfaSetupBack').classList.remove('hidden')}catch(e){toast(e.message,true)}};
 $('mfaSetupClose').onclick=()=>$('mfaSetupBack').classList.add('hidden');
 $('mfaSetupVerify').onclick=async()=>{try{if(!mfaEnroll)throw new Error('Enrollment не начат');const ch=await supabase.auth.mfa.challenge({factorId:mfaEnroll.id});if(ch.error)throw ch.error;const vr=await supabase.auth.mfa.verify({factorId:mfaEnroll.id,challengeId:ch.data.id,code:$('mfaSetupCode').value.trim()});if(vr.error)throw vr.error;await call({action:'security_mfa',mode:'enable'});$('mfaSetupMsg').className='ok';$('mfaSetupMsg').textContent='2FA включена и будет требоваться для Owner Control.';setTimeout(()=>{$('mfaSetupBack').classList.add('hidden');loadSecurity()},900)}catch(e){$('mfaSetupMsg').className='error';$('mfaSetupMsg').textContent=e.message}};
 $('logoutAllBtn').onclick=async()=>{if(!confirm('Завершить все owner-сессии на всех браузерах?'))return;await supabase.auth.signOut({scope:'global'});showLogin()};
