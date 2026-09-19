@@ -34,7 +34,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.shell{max-width
   <div class="field"><label>Email</label><input id="email" type="email" autocomplete="username"></div>
   <div class="field"><label>Пароль</label><input id="password" type="password" autocomplete="current-password"></div>
   <button id="loginBtn" class="btn" style="width:100%">ВОЙТИ</button>
-  <p id="loginErr" style="color:#ff8191"></p>
+  <p id="loginErr" style="color:#ff8191"></p><button id="forgotBtn" class="btn secondary" style="width:100%;margin-top:8px">ЗАБЫЛ ПАРОЛЬ</button><div id="resetBox" class="hidden" style="margin-top:14px"><div class="field"><label>Новый пароль</label><input id="newPassword" type="password" minlength="8" autocomplete="new-password"></div><button id="savePasswordBtn" class="btn green" style="width:100%">СОХРАНИТЬ НОВЫЙ ПАРОЛЬ</button><p id="resetMsg" class="muted"></p></div>
 </div>
 
 <div id="app" class="shell hidden">
@@ -168,6 +168,50 @@ async function load(silent=false){
 async function licenseAction(e){const b=e.currentTarget;b.disabled=true;try{await call({action:'mutate',license_id:b.dataset.lic,command:b.dataset.cmd});await load();toast('Лицензия обновлена')}catch(err){toast(String(err),true)}finally{b.disabled=false}}
 async function deviceAction(e){const b=e.currentTarget;b.disabled=true;try{await call({action:'device',device_id:b.dataset.dev,command:b.dataset.cmd});await load();toast('Устройство обновлено')}catch(err){toast(String(err),true)}finally{b.disabled=false}}
 
+
+async function sendRecovery(){
+  const email=$('email').value.trim();
+  if(!email){$('loginErr').textContent='Введите email владельца';return}
+  $('loginErr').textContent='';
+  const redirect=location.origin+location.pathname;
+  const r=await fetch(BASE+'/auth/v1/recover',{
+    method:'POST',
+    headers:{apikey:PUB,'Content-Type':'application/json'},
+    body:JSON.stringify({email,redirect_to:redirect})
+  });
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok){$('loginErr').textContent=j.msg||j.error_description||'Не удалось отправить письмо';return}
+  $('loginErr').style.color='#84efae';
+  $('loginErr').textContent='Ссылка для сброса пароля отправлена на email.';
+}
+function recoveryTokenFromHash(){
+  const p=new URLSearchParams((location.hash||'').replace(/^#/,''));
+  return p.get('type')==='recovery'?p.get('access_token'):null;
+}
+async function saveRecoveredPassword(){
+  const token=recoveryTokenFromHash();
+  const password=$('newPassword').value;
+  if(!token){$('resetMsg').textContent='Recovery-сессия не найдена.';return}
+  if(!password||password.length<8){$('resetMsg').textContent='Пароль должен быть не короче 8 символов.';return}
+  const r=await fetch(BASE+'/auth/v1/user',{
+    method:'PUT',
+    headers:{apikey:PUB,Authorization:'Bearer '+token,'Content-Type':'application/json'},
+    body:JSON.stringify({password})
+  });
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok){$('resetMsg').textContent=j.msg||j.error_description||'Не удалось изменить пароль';return}
+  $('resetMsg').style.color='#84efae';
+  $('resetMsg').textContent='Пароль изменён. Теперь войди с новым паролем.';
+  history.replaceState(null,'',location.pathname);
+  $('resetBox').classList.add('hidden');
+}
+$('forgotBtn').onclick=()=>sendRecovery().catch(e=>$('loginErr').textContent=String(e));
+$('savePasswordBtn').onclick=()=>saveRecoveredPassword().catch(e=>$('resetMsg').textContent=String(e));
+if(recoveryTokenFromHash()){
+  $('resetBox').classList.remove('hidden');
+  $('loginErr').style.color='#84efae';
+  $('loginErr').textContent='Придумай новый пароль.';
+}
 $('loginBtn').onclick=async()=>{const b=$('loginBtn');b.disabled=true;$('loginErr').textContent='';try{session=await auth($('email').value.trim(),$('password').value);sessionStorage.setItem('endlume_owner_session',JSON.stringify(session));$('login').classList.add('hidden');$('app').classList.remove('hidden');await load();poll=setInterval(()=>load(true),5000)}catch(e){$('loginErr').textContent=String(e)}finally{b.disabled=false}};
 $('logoutBtn').onclick=()=>{sessionStorage.removeItem('endlume_owner_session');location.reload()};
 $('refreshBtn').onclick=()=>load();
