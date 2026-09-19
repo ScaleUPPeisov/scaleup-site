@@ -180,9 +180,19 @@ async function sendRecovery(){
     body:JSON.stringify({email})
   });
   const j=await r.json().catch(()=>({}));
-  if(!r.ok){$('loginErr').textContent=j.msg||j.error_description||'Не удалось отправить письмо';return}
+  if(!r.ok){
+    const msg=String(j.msg||j.error_description||'Не удалось отправить письмо');
+    if(/rate limit/i.test(msg)){
+      $('loginErr').style.color='#ffb86b';
+      $('loginErr').textContent='Лимит писем Supabase исчерпан. Подожди до 1 часа и запроси одно новое письмо.';
+    }else{
+      $('loginErr').style.color='#ff8191';
+      $('loginErr').textContent=msg;
+    }
+    return
+  }
   $('loginErr').style.color='#84efae';
-  $('loginErr').textContent='Ссылка для сброса пароля отправлена на email.';
+  $('loginErr').textContent='Ссылка для сброса пароля отправлена на email. Используй только самое новое письмо.';
 }
 function recoveryTokenFromHash(){
   const p=new URLSearchParams((location.hash||'').replace(/^#/,''));
