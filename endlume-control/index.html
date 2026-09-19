@@ -178,6 +178,11 @@ button{cursor:pointer}.app{max-width:1520px;margin:auto;padding:22px}.card{backg
       <div class="field"><label>Действует до</label><input id="editExpires" type="datetime-local"></div>
     </div>
     <div class="field"><label>Заметка</label><textarea id="editNotes"></textarea></div>
+    <div class="grid3">
+      <label class="row"><input id="editCloudArtifacts" type="checkbox"> Хранить готовые MP4 в приватном облаке</label>
+      <div class="field"><label>Хранить дней</label><input id="editCloudRetention" type="number" min="1" max="30" value="3"></div>
+      <div class="field"><label>Cloud</label><div id="editCloudStatus" class="pill">—</div></div>
+    </div>
     <div class="actions">
       <button id="saveClientBtn" class="btn">Сохранить</button>
       <button id="clientActiveBtn" class="btn green">Active</button>
@@ -408,6 +413,8 @@ async function openClient(id){
   ].map(x=>'<div class="mini"><small>'+x[0]+'</small><b>'+x[1]+'</b></div>').join('');
   $('editCustomer').value=l.customer_name||'';$('editMaxDevices').value=l.max_devices||1;$('editNotes').value=l.notes||'';
   $('editExpires').disabled=!!l.owner;$('editExpires').value=l.expires_at?new Date(Date.parse(l.expires_at)-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16):'';
+  $('editCloudArtifacts').checked=!!l.cloud_artifacts_enabled;$('editCloudRetention').value=l.cloud_artifact_retention_days||3;
+  const cloud=data.systemSettings?.artifact_service||{};$('editCloudStatus').textContent=cloud.enabled?'R2 ONLINE':'R2 PENDING';
   const td=$('drawerDevices');td.innerHTML='';const t=table(['Устройство','Сеть','Версия','Экран','Последний раз']),tb=t.tBodies[0];ds.forEach(d=>{const r=tb.insertRow(),st=connection(d);r.insertCell().textContent=d.device_name||d.device_id;r.insertCell().innerHTML='<span class="status"><i class="dot '+st[1]+'"></i>'+st[0]+'</span>';r.insertCell().textContent=d.app_version||'—';r.insertCell().textContent=d.current_screen||'—';r.insertCell().textContent=dt(d.last_seen_at)});td.appendChild(t);
   const rr=$('drawerRenders');rr.innerHTML='';const rt=table(['Проект','Статус','Результат','Дата']),rb=rt.tBodies[0];rs.slice(0,20).forEach(x=>{const r=rb.insertRow();r.className='clickable';r.onclick=()=>openRender(x.id);r.insertCell().textContent=x.project_name||x.project_id||'—';r.insertCell().textContent=x.status;r.insertCell().textContent=(x.output_filename||'—')+' • '+bytes(x.output_bytes);r.insertCell().textContent=dt(x.updated_at)});rr.appendChild(rt);
   renderFeedFromData('drawerEvents',j.notifications||[],20);renderFeedFromData('drawerAudit',(j.audit||[]).map(a=>({title:a.action,body:JSON.stringify(a.metadata||{}),created_at:a.created_at})),20);
@@ -419,9 +426,34 @@ async function openRender(id){
   const r=(data.renders||[]).find(x=>x.id===id);if(!r)return;
   const j=await call({action:'render_events',render_id:id});$('renderModalTitle').textContent=r.project_name||r.project_id||'Рендер';
   const art=j.artifact;
-  $('renderModalInfo').innerHTML='<div class="grid3"><div class="mini"><small>СТАТУС</small><b>'+esc(r.status)+'</b></div><div class="mini"><small>РАЗМЕР</small><b>'+bytes(r.output_bytes)+'</b></div><div class="mini"><small>ДЛИТЕЛЬНОСТЬ</small><b>'+dur(r.duration_seconds)+'</b></div></div><p><b>Файл:</b> '+esc(r.output_filename||'—')+'</p><p><b>Видео:</b> '+esc(r.codec||'—')+' • '+(r.width||'—')+'×'+(r.height||'—')+' @ '+(r.fps||'—')+' • '+esc(r.encoder||'—')+'</p><p><b>Cloud artifact:</b> '+esc(art?.status||'не загружен — файл пока хранится только на компьютере клиента')+'</p>';
+  const cloud=data.systemSettings?.artifact_service||{};
+  const cloudReady=!!(art&&art.status==='ready'&&cloud.enabled&&cloud.base_url);
+  $('renderModalInfo').innerHTML='<div class="grid3"><div class="mini"><small>СТАТУС</small><b>'+esc(r.status)+'</b></div><div class="mini"><small>РАЗМЕР</small><b>'+bytes(r.output_bytes)+'</b></div><div class="mini"><small>ДЛИТЕЛЬНОСТЬ</small><b>'+dur(r.duration_seconds)+'</b></div></div><p><b>Файл:</b> '+esc(r.output_filename||'—')+'</p><p><b>Видео:</b> '+esc(r.codec||'—')+' • '+(r.width||'—')+'×'+(r.height||'—')+' @ '+(r.fps||'—')+' • '+esc(r.encoder||'—')+'</p><p><b>Cloud artifact:</b> '+esc(art?.status||'не загружен — файл пока хранится только на компьютере клиента')+'</p><div class="actions"><button id="artifactDownloadBtn" class="btn green" '+(cloudReady?'':'disabled')+'>СКАЧАТЬ MP4</button><button id="artifactDeleteBtn" class="btn danger" '+(cloudReady?'':'disabled')+'>УДАЛИТЬ ИЗ ОБЛАКА</button></div>';
+  if(cloudReady){
+    $('artifactDownloadBtn').onclick=()=>downloadArtifact(r.id);
+    $('artifactDeleteBtn').onclick=()=>deleteArtifact(r.id);
+  }
   renderFeedFromData('renderTimeline',(j.events||[]).map(e=>({title:e.event_type+' • '+(e.stage||''),body:(e.progress==null?'':Number(e.progress).toFixed(1)+'%')+(e.eta_seconds==null?'':' • ETA '+Math.round(e.eta_seconds)+'s'),created_at:e.created_at})),100);
   $('renderModalBack').classList.remove('hidden')
+}
+async function downloadArtifact(renderId){
+  const cloud=data.systemSettings?.artifact_service||{};
+  if(!cloud.enabled||!cloud.base_url){toast('R2 artifact service ещё не опубликован',true);return}
+  await getSession();
+  const r=await fetch(cloud.base_url+'/v1/render-download-ticket?render_id='+encodeURIComponent(renderId),{headers:{Authorization:'Bearer '+session.access_token,apikey:PUB}});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok||!j.url){toast(j.error||'Не удалось получить ссылку',true);return}
+  window.location.href=j.url;
+}
+async function deleteArtifact(renderId){
+  const cloud=data.systemSettings?.artifact_service||{};
+  if(!cloud.enabled||!cloud.base_url)return;
+  if(!confirm('Удалить облачную копию MP4? Локальный файл клиента не удаляется.'))return;
+  await getSession();
+  const r=await fetch(cloud.base_url+'/v1/render-delete?render_id='+encodeURIComponent(renderId),{method:'DELETE',headers:{Authorization:'Bearer '+session.access_token,apikey:PUB}});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok||!j.ok){toast(j.error||'Не удалось удалить файл',true);return}
+  $('renderModalBack').classList.add('hidden');await load(false);toast('Облачная копия удалена');
 }
 async function loadNotificationSettings(){
   try{const j=await call({action:'notification_settings',mode:'get'}),s=j.settings||{};$('notifyActivation').checked=s.notify_first_activation!==false;$('notifyStart').checked=s.notify_render_started!==false;$('notifyDone').checked=s.notify_render_completed!==false;$('notifyFail').checked=s.notify_render_failed!==false;$('notifyExpire').checked=s.notify_license_expiring!==false;$('telegramEnabled').checked=!!s.telegram_enabled;$('telegramChatId').value=s.telegram_chat_id||'';$('emailEnabled').checked=!!s.email_enabled;$('notifyEmail').value=s.email_to||'';$('notifyTransport').textContent='Control Center события работают. Telegram/Email transport: '+((j.telegramTransportConfigured||j.emailTransportConfigured)?'частично настроен':'нужны серверные credentials (bot token / mail provider).')}catch(e){toast(e.message,true)}
@@ -436,7 +468,7 @@ $('clientSearch').oninput=renderClients;$('clientFilter').onchange=renderClients
 $('refreshBtn').onclick=()=>load(false);$('drawerClose').onclick=closeDrawer;$('drawerBackdrop').onclick=closeDrawer;$('renderModalClose').onclick=()=>$('renderModalBack').classList.add('hidden');$('renderModalBack').onclick=e=>{if(e.target===$('renderModalBack'))$('renderModalBack').classList.add('hidden')};
 
 $('createBtn').onclick=async()=>{const b=$('createBtn');b.disabled=true;try{const days=Number($('days').value||30),j=await call({action:'create',plan:'managed',customer_name:$('cust').value.trim(),expires_at:new Date(Date.now()+days*86400000).toISOString(),max_devices:Number($('maxDevices').value||1),notes:$('notes').value.trim()});$('newKey').innerHTML='<b>Скопируй ключ сейчас — потом полный ключ не показывается:</b><br><br><code>'+esc(j.key)+'</code><br><br><button id="copyNewKey" class="btn green small">КОПИРОВАТЬ</button>';$('newKey').classList.remove('hidden');$('copyNewKey').onclick=()=>navigator.clipboard.writeText(j.key).then(()=>toast('Ключ скопирован'));await load();toast('Уникальный ключ создан')}catch(e){toast(e.message,true)}finally{b.disabled=false}};
-$('saveClientBtn').onclick=async()=>{if(!currentLicenseId)return;try{const payload={action:'update_license',license_id:currentLicenseId,customer_name:$('editCustomer').value.trim(),notes:$('editNotes').value,max_devices:Number($('editMaxDevices').value||1)};if(!$('editExpires').disabled&&$('editExpires').value)payload.expires_at=new Date($('editExpires').value).toISOString();await call(payload);await load();await openClient(currentLicenseId);toast('Карточка клиента сохранена')}catch(e){toast(e.message,true)}};
+$('saveClientBtn').onclick=async()=>{if(!currentLicenseId)return;try{const payload={action:'update_license',license_id:currentLicenseId,customer_name:$('editCustomer').value.trim(),notes:$('editNotes').value,max_devices:Number($('editMaxDevices').value||1),cloud_artifacts_enabled:$('editCloudArtifacts').checked,cloud_artifact_retention_days:Number($('editCloudRetention').value||3)};if(!$('editExpires').disabled&&$('editExpires').value)payload.expires_at=new Date($('editExpires').value).toISOString();await call(payload);await load();await openClient(currentLicenseId);toast('Карточка клиента сохранена')}catch(e){toast(e.message,true)}};
 $('clientActiveBtn').onclick=()=>currentLicenseId&&licenseCmd(currentLicenseId,'active');$('clientPauseBtn').onclick=()=>currentLicenseId&&licenseCmd(currentLicenseId,'paused');$('clientRevokeBtn').onclick=()=>currentLicenseId&&licenseCmd(currentLicenseId,'revoked');
 $('rotateKeyBtn').onclick=async()=>{if(!currentLicenseId||!confirm('Старый ключ перестанет работать, все текущие сессии будут закрыты. Продолжить?'))return;try{const j=await call({action:'rotate_key',license_id:currentLicenseId});$('rotatedKey').innerHTML='<b>Новый ключ — скопируй сейчас:</b><br><br><code>'+esc(j.key)+'</code><br><br><button id="copyRotated" class="btn green small">КОПИРОВАТЬ</button>';$('rotatedKey').classList.remove('hidden');$('copyRotated').onclick=()=>navigator.clipboard.writeText(j.key);await load();toast('Ключ заменён, старые сессии отозваны')}catch(e){toast(e.message,true)}};
 $('saveNotifyBtn').onclick=async()=>{try{await call({action:'notification_settings',mode:'save',telegram_enabled:$('telegramEnabled').checked,telegram_chat_id:$('telegramChatId').value.trim(),email_enabled:$('emailEnabled').checked,email_to:$('notifyEmail').value.trim(),notify_first_activation:$('notifyActivation').checked,notify_render_started:$('notifyStart').checked,notify_render_completed:$('notifyDone').checked,notify_render_failed:$('notifyFail').checked,notify_license_expiring:$('notifyExpire').checked});toast('Настройки событий сохранены');await loadNotificationSettings()}catch(e){toast(e.message,true)}};
