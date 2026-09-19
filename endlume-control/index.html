@@ -174,10 +174,10 @@ async function sendRecovery(){
   if(!email){$('loginErr').textContent='Введите email владельца';return}
   $('loginErr').textContent='';
   const redirect=location.origin+location.pathname;
-  const r=await fetch(BASE+'/auth/v1/recover',{
+  const r=await fetch(BASE+'/auth/v1/recover?redirect_to='+encodeURIComponent(redirect),{
     method:'POST',
     headers:{apikey:PUB,'Content-Type':'application/json'},
-    body:JSON.stringify({email,redirect_to:redirect})
+    body:JSON.stringify({email})
   });
   const j=await r.json().catch(()=>({}));
   if(!r.ok){$('loginErr').textContent=j.msg||j.error_description||'Не удалось отправить письмо';return}
