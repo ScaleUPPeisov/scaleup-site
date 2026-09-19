@@ -1,4 +1,4 @@
-name: ENDLUME Control check
+name: ScaleUP Control check
 
 on:
   push:
@@ -32,10 +32,12 @@ jobs:
           s=Path("endlume-control/index.html").read_text(encoding="utf-8")
           required=[
             "page-dashboard","page-clients","page-devices","page-renders",
-            "page-versions","page-notifications","page-security",
-            "client_detail","rotate_key","security_mfa"
+            "page-versions","page-notifications","page-security","page-vyron",
+            "client_detail","rotate_key","security_mfa",
+            "vyron-admin-licenses","vyronCreateBtn","vyronLicenseCmd","vyronDeviceCmd",
+            "VYRON_2.1.9_x64-setup.exe"
           ]
           missing=[x for x in required if x not in s]
           if missing:
               raise SystemExit("Missing: "+", ".join(missing))
-          print("ENDLUME Control static contracts PASS")
+          print("ScaleUP Control static contracts PASS: ENDLUME + VYRON")
