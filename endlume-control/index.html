@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>ENDLUME Control</title>
+<style>
+:root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#eef1ff;background:#070812;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0,#202650 0,transparent 30%),#070812;min-height:100vh}
+button,input,select{font:inherit}.hidden{display:none!important}.shell{max-width:1480px;margin:auto;padding:24px}
+.card{background:rgba(17,19,38,.93);border:1px solid #2c3152;border-radius:18px;padding:18px;box-shadow:0 20px 55px #0005}
+.login{max-width:440px;margin:12vh auto;padding:28px}.brand{display:flex;align-items:center;gap:12px}.logo{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#5c62ff,#b65cff 55%,#ff5dbb);display:grid;place-items:center;font-size:28px}
+.brand b{display:block}.brand small,.muted{color:#8f97b6}.field{display:grid;gap:7px;margin:14px 0}.field label{font-size:12px;color:#929ab8}
+.field input,.field select{background:#090b17;border:1px solid #34395c;border-radius:11px;color:#fff;padding:12px;outline:none}.field input:focus{border-color:#716aff}
+.btn{border:0;border-radius:10px;padding:10px 13px;background:#5d57ff;color:#fff;font-weight:700;cursor:pointer}.btn.secondary{background:#1c2037;border:1px solid #353a5f}.btn.danger{background:#8d3149}.btn.warn{background:#76551f}.btn.green{background:#216245}.btn:disabled{opacity:.45}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.topActions{display:flex;gap:8px;align-items:center}.pill{padding:8px 12px;border:1px solid #34395a;border-radius:999px;background:#111426;color:#a7afca}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}.stat b{display:block;font-size:27px}.stat small{color:#8d95b5}
+.layout{display:grid;grid-template-columns:340px 1fr;gap:16px}.head{display:flex;justify-content:space-between;align-items:center}.head h2{margin:0;font-size:16px}
+.keybox{margin-top:12px;padding:12px;border-radius:11px;background:#07150e;border:1px solid #216245;color:#84efae;word-break:break-all}
+.tabs{display:flex;gap:8px;margin-bottom:12px}.tab{background:#171a30;border:1px solid #303557;color:#9ba4c3}.tab.active{background:#5d57ff;color:white}
+.tableWrap{overflow:auto}.tbl{width:100%;border-collapse:collapse;min-width:920px}.tbl th,.tbl td{text-align:left;border-bottom:1px solid #252944;padding:10px 9px;font-size:12px;vertical-align:top}.tbl th{color:#8089aa}.actions{display:flex;gap:5px;flex-wrap:wrap}.actions button{font-size:11px;padding:6px 8px}
+.status{display:inline-flex;align-items:center;gap:6px}.dot{width:8px;height:8px;border-radius:50%;background:#6b7280}.dot.on{background:#42d17a;box-shadow:0 0 10px #42d17a}.dot.warn{background:#f3ba4f}.dot.off{background:#e35c72}
+.progress{height:7px;background:#222640;border-radius:99px;overflow:hidden;margin-top:6px}.progress i{display:block;height:100%;background:linear-gradient(90deg,#655fff,#c55bff)}
+.toast{position:fixed;right:20px;bottom:20px;max-width:420px;padding:13px 16px;background:#171a31;border:1px solid #3c4169;border-radius:12px;box-shadow:0 15px 50px #0008}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}.shell{padding:14px}.top{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div id="login" class="login card">
+  <div class="brand"><div class="logo">∞</div><div><b>ENDLUME Control</b><small>Owner Console</small></div></div>
+  <h1>Вход владельца</h1>
+  <p class="muted">Управление лицензиями, устройствами и рендерами ENDLUME.</p>
+  <div class="field"><label>Email</label><input id="email" type="email" autocomplete="username"></div>
+  <div class="field"><label>Пароль</label><input id="password" type="password" autocomplete="current-password"></div>
+  <button id="loginBtn" class="btn" style="width:100%">ВОЙТИ</button>
+  <p id="loginErr" style="color:#ff8191"></p>
+</div>
+
+<div id="app" class="shell hidden">
+  <div class="top">
+    <div class="brand"><div class="logo">∞</div><div><b>ENDLUME YT Studio PEISOV</b><small>Owner Control • Managed Access</small></div></div>
+    <div class="topActions"><span id="updated" class="pill">—</span><button id="refreshBtn" class="btn secondary">Обновить</button><button id="logoutBtn" class="btn secondary">Выйти</button></div>
+  </div>
+
+  <div class="stats">
+    <div class="card stat"><small>ЛИЦЕНЗИИ</small><b id="sLic">0</b></div>
+    <div class="card stat"><small>УСТРОЙСТВА ONLINE</small><b id="sOnline">0</b></div>
+    <div class="card stat"><small>АКТИВНЫЕ РЕНДЕРЫ</small><b id="sRender">0</b></div>
+    <div class="card stat"><small>ЗАВЕРШЕНО</small><b id="sDone">0</b></div>
+  </div>
+
+  <div class="layout">
+    <aside class="card">
+      <div class="head"><h2>Новый ключ</h2><span class="muted">160-bit</span></div>
+      <div class="field"><label>Клиент</label><input id="cust" placeholder="Например: Иван"></div>
+      <div class="field"><label>Срок</label><select id="days"><option value="7">7 дней</option><option value="30" selected>30 дней</option><option value="90">90 дней</option><option value="365">365 дней</option></select></div>
+      <div class="field"><label>Устройств</label><input id="maxDevices" type="number" min="1" max="100" value="1"></div>
+      <div class="field"><label>Заметка</label><input id="notes" placeholder="Необязательно"></div>
+      <button id="createBtn" class="btn" style="width:100%">СОЗДАТЬ УНИКАЛЬНЫЙ КЛЮЧ</button>
+      <div id="newKey" class="keybox hidden"></div>
+    </aside>
+
+    <main class="card">
+      <div class="tabs">
+        <button class="btn tab active" data-tab="licenses">Лицензии</button>
+        <button class="btn tab" data-tab="devices">Устройства</button>
+        <button class="btn tab" data-tab="renders">Рендеры</button>
+      </div>
+      <div id="licenses" class="tableWrap"></div>
+      <div id="devices" class="tableWrap hidden"></div>
+      <div id="renders" class="tableWrap hidden"></div>
+    </main>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+(function(){
+const BASE='https://odlseljmogaguyqdlkyv.supabase.co';
+const PUB='sb_publishable_zKjzhQTdTG8f9BfR2X5NVg_zQgjo70f';
+const ADMIN=BASE+'/functions/v1/endlume-admin-licenses';
+const $=id=>document.getElementById(id);
+let session=null,data={licenses:[],devices:[],renders:[]},poll=null;
+
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const dt=v=>v?new Date(v).toLocaleString('ru-RU'):'—';
+const bytes=n=>!n?'—':n>1e9?(n/1e9).toFixed(2)+' GB':(n/1e6).toFixed(1)+' MB';
+const toast=(m,bad=false)=>{const e=$('toast');e.textContent=m;e.style.borderColor=bad?'#8d3149':'#3c4169';e.classList.remove('hidden');setTimeout(()=>e.classList.add('hidden'),3500)};
+const online=d=>Date.now()-Date.parse(d.last_seen_at||0)<60000;
+const away=d=>Date.now()-Date.parse(d.last_seen_at||0)<180000;
+
+async function auth(email,password){
+  const r=await fetch(BASE+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:PUB,'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+  const j=await r.json();
+  if(!r.ok)throw new Error(j.error_description||j.msg||'Ошибка входа');
+  return j;
+}
+async function call(body){
+  if(!session?.access_token)throw new Error('Нет сессии');
+  const r=await fetch(ADMIN,{method:'POST',headers:{apikey:PUB,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const j=await r.json().catch(()=>({ok:false,code:'bad_response'}));
+  if(!r.ok||j.ok===false)throw new Error(j.code||'Ошибка API');
+  return j;
+}
+function table(headers){const t=document.createElement('table');t.className='tbl';const tr=t.createTHead().insertRow();headers.forEach(h=>{const th=document.createElement('th');th.textContent=h;tr.appendChild(th)});t.createTBody();return t}
+function btn(text,cls,attrs,handler){const b=document.createElement('button');b.className='btn '+cls;b.textContent=text;Object.entries(attrs).forEach(([k,v])=>b.dataset[k]=v);b.onclick=handler;return b}
+
+function renderLicenses(){
+  const root=$('licenses');root.innerHTML='';const t=table(['Клиент','Ключ','Статус','План','До','Устройств','Действия']),tb=t.tBodies[0];
+  (data.licenses||[]).forEach(l=>{
+    const r=tb.insertRow();
+    r.insertCell().innerHTML='<b>'+esc(l.customer_name||'Без имени')+'</b><br><span class="muted">'+esc(l.notes||'')+'</span>';
+    r.insertCell().textContent='ENDLUME-••••…'+(l.key_last4||'');
+    r.insertCell().innerHTML='<span class="status"><i class="dot '+(l.status==='active'?'on':l.status==='paused'?'warn':'off')+'"></i>'+esc(l.status)+'</span>';
+    r.insertCell().textContent=l.plan||'—';
+    r.insertCell().textContent=l.owner?'LIFETIME':dt(l.expires_at);
+    r.insertCell().textContent=String(l.max_devices||1);
+    const a=r.insertCell();a.className='actions';
+    [['Active','green','active'],['Pause','warn','paused'],['Revoke','danger','revoked']].forEach(x=>a.appendChild(btn(x[0],x[1],{lic:l.id,cmd:x[2]},licenseAction)));
+    if(!l.owner)[['+7','secondary','extend_7'],['+30','secondary','extend_30']].forEach(x=>a.appendChild(btn(x[0],x[1],{lic:l.id,cmd:x[2]},licenseAction)));
+  });
+  root.appendChild(t);
+}
+function renderDevices(){
+  const root=$('devices');root.innerHTML='';const t=table(['Устройство','Состояние','Экран / рендер','Прогресс','Версия','Last seen','Действия']),tb=t.tBodies[0];
+  (data.devices||[]).forEach(d=>{
+    const state=online(d)?'ONLINE':away(d)?'AWAY':'OFFLINE',cls=online(d)?'on':away(d)?'warn':'off';
+    const r=tb.insertRow();
+    r.insertCell().innerHTML='<b>'+esc(d.device_name||d.device_id)+'</b><br><span class="muted">'+esc((d.platform||'')+' '+(d.architecture||''))+'</span>';
+    r.insertCell().innerHTML='<span class="status"><i class="dot '+cls+'"></i>'+state+' · '+esc(d.status)+'</span>';
+    r.insertCell().innerHTML=esc(d.current_screen||'—')+'<br><b>'+esc(d.render_status||'—')+'</b><br><span class="muted">'+esc(d.current_job_id||'')+'</span>';
+    const p=Number(d.render_progress||0);
+    r.insertCell().innerHTML=p.toFixed(1)+'%<div class="progress"><i style="width:'+Math.max(0,Math.min(100,p))+'%"></i></div>';
+    r.insertCell().textContent=d.app_version||'—';
+    r.insertCell().textContent=dt(d.last_seen_at);
+    const a=r.insertCell();a.className='actions';
+    [['Block','danger','block'],['Unblock','green','unblock'],['Detach','secondary','detach']].forEach(x=>a.appendChild(btn(x[0],x[1],{dev:d.id,cmd:x[2]},deviceAction)));
+  });
+  root.appendChild(t);
+}
+function renderRenders(){
+  const root=$('renders');root.innerHTML='';const t=table(['Проект','Статус','Прогресс','Stage','Encoder','Output','Обновлено']),tb=t.tBodies[0];
+  (data.renders||[]).forEach(x=>{
+    const r=tb.insertRow();
+    r.insertCell().innerHTML='<b>'+esc(x.project_name||x.project_id||'—')+'</b><br><span class="muted">'+esc(x.job_id||'')+'</span>';
+    r.insertCell().textContent=x.status||'—';
+    const p=Number(x.progress||0);r.insertCell().innerHTML=p.toFixed(1)+'%<div class="progress"><i style="width:'+Math.max(0,Math.min(100,p))+'%"></i></div>';
+    r.insertCell().innerHTML=esc(x.stage||'—')+'<br><span class="muted">ETA '+(x.eta_seconds==null?'—':Math.round(x.eta_seconds)+'s')+'</span>';
+    r.insertCell().innerHTML=esc(x.encoder||'—')+'<br><span class="muted">'+(x.width||'—')+'×'+(x.height||'—')+' @ '+(x.fps||'—')+'</span>';
+    r.insertCell().innerHTML=esc(x.output_filename||'—')+'<br><span class="muted">'+bytes(x.output_bytes)+'</span>';
+    r.insertCell().textContent=dt(x.updated_at);
+  });
+  root.appendChild(t);
+}
+function render(){
+  const ls=data.licenses||[],ds=data.devices||[],rs=data.renders||[];
+  $('sLic').textContent=ls.length;$('sOnline').textContent=ds.filter(online).length;
+  $('sRender').textContent=rs.filter(r=>['rendering','queued'].includes(r.status||r.render_status)).length;
+  $('sDone').textContent=rs.filter(r=>r.status==='completed').length;
+  renderLicenses();renderDevices();renderRenders();
+}
+async function load(silent=false){
+  try{data=await call({action:'dashboard'});render();$('updated').textContent='Обновлено '+new Date().toLocaleTimeString('ru-RU')}
+  catch(e){if(!silent)toast(String(e),true)}
+}
+async function licenseAction(e){const b=e.currentTarget;b.disabled=true;try{await call({action:'mutate',license_id:b.dataset.lic,command:b.dataset.cmd});await load();toast('Лицензия обновлена')}catch(err){toast(String(err),true)}finally{b.disabled=false}}
+async function deviceAction(e){const b=e.currentTarget;b.disabled=true;try{await call({action:'device',device_id:b.dataset.dev,command:b.dataset.cmd});await load();toast('Устройство обновлено')}catch(err){toast(String(err),true)}finally{b.disabled=false}}
+
+$('loginBtn').onclick=async()=>{const b=$('loginBtn');b.disabled=true;$('loginErr').textContent='';try{session=await auth($('email').value.trim(),$('password').value);sessionStorage.setItem('endlume_owner_session',JSON.stringify(session));$('login').classList.add('hidden');$('app').classList.remove('hidden');await load();poll=setInterval(()=>load(true),5000)}catch(e){$('loginErr').textContent=String(e)}finally{b.disabled=false}};
+$('logoutBtn').onclick=()=>{sessionStorage.removeItem('endlume_owner_session');location.reload()};
+$('refreshBtn').onclick=()=>load();
+$('createBtn').onclick=async()=>{const b=$('createBtn');b.disabled=true;try{const days=Number($('days').value||30);const j=await call({action:'create',plan:'managed',customer_name:$('cust').value.trim(),expires_at:new Date(Date.now()+days*86400000).toISOString(),max_devices:Number($('maxDevices').value||1),notes:$('notes').value.trim()});$('newKey').innerHTML='<b>Скопируй ключ сейчас — потом он не показывается:</b><br><br><code>'+esc(j.key)+'</code><br><br><button id="copyKey" class="btn green">КОПИРОВАТЬ</button>';$('newKey').classList.remove('hidden');$('copyKey').onclick=()=>navigator.clipboard.writeText(j.key).then(()=>toast('Ключ скопирован'));await load();toast('Уникальный ключ создан')}catch(e){toast(String(e),true)}finally{b.disabled=false}};
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));['licenses','devices','renders'].forEach(x=>$(x).classList.toggle('hidden',x!==b.dataset.tab))});
+try{const s=JSON.parse(sessionStorage.getItem('endlume_owner_session')||'null');if(s?.access_token){session=s;$('login').classList.add('hidden');$('app').classList.remove('hidden');load();poll=setInterval(()=>load(true),5000)}}catch{}
+})();
+</script>
+</body>
+</html>
