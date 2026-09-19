@@ -124,15 +124,30 @@ function table(headers){const t=document.createElement('table');t.className='tbl
 function btn(text,cls,attrs,handler){const b=document.createElement('button');b.className='btn '+cls;b.textContent=text;Object.entries(attrs).forEach(([k,v])=>b.dataset[k]=v);b.onclick=handler;return b}
 
 function renderLicenses(){
-  const root=$('licenses');root.innerHTML='';const t=table(['Клиент','Ключ','Статус','План','До','Устройств','Действия']),tb=t.tBodies[0];
+  const root=$('licenses');root.innerHTML='';
+  const t=table(['Клиент','Ключ','Статус','Подключение','План','До','Устройств','Действия']),tb=t.tBodies[0];
   (data.licenses||[]).forEach(l=>{
+    const linked=(data.devices||[]).filter(d=>d.license_id===l.id && d.status!=='detached');
+    const onlineDevices=linked.filter(online);
+    const awayDevices=linked.filter(d=>!online(d)&&away(d));
+    const seenTimes=linked.map(d=>Date.parse(d.last_seen_at||0)).filter(Number.isFinite);
+    const lastSeen=seenTimes.length?new Date(Math.max(...seenTimes)).toISOString():null;
+    const connection=onlineDevices.length
+      ? {label:'ONLINE',cls:'on',sub:(onlineDevices.length+' сейчас')}
+      : awayDevices.length
+        ? {label:'AWAY',cls:'warn',sub:'Последний раз '+dt(lastSeen)}
+        : linked.length
+          ? {label:'OFFLINE',cls:'off',sub:'Последний раз '+dt(lastSeen)}
+          : {label:'НЕ ПОДКЛЮЧАЛСЯ',cls:'',sub:'Ключ ещё не активирован в приложении'};
+
     const r=tb.insertRow();
     r.insertCell().innerHTML='<b>'+esc(l.customer_name||'Без имени')+'</b><br><span class="muted">'+esc(l.notes||'')+'</span>';
     r.insertCell().textContent='ENDLUME-••••…'+(l.key_last4||'');
     r.insertCell().innerHTML='<span class="status"><i class="dot '+(l.status==='active'?'on':l.status==='paused'?'warn':'off')+'"></i>'+esc(l.status)+'</span>';
+    r.insertCell().innerHTML='<span class="status"><i class="dot '+connection.cls+'"></i><b>'+connection.label+'</b></span><br><span class="muted">'+esc(connection.sub)+'</span>';
     r.insertCell().textContent=l.plan||'—';
     r.insertCell().textContent=l.owner?'LIFETIME':dt(l.expires_at);
-    r.insertCell().textContent=String(l.max_devices||1);
+    r.insertCell().innerHTML='<b>'+linked.length+' / '+String(l.max_devices||1)+'</b><br><span class="muted">активировано / лимит</span>';
     const a=r.insertCell();a.className='actions';
     [['Active','green','active'],['Pause','warn','paused'],['Revoke','danger','revoked']].forEach(x=>a.appendChild(btn(x[0],x[1],{lic:l.id,cmd:x[2]},licenseAction)));
     if(!l.owner)[['+7','secondary','extend_7'],['+30','secondary','extend_30']].forEach(x=>a.appendChild(btn(x[0],x[1],{lic:l.id,cmd:x[2]},licenseAction)));
