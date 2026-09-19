@@ -34,7 +34,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.shell{max-width
   <div class="field"><label>Email</label><input id="email" type="email" autocomplete="username"></div>
   <div class="field"><label>Пароль</label><input id="password" type="password" autocomplete="current-password"></div>
   <button id="loginBtn" class="btn" style="width:100%">ВОЙТИ</button>
-  <p id="loginErr" style="color:#ff8191"></p><button id="forgotBtn" class="btn secondary" style="width:100%;margin-top:8px">ЗАБЫЛ ПАРОЛЬ</button><div id="recoveryPasteBox" style="margin-top:12px"><div class="field"><label>Если письмо открыло старый ChannelCore — вставь сюда всю ссылку из адресной строки</label><input id="recoveryUrl" type="url" placeholder="https://network-os-youtube.vercel.app/#access_token=..."></div><button id="useRecoveryUrlBtn" class="btn secondary" style="width:100%">ПРОДОЛЖИТЬ СБРОС В ENDLUME</button><p class="muted" style="font-size:12px">Ссылка разбирается только в браузере и не отправляется в базу.</p></div><div id="resetBox" class="hidden" style="margin-top:14px"><div class="field"><label>Новый пароль</label><input id="newPassword" type="password" minlength="8" autocomplete="new-password"></div><button id="savePasswordBtn" class="btn green" style="width:100%">СОХРАНИТЬ НОВЫЙ ПАРОЛЬ</button><p id="resetMsg" class="muted"></p></div>
+  <p id="loginErr" style="color:#ff8191"></p><button id="forgotBtn" class="btn secondary" style="width:100%;margin-top:8px">ЗАБЫЛ ПАРОЛЬ</button><button id="emergencyResetBtn" class="btn warn" style="width:100%;margin-top:8px">СБРОСИТЬ СЕЙЧАС БЕЗ EMAIL</button><div id="emergencyResetBox" class="hidden" style="margin-top:14px"><div class="field"><label>Одноразовый код</label><input id="emergencyResetToken" type="password" autocomplete="off"></div><div class="field"><label>Новый пароль</label><input id="emergencyResetPassword" type="password" minlength="12" autocomplete="new-password"></div><button id="emergencyResetSaveBtn" class="btn green" style="width:100%">УСТАНОВИТЬ НОВЫЙ ПАРОЛЬ</button><p id="emergencyResetMsg" class="muted"></p></div><div id="recoveryPasteBox" style="margin-top:12px"><div class="field"><label>Если письмо открыло старый ChannelCore — вставь сюда всю ссылку из адресной строки</label><input id="recoveryUrl" type="url" placeholder="https://network-os-youtube.vercel.app/#access_token=..."></div><button id="useRecoveryUrlBtn" class="btn secondary" style="width:100%">ПРОДОЛЖИТЬ СБРОС В ENDLUME</button><p class="muted" style="font-size:12px">Ссылка разбирается только в браузере и не отправляется в базу.</p></div><div id="resetBox" class="hidden" style="margin-top:14px"><div class="field"><label>Новый пароль</label><input id="newPassword" type="password" minlength="8" autocomplete="new-password"></div><button id="savePasswordBtn" class="btn green" style="width:100%">СОХРАНИТЬ НОВЫЙ ПАРОЛЬ</button><p id="resetMsg" class="muted"></p></div>
 </div>
 
 <div id="app" class="shell hidden">
@@ -216,6 +216,35 @@ async function saveRecoveredPassword(){
   $('resetBox').classList.add('hidden');
 }
 $('forgotBtn').onclick=()=>sendRecovery().catch(e=>$('loginErr').textContent=String(e));
+async function emergencyResetNow(){
+  const token=$('emergencyResetToken').value.trim();
+  const password=$('emergencyResetPassword').value;
+  const msg=$('emergencyResetMsg');
+  msg.style.color='#8f97b6';
+  msg.textContent='';
+  if(token.length<32){msg.textContent='Введи одноразовый код.';return}
+  if(password.length<12){msg.textContent='Пароль должен быть не короче 12 символов.';return}
+  const r=await fetch(BASE+'/functions/v1/endlume-owner-reset-now',{
+    method:'POST',
+    headers:{apikey:PUB,'Content-Type':'application/json'},
+    body:JSON.stringify({token,password})
+  });
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok||j.ok!==true){
+    msg.style.color='#ff8191';
+    const map={invalid_or_expired_reset:'Код недействителен или истёк.',password_too_short:'Пароль слишком короткий.',not_owner:'Аккаунт не является OWNER.',password_update_failed:'Не удалось изменить пароль.'};
+    msg.textContent=map[j.code]||j.code||'Не удалось изменить пароль';
+    return
+  }
+  msg.style.color='#84efae';
+  msg.textContent='Пароль изменён. Теперь войди выше с новым паролем.';
+  $('password').value=password;
+  $('emergencyResetToken').value='';
+  $('emergencyResetPassword').value='';
+}
+$('emergencyResetBtn').onclick=()=>{$('emergencyResetBox').classList.toggle('hidden')};
+$('emergencyResetSaveBtn').onclick=()=>emergencyResetNow().catch(e=>$('emergencyResetMsg').textContent=String(e));
+
 function importRecoveryUrl(){
   const raw=$('recoveryUrl').value.trim();
   if(!raw){$('loginErr').textContent='Вставь ссылку из адресной строки ChannelCore';return}
