@@ -12,7 +12,7 @@ button{cursor:pointer}.app{max-width:1520px;margin:auto;padding:22px}.card{backg
 .login{max-width:440px;margin:11vh auto;padding:28px}.brand{display:flex;align-items:center;gap:12px}.logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#5966ff,#b45cff 55%,#ff5dbd);display:grid;place-items:center;font-size:27px}.brand b{display:block;font-size:17px}.brand small,.muted{color:#8f97b6}
 .top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}.topActions,.actions,.tabs,.filters,.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .pill{padding:8px 11px;border:1px solid #34395a;border-radius:999px;background:#111426;color:#a7afca;font-size:12px}.btn{border:0;border-radius:10px;padding:10px 13px;background:#5d57ff;color:#fff;font-weight:750}.btn.small{padding:6px 8px;font-size:11px}.btn.secondary{background:#1b1f36;border:1px solid #353b60}.btn.green{background:#216245}.btn.warn{background:#76551f}.btn.danger{background:#8d3149}.btn.ghost{background:transparent;border:1px solid #303657;color:#aeb6d0}.btn:disabled{opacity:.42;cursor:not-allowed}
-.nav{display:flex;gap:7px;margin:12px 0 18px;overflow:auto;padding-bottom:2px}.nav button{white-space:nowrap}.nav .active,.tabs .active{background:#5d57ff;color:#fff;border-color:#5d57ff}
+.productSwitch{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0 10px}.productBtn{display:flex;align-items:center;justify-content:space-between;gap:14px;text-align:left;padding:15px 18px;border-radius:15px;border:1px solid #303657;background:#101326;color:#c8cee7;font-weight:800}.productBtn span{display:block;font-size:17px}.productBtn small{display:block;color:#7f88a8;font-size:11px;font-weight:600;margin-top:2px}.productBtn.active{background:linear-gradient(135deg,#5d57ff,#7447d9);border-color:#8c80ff;color:#fff;box-shadow:0 10px 35px #5d57ff33}.productBtn.active small{color:#d9dcff}.productBtn[data-product="vyron"].active{background:linear-gradient(135deg,#126c62,#2460c7);border-color:#4bb8ac}.nav{display:flex;gap:7px;margin:8px 0 18px;overflow:auto;padding-bottom:2px}.nav button{white-space:nowrap}.nav .active,.tabs .active{background:#5d57ff;color:#fff;border-color:#5d57ff}.nav.vyronNav .active{background:#167f72;border-color:#2da899}.productContext{display:flex;align-items:center;gap:8px;color:#8f97b6;font-size:11px;margin-top:-4px}
 .stats{display:grid;grid-template-columns:repeat(6,1fr);gap:11px;margin:12px 0 16px}.stat{padding:15px}.stat small{display:block;color:#8c95b5;font-size:11px}.stat b{display:block;font-size:25px;margin-top:5px}.stat em{font-style:normal;font-size:11px;color:#7e86a6}
 .grid2{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.clientsLayout{display:grid;grid-template-columns:320px 1fr;gap:14px}
 .field{display:grid;gap:6px;margin:12px 0}.field label{font-size:11px;color:#9098b8}.field input,.field select,.field textarea{background:#090b17;border:1px solid #34395c;border-radius:10px;color:#fff;padding:11px;outline:none}.field textarea{min-height:80px;resize:vertical}.field input:focus,.field select:focus,.field textarea:focus{border-color:#716aff}
@@ -47,7 +47,7 @@ button{cursor:pointer}.app{max-width:1520px;margin:auto;padding:22px}.card{backg
 </div>
 
 <div id="mfaLogin" class="login card hidden">
-  <div class="brand"><div class="logo">∞</div><div><b>ENDLUME Control</b><small>2FA verification</small></div></div>
+  <div class="brand"><div class="logo">∞</div><div><b>ScaleUP Control</b><small>ENDLUME • VYRON • 2FA verification</small></div></div>
   <h2>Код из Authenticator</h2>
   <p class="muted">Для Owner Control включена дополнительная защита.</p>
   <div class="field"><label>6-значный код</label><input id="mfaLoginCode" inputmode="numeric" autocomplete="one-time-code"></div>
@@ -60,7 +60,13 @@ button{cursor:pointer}.app{max-width:1520px;margin:auto;padding:22px}.card{backg
     <div class="brand"><div class="logo">∞</div><div><b>ScaleUP Owner Control</b><small>ENDLUME • VYRON • Managed Access</small></div></div>
     <div class="topActions"><span id="updated" class="pill">—</span><button id="refreshBtn" class="btn secondary">Обновить</button><button id="logoutBtn" class="btn secondary">Выйти</button></div>
   </div>
-  <div class="nav" id="nav">
+  <div class="productSwitch" id="productSwitch">
+    <button class="productBtn active" data-product="endlume"><div><span>∞ ENDLUME</span><small>YT Studio PEISOV • рендеры и Managed Access</small></div><b>→</b></button>
+    <button class="productBtn" data-product="vyron"><div><span>▶ VYRON</span><small>Content OS • YouTube, OAuth, каналы и лицензии</small></div><b>→</b></button>
+  </div>
+  <div class="productContext"><span id="productContext">ENDLUME Control</span></div>
+
+  <div class="nav" id="endlumeNav">
     <button class="btn secondary active" data-page="dashboard">Обзор</button>
     <button class="btn secondary" data-page="clients">Клиенты</button>
     <button class="btn secondary" data-page="devices">Устройства</button>
@@ -68,7 +74,16 @@ button{cursor:pointer}.app{max-width:1520px;margin:auto;padding:22px}.card{backg
     <button class="btn secondary" data-page="versions">Версии</button>
     <button class="btn secondary" data-page="notifications">События</button>
     <button class="btn secondary" data-page="security">Безопасность</button>
-    <button class="btn secondary" data-page="vyron">VYRON ⚡</button>
+  </div>
+
+  <div class="nav vyronNav hidden" id="vyronNav">
+    <button class="btn secondary active" data-page="vyron-overview">Обзор</button>
+    <button class="btn secondary" data-page="vyron-clients">Клиенты</button>
+    <button class="btn secondary" data-page="vyron-devices">Устройства</button>
+    <button class="btn secondary" data-page="vyron-channels">Каналы / OAuth</button>
+    <button class="btn secondary" data-page="vyron-errors">Ошибки</button>
+    <button class="btn secondary" data-page="vyron-quota">Quota</button>
+    <button class="btn secondary" data-page="vyron-releases">Релизы</button>
   </div>
 
   <section id="page-dashboard">
@@ -166,25 +181,30 @@ button{cursor:pointer}.app{max-width:1520px;margin:auto;padding:22px}.card{backg
     </div>
   </section>
 
-  <section id="page-vyron" class="hidden">
-    <div class="card pad" style="margin-bottom:14px;border-color:#39437a">
+  <section id="page-vyron-overview" class="hidden">
+    <div class="card pad" style="margin-bottom:14px;border-color:#23594f">
       <div class="sectionTitle">
-        <div>
-          <h2>VYRON 2.1.9 • Windows x64</h2>
-          <span class="muted">Managed Access • отдельный tenant на каждого клиента • Windows Credential Manager</span>
-        </div>
-        <div class="actions">
-          <span class="tag">PUBLISHED</span>
-          <span class="tag">UPDATER OFF</span>
-          <span class="tag">UNSIGNED</span>
-        </div>
+        <div><h2>VYRON Control Center</h2><span class="muted">Клиенты • OAuth • каналы • ошибки • API usage • Windows releases</span></div>
+        <div class="actions"><span class="tag">2.1.9 WINDOWS</span><span id="vyronTelemetryState" class="tag">TELEMETRY READY</span></div>
       </div>
       <div id="vyronStats" class="stats"></div>
       <div id="vyronLoadError" class="error"></div>
     </div>
-
-    <div class="grid2" style="margin-bottom:14px">
+    <div class="grid2">
       <div class="card pad">
+        <div class="sectionTitle"><h2>Client Health</h2><span class="muted">без OAuth-секретов</span></div>
+        <div id="vyronHealthTable" class="tableWrap"></div>
+      </div>
+      <div class="card pad">
+        <div class="sectionTitle"><h2>Последние ошибки</h2><button class="btn ghost small" data-go-vyron="vyron-errors">Все</button></div>
+        <div id="vyronRecentErrors" class="feed"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="page-vyron-clients" class="hidden">
+    <div class="clientsLayout">
+      <aside class="card pad">
         <div class="sectionTitle"><h2>Новый ключ VYRON</h2><span class="tag">Managed</span></div>
         <div class="field"><label>Клиент</label><input id="vyronCust" placeholder="Например: Клиент 01"></div>
         <div class="field"><label>Срок</label><select id="vyronDays"><option value="7">7 дней</option><option value="30" selected>30 дней</option><option value="90">90 дней</option><option value="365">365 дней</option></select></div>
@@ -192,61 +212,104 @@ button{cursor:pointer}.app{max-width:1520px;margin:auto;padding:22px}.card{backg
         <div class="field"><label>Заметка</label><textarea id="vyronNotes" placeholder="Необязательно"></textarea></div>
         <button id="vyronCreateBtn" class="btn" style="width:100%">СОЗДАТЬ КЛЮЧ VYRON</button>
         <div id="vyronNewKey" class="keybox hidden"></div>
-      </div>
-
-      <div class="card pad">
-        <div class="sectionTitle"><h2>Windows Release</h2><span class="tag">v2.1.9-windows-x64</span></div>
-        <div class="feed">
-          <div class="feedItem"><b>Installer</b><small>VYRON_2.1.9_x64-setup.exe • 58 459 772 байта</small></div>
-          <div class="feedItem"><b>SHA-256</b><small style="word-break:break-all">cf0aabef811a8b3cc8cbb9c8ca2fee44f2ed9d1af9fb2e56b81117a3836790f0</small></div>
-          <div class="feedItem"><b>Release source</b><small style="word-break:break-all">276e7e5aa50ed0010a91dca2de90625dd8668bc6</small></div>
-          <div class="feedItem"><b>Production gates</b><small>Rust 123/123 • MSVC PASS • Tauri PASS • NSIS PASS • PE x64 PASS</small></div>
-          <div class="feedItem"><b>Windows updater</b><small>Не активирован до physical acceptance.</small></div>
-          <div class="feedItem"><b>Authenticode</b><small>Не настроен — SmartScreen / «Неизвестный издатель» ожидаем.</small></div>
+      </aside>
+      <main class="card pad">
+        <div class="sectionTitle"><h2>Клиенты и лицензии VYRON</h2><span id="vyronClientCount" class="muted"></span></div>
+        <div class="filters">
+          <input id="vyronSearch" placeholder="Клиент / userId / последние 4 символа" style="min-width:320px">
+          <select id="vyronFilter"><option value="all">Все</option><option value="active">Active</option><option value="paused">Paused</option><option value="revoked">Revoked</option><option value="expired">Expired</option><option value="never">Не активировались</option></select>
         </div>
-      </div>
+        <div id="vyronLicensesTable" class="tableWrap" style="margin-top:10px"></div>
+      </main>
     </div>
+  </section>
 
-    <div class="card pad" style="margin-bottom:14px">
-      <div class="sectionTitle">
-        <h2>Клиенты и лицензии VYRON</h2>
-        <span id="vyronClientCount" class="muted"></span>
-      </div>
-      <div class="filters">
-        <input id="vyronSearch" placeholder="Клиент / userId / последние 4 символа ключа" style="min-width:320px">
-        <select id="vyronFilter"><option value="all">Все</option><option value="active">Active</option><option value="paused">Paused</option><option value="revoked">Revoked</option><option value="expired">Expired</option><option value="never">Не активировались</option></select>
-      </div>
-      <div id="vyronLicensesTable" class="tableWrap" style="margin-top:10px"></div>
+  <section id="page-vyron-devices" class="hidden">
+    <div class="grid2" style="margin-bottom:14px">
+      <div class="card pad"><div class="sectionTitle"><h2>Версии VYRON</h2></div><div id="vyronVersionsList"></div></div>
+      <div class="card pad"><div class="sectionTitle"><h2>Состояние устройств</h2></div><div id="vyronDeviceSummary" class="feed"></div></div>
     </div>
-
-    <div class="card pad" style="margin-bottom:14px">
-      <div class="sectionTitle"><h2>Устройства VYRON</h2><span class="muted">Device binding + session control</span></div>
+    <div class="card pad">
+      <div class="sectionTitle"><h2>Устройства VYRON</h2><span class="muted">binding + session control</span></div>
       <div class="filters">
         <input id="vyronDeviceSearch" placeholder="Клиент / устройство / версия / платформа" style="min-width:320px">
         <select id="vyronDeviceFilter"><option value="all">Все</option><option value="active">Active</option><option value="blocked">Blocked</option><option value="detached">Detached</option></select>
       </div>
       <div id="vyronDevicesTable" class="tableWrap" style="margin-top:10px"></div>
     </div>
+  </section>
 
+  <section id="page-vyron-channels" class="hidden">
+    <div class="card pad" style="margin-bottom:14px">
+      <div class="sectionTitle"><h2>Каналы / OAuth Health</h2><span class="muted">metadata only • без refresh/access tokens</span></div>
+      <div id="vyronChannelStats" class="stats"></div>
+      <div class="filters">
+        <input id="vyronChannelSearch" placeholder="Клиент / канал / Channel ID / OAuth profile" style="min-width:330px">
+        <select id="vyronChannelFilter"><option value="all">Все</option><option value="healthy">Healthy</option><option value="reconnect_required">Reconnect required</option><option value="error">Error</option><option value="unknown">Unknown</option></select>
+      </div>
+      <div id="vyronChannelsTable" class="tableWrap" style="margin-top:10px"></div>
+    </div>
+    <div class="card pad">
+      <div class="sectionTitle"><h2>Google / tenant isolation</h2><span class="tag">SECURITY</span></div>
+      <div class="grid2">
+        <div class="feed">
+          <div class="feedItem"><b>Tenant per license</b><small>Каждая лицензия имеет уникальный userId и собственный private data scope.</small></div>
+          <div class="feedItem"><b>Credential Manager</b><small>Refresh token namespace: tenant.&lt;userId&gt;.oauth.&lt;profile&gt;.refresh_token</small></div>
+          <div class="feedItem"><b>Admin privacy</b><small>Control Center принимает только health metadata. Секретные поля telemetry endpoint отклоняет.</small></div>
+        </div>
+        <div class="feed">
+          <div class="feedItem"><b>Один Google project</b><small>Может обслуживать много OAuth profiles/каналов. Каждый канал остаётся отдельным OAuth profile.</small></div>
+          <div class="feedItem"><b>Много каналов</b><small>Панель готова отображать сотни каналов; фактическая работа зависит от Google OAuth и YouTube API quota.</small></div>
+          <div class="feedItem"><b>2.1.9</b><small>Текущий Windows release ещё не отправляет новый Control telemetry. Данные появятся после интеграции telemetry в клиент.</small></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="page-vyron-errors" class="hidden">
+    <div class="grid2" style="margin-bottom:14px">
+      <div class="card pad"><div class="sectionTitle"><h2>Ошибки за 24 часа</h2></div><div id="vyronErrorStats" class="stats" style="grid-template-columns:repeat(3,1fr)"></div></div>
+      <div class="card pad"><div class="sectionTitle"><h2>Частые коды</h2></div><div id="vyronErrorCodes" class="feed"></div></div>
+    </div>
+    <div class="card pad">
+      <div class="sectionTitle"><h2>VYRON incidents</h2><span class="muted">OAuth • YouTube • FFmpeg • render • upload • storage</span></div>
+      <div class="filters"><input id="vyronErrorSearch" placeholder="Клиент / код / сообщение / операция"><select id="vyronErrorFilter"><option value="all">Все категории</option><option value="oauth">OAuth</option><option value="youtube">YouTube</option><option value="render">Render</option><option value="upload">Upload</option><option value="storage">Storage</option><option value="runtime">Runtime</option></select></div>
+      <div id="vyronErrorsTable" class="tableWrap" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <section id="page-vyron-quota" class="hidden">
+    <div class="card pad" style="margin-bottom:14px">
+      <div class="sectionTitle"><h2>YouTube API Usage</h2><span class="muted">tracked telemetry • последние 30 дней</span></div>
+      <div id="vyronQuotaStats" class="stats"></div>
+    </div>
     <div class="grid2">
+      <div class="card pad"><div class="sectionTitle"><h2>Сегодня по endpoint</h2></div><div id="vyronQuotaEndpoints"></div></div>
+      <div class="card pad"><div class="sectionTitle"><h2>Клиенты</h2></div><div id="vyronQuotaClients" class="feed"></div></div>
+    </div>
+  </section>
+
+  <section id="page-vyron-releases" class="hidden">
+    <div class="grid2" style="margin-bottom:14px">
       <div class="card pad">
-        <div class="sectionTitle"><h2>Tenant isolation</h2><span class="tag">SECURITY</span></div>
+        <div class="sectionTitle"><h2>Windows Production</h2><span class="tag">v2.1.9-windows-x64</span></div>
         <div class="feed">
-          <div class="feedItem"><b>Персональный ключ</b><small>У каждой лицензии свой уникальный userId. Полный ключ не хранится в БД — только SHA-256 + masked metadata.</small></div>
-          <div class="feedItem"><b>Сессии</b><small>На backend хранится только hash session token; revoke уничтожает сессии, pause/enable сохраняет session contract.</small></div>
-          <div class="feedItem"><b>Google / YouTube</b><small>OAuth profiles, metadata и локальные данные лежат в tenant-контуре конкретного userId.</small></div>
-          <div class="feedItem"><b>Windows Credential Manager</b><small>Refresh tokens namespace: tenant.&lt;userId&gt;.oauth.&lt;profile&gt;.refresh_token.</small></div>
-          <div class="feedItem"><b>Каналы</b><small>Админская лицензия не выдаёт клиенту каналы владельца или другого клиента. Каналы/refresh tokens не перечисляются через license admin API.</small></div>
+          <div class="feedItem"><b>Installer</b><small>VYRON_2.1.9_x64-setup.exe • 58 459 772 байта</small></div>
+          <div class="feedItem"><b>SHA-256</b><small style="word-break:break-all">cf0aabef811a8b3cc8cbb9c8ca2fee44f2ed9d1af9fb2e56b81117a3836790f0</small></div>
+          <div class="feedItem"><b>Source</b><small style="word-break:break-all">276e7e5aa50ed0010a91dca2de90625dd8668bc6</small></div>
+          <div class="feedItem"><b>Production gates</b><small>Rust 123/123 • MSVC PASS • Tauri PASS • NSIS PASS • PE x64 PASS</small></div>
+          <div class="feedItem"><b>Updater</b><small>OFF — не активирован до physical acceptance.</small></div>
+          <div class="feedItem"><b>Authenticode</b><small>UNSIGNED — SmartScreen возможен.</small></div>
         </div>
       </div>
       <div class="card pad">
-        <div class="sectionTitle"><h2>Google project / каналы</h2><span class="tag">OAUTH</span></div>
-        <div class="feed">
-          <div class="feedItem"><b>Один Google Cloud project</b><small>Может обслуживать много OAuth-профилей и каналов одного клиента; каждый канал сохраняется отдельным OAuth profile/refresh token.</small></div>
-          <div class="feedItem"><b>100 каналов</b><small>Архитектура VYRON не ограничивает профиль одним каналом на лицензию. Реальный предел зависит от Google OAuth/YouTube quota и состава аккаунтов/Brand Accounts.</small></div>
-          <div class="feedItem"><b>Privacy</b><small>Количество и названия YouTube-каналов сейчас не отправляются в VYRON license backend, поэтому owner-панель показывает лицензии/устройства, а не содержимое Google-аккаунтов.</small></div>
-        </div>
+        <div class="sectionTitle"><h2>Release adoption</h2><span class="muted">по подключённым устройствам</span></div>
+        <div id="vyronReleaseAdoption"></div>
       </div>
+    </div>
+    <div class="card pad">
+      <div class="sectionTitle"><h2>Control infrastructure</h2><span class="tag">V1</span></div>
+      <div id="vyronInfra" class="feed"></div>
     </div>
   </section>
 </div>
@@ -317,7 +380,7 @@ const ADMIN=BASE+'/functions/v1/endlume-admin-licenses';
 const VYRON_ADMIN=BASE+'/functions/v1/vyron-admin-licenses';
 const supabase=createClient(BASE,PUB,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'endlume-owner-control'}});
 const $=id=>document.getElementById(id);
-let session=null,data={licenses:[],devices:[],renders:[],notifications:[],artifacts:[],versions:{},stats:{}},vyronData={licenses:[],devices:[],serverTime:null},vyronLoadError='',poll=null,currentLicenseId=null,mfaLoginFactor=null,mfaLoginChallenge=null,mfaEnroll=null;
+let session=null,data={licenses:[],devices:[],renders:[],notifications:[],artifacts:[],versions:{},stats:{}},vyronData={licenses:[],devices:[],health:[],channels:[],errors:[],quota:[],stats:{},telemetry:{},serverTime:null},vyronLoadError='',poll=null,currentLicenseId=null,mfaLoginFactor=null,mfaLoginChallenge=null,mfaEnroll=null;
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const dt=v=>v?new Date(v).toLocaleString('ru-RU'):'—';
@@ -374,6 +437,7 @@ async function bootstrap(){
   if(!(await maybeMfa()))return;
   showApp();
   await load(false);
+  showProduct(localStorage.getItem('scaleup-control-product')||'endlume');
   clearInterval(poll);poll=setInterval(()=>load(true),5000);
 }
 async function load(silent=false){
@@ -497,83 +561,131 @@ function renderRenders(){
 function renderNotifications(){renderFeed('notificationFeed',data.notifications||[],50);renderFeed('dashFeed',data.notifications||[],12)}
 
 const vyronLicenseDevices=id=>(vyronData.devices||[]).filter(d=>d.license_id===id&&d.status!=='detached');
+const vyronLicense=id=>(vyronData.licenses||[]).find(x=>x.id===id);
+const vyronHealth=id=>(vyronData.health||[]).find(x=>x.license_id===id);
+const statusDot=s=>s==='healthy'||s==='active'?'on':s==='error'||s==='blocked'||s==='revoked'?'off':'warn';
 function vyronFilteredLicenses(){
   const q=($('vyronSearch')?.value||'').trim().toLowerCase(),f=$('vyronFilter')?.value||'all';
   return (vyronData.licenses||[]).filter(l=>{
     const txt=((l.customer_name||'')+' '+(l.user_id||'')+' '+(l.key_last4||'')+' '+(l.notes||'')).toLowerCase();
-    if(q&&!txt.includes(q))return false;
-    if(f==='never')return !l.activated_at;
-    if(f!=='all')return l.status===f;
-    return true;
+    if(q&&!txt.includes(q))return false;if(f==='never')return !l.activated_at;if(f!=='all')return l.status===f;return true;
   });
 }
 function vyronFilteredDevices(){
   const q=($('vyronDeviceSearch')?.value||'').trim().toLowerCase(),f=$('vyronDeviceFilter')?.value||'all';
   return (vyronData.devices||[]).filter(d=>{
-    const l=(vyronData.licenses||[]).find(x=>x.id===d.license_id);
-    const txt=((l?.customer_name||'')+' '+(d.device_name||'')+' '+(d.device_id||'')+' '+(d.platform||'')+' '+(d.architecture||'')+' '+(d.app_version||'')).toLowerCase();
+    const l=vyronLicense(d.license_id),txt=((l?.customer_name||'')+' '+(d.device_name||'')+' '+(d.device_id||'')+' '+(d.platform||'')+' '+(d.architecture||'')+' '+(d.app_version||'')).toLowerCase();
     return (!q||txt.includes(q))&&(f==='all'||d.status===f);
+  });
+}
+function vyronFilteredChannels(){
+  const q=($('vyronChannelSearch')?.value||'').trim().toLowerCase(),f=$('vyronChannelFilter')?.value||'all';
+  return (vyronData.channels||[]).filter(x=>{
+    const l=vyronLicense(x.license_id),txt=((l?.customer_name||'')+' '+(x.channel_title||'')+' '+(x.channel_id||'')+' '+(x.oauth_profile_id||'')+' '+(x.last_error_code||'')).toLowerCase();
+    return (!q||txt.includes(q))&&(f==='all'||x.oauth_status===f);
+  });
+}
+function vyronFilteredErrors(){
+  const q=($('vyronErrorSearch')?.value||'').trim().toLowerCase(),f=$('vyronErrorFilter')?.value||'all';
+  return (vyronData.errors||[]).filter(x=>{
+    const l=vyronLicense(x.license_id),txt=((l?.customer_name||'')+' '+(x.category||'')+' '+(x.code||'')+' '+(x.operation||'')+' '+(x.message||'')+' '+(x.channel_id||'')).toLowerCase();
+    return (!q||txt.includes(q))&&(f==='all'||x.category===f);
   });
 }
 function renderVyron(){
   if(!$('vyronStats'))return;
   $('vyronLoadError').textContent=vyronLoadError?('VYRON API: '+vyronLoadError):'';
-  const ls=vyronData.licenses||[],ds=vyronData.devices||[];
+  $('vyronTelemetryState').textContent=vyronData.telemetry?.schemaVersion===1?'TELEMETRY BACKEND READY':'TELEMETRY —';
+  const ls=vyronData.licenses||[],ds=vyronData.devices||[],hs=vyronData.health||[],cs=vyronData.channels||[],es=vyronData.errors||[],qs=vyronData.quota||[],s=vyronData.stats||{};
   const items=[
-    ['ЛИЦЕНЗИИ',ls.length,ls.filter(x=>x.status==='active').length+' active'],
-    ['PAUSED',ls.filter(x=>x.status==='paused').length,'временно отключены'],
-    ['REVOKED',ls.filter(x=>x.status==='revoked').length,'сессии уничтожены'],
-    ['УСТРОЙСТВА',ds.filter(x=>x.status!=='detached').length,ds.filter(x=>x.status==='blocked').length+' blocked'],
-    ['АКТИВИРОВАНО',ls.filter(x=>!!x.activated_at).length,ls.filter(x=>!x.activated_at).length+' never'],
-    ['ВЕРСИЯ','2.1.9','Windows x64']
+    ['ЛИЦЕНЗИИ',ls.length,(s.activeLicenses||0)+' active'],
+    ['УСТРОЙСТВА',ds.filter(x=>x.status!=='detached').length,(s.blockedDevices||0)+' blocked'],
+    ['КАНАЛЫ',cs.length,(s.oauthHealthy||0)+' OAuth healthy'],
+    ['OAUTH ERROR',s.oauthErrors||0,'reconnect/error'],
+    ['ОШИБКИ 24Ч',s.errors24h||0,'telemetry events'],
+    ['VYRON','2.1.9','Windows x64']
   ];
   $('vyronStats').innerHTML=items.map(x=>'<div class="stat"><span>'+x[0]+'</span><b>'+x[1]+'</b><small>'+x[2]+'</small></div>').join('');
 
-  const rows=vyronFilteredLicenses();$('vyronClientCount').textContent=rows.length+' из '+ls.length;
-  const root=$('vyronLicensesTable');root.innerHTML='';const t=table(['Клиент','User ID','Ключ','Статус','План','До','Устройства','Последний контакт','Действия']),tb=t.tBodies[0];
-  rows.forEach(l=>{
-    const r=tb.insertRow(),lds=vyronLicenseDevices(l.id);r.insertCell().innerHTML='<b>'+esc(l.customer_name||'Без имени')+'</b><br><span class="muted">'+esc(l.notes||'')+'</span>';
-    r.insertCell().innerHTML='<code style="font-size:10px">'+esc(l.user_id||'—')+'</code>';
-    r.insertCell().innerHTML='VYRON •••• <b>'+esc(l.key_last4||'—')+'</b>';
-    r.insertCell().innerHTML='<b>'+esc(String(l.status||'—').toUpperCase())+'</b>';
-    r.insertCell().textContent=l.owner?'OWNER':(l.plan||'managed');
-    r.insertCell().textContent=l.owner?'∞':shortDate(l.expires_at);
-    r.insertCell().textContent=lds.length+' / '+(l.max_devices||1);
-    r.insertCell().textContent=dt(l.last_seen_at||l.activated_at);
-    const a=r.insertCell();a.className='actions';
-    a.appendChild(actionBtn('Active','green',()=>vyronLicenseCmd(l.id,'active')));
-    a.appendChild(actionBtn('Pause','warn',()=>vyronLicenseCmd(l.id,'paused')));
-    a.appendChild(actionBtn('Revoke','danger',()=>vyronLicenseCmd(l.id,'revoked')));
-  });root.appendChild(t);
+  // Health overview
+  const hroot=$('vyronHealthTable');hroot.innerHTML='';
+  if(!hs.length){hroot.innerHTML='<div class="empty">Telemetry backend готов. VYRON 2.1.9 ещё не отправляет client health — данные появятся после следующей интеграции клиента.</div>'}
+  else{
+    const t=table(['Клиент','Версия / экран','Каналы','OAuth','Credential Manager','FFmpeg','Последний sync','Последняя ошибка']),tb=t.tBodies[0];
+    hs.forEach(h=>{const l=vyronLicense(h.license_id),r=tb.insertRow();r.insertCell().innerHTML='<b>'+esc(l?.customer_name||'—')+'</b><br><span class="muted">•••• '+esc(l?.key_last4||'—')+'</span>';r.insertCell().innerHTML='<b>'+esc(h.app_version||'—')+'</b><br><span class="muted">'+esc(h.current_screen||'—')+'</span>';r.insertCell().textContent=String(h.channel_count||0);r.insertCell().innerHTML='<b>'+Number(h.oauth_healthy||0)+' OK</b><br><span class="'+(Number(h.oauth_errors||0)?'error':'muted')+'">'+Number(h.oauth_errors||0)+' error</span>';r.insertCell().textContent=h.credential_manager_status||'—';r.insertCell().textContent=(h.ffmpeg_status||'—')+' / '+(h.ffprobe_status||'—');r.insertCell().textContent=dt(h.last_sync_at);r.insertCell().innerHTML=esc(h.last_error_code||'—')+'<br><span class="muted">'+dt(h.last_error_at)+'</span>'});hroot.appendChild(t)
+  }
+  renderFeedFromData('vyronRecentErrors',es.slice(0,8).map(e=>({title:(vyronLicense(e.license_id)?.customer_name||'Клиент')+' • '+(e.code||e.category),body:(e.operation?e.operation+' • ':'')+(e.message||e.category),created_at:e.created_at})),8);
 
+  // Clients
+  const rows=vyronFilteredLicenses();$('vyronClientCount').textContent=rows.length+' из '+ls.length;
+  const root=$('vyronLicensesTable');root.innerHTML='';const t=table(['Клиент','User ID','Ключ','Статус','Health','До','Устройства','Последний контакт','Действия']),tb=t.tBodies[0];
+  rows.forEach(l=>{const r=tb.insertRow(),lds=vyronLicenseDevices(l.id),h=vyronHealth(l.id);r.insertCell().innerHTML='<b>'+esc(l.customer_name||'Без имени')+'</b><br><span class="muted">'+esc(l.notes||'')+'</span>';r.insertCell().innerHTML='<code style="font-size:10px">'+esc(l.user_id||'—')+'</code>';r.insertCell().innerHTML='VYRON •••• <b>'+esc(l.key_last4||'—')+'</b>';r.insertCell().innerHTML='<span class="status"><i class="dot '+statusDot(l.status)+'"></i>'+esc(String(l.status||'—').toUpperCase())+'</span>';r.insertCell().innerHTML=h?('<b>'+Number(h.channel_count||0)+' ch</b><br><span class="muted">'+Number(h.oauth_healthy||0)+' OAuth OK / '+Number(h.oauth_errors||0)+' err</span>'):'<span class="muted">нет telemetry</span>';r.insertCell().textContent=l.owner?'∞':shortDate(l.expires_at);r.insertCell().textContent=lds.length+' / '+(l.max_devices||1);r.insertCell().textContent=dt(l.last_seen_at||l.activated_at);const a=r.insertCell();a.className='actions';a.appendChild(actionBtn('Active','green',()=>vyronLicenseCmd(l.id,'active')));a.appendChild(actionBtn('Pause','warn',()=>vyronLicenseCmd(l.id,'paused')));a.appendChild(actionBtn('Revoke','danger',()=>vyronLicenseCmd(l.id,'revoked')))});root.appendChild(t);
+
+  // Devices and versions
   const droot=$('vyronDevicesTable');droot.innerHTML='';const dtb=table(['Клиент','Устройство','Статус','Система','Версия','Последний контакт','Действия']),db=dtb.tBodies[0];
-  vyronFilteredDevices().forEach(d=>{
-    const l=ls.find(x=>x.id===d.license_id),r=db.insertRow();
-    r.insertCell().innerHTML='<b>'+esc(l?.customer_name||'—')+'</b><br><span class="muted">•••• '+esc(l?.key_last4||'—')+'</span>';
-    r.insertCell().innerHTML='<b>'+esc(d.device_name||'Без имени')+'</b><br><code style="font-size:10px">'+esc(d.device_id||'—')+'</code>';
-    r.insertCell().innerHTML='<b>'+esc(String(d.status||'—').toUpperCase())+'</b>';
-    r.insertCell().textContent=(d.platform||'—')+' '+(d.architecture||'');
-    r.insertCell().textContent=d.app_version||'—';
-    r.insertCell().textContent=dt(d.last_seen_at);
-    const a=r.insertCell();a.className='actions';
-    a.appendChild(actionBtn('Block','danger',()=>vyronDeviceCmd(d.id,'block')));
-    a.appendChild(actionBtn('Unblock','green',()=>vyronDeviceCmd(d.id,'unblock')));
-    a.appendChild(actionBtn('Detach','secondary',()=>vyronDeviceCmd(d.id,'detach')));
-  });droot.appendChild(dtb);
+  vyronFilteredDevices().forEach(d=>{const l=vyronLicense(d.license_id),r=db.insertRow();r.insertCell().innerHTML='<b>'+esc(l?.customer_name||'—')+'</b><br><span class="muted">•••• '+esc(l?.key_last4||'—')+'</span>';r.insertCell().innerHTML='<b>'+esc(d.device_name||'Без имени')+'</b><br><code style="font-size:10px">'+esc(d.device_id||'—')+'</code>';r.insertCell().innerHTML='<span class="status"><i class="dot '+statusDot(d.status)+'"></i>'+esc(String(d.status||'—').toUpperCase())+'</span>';r.insertCell().textContent=(d.platform||'—')+' '+(d.architecture||'');r.insertCell().textContent=d.app_version||'—';r.insertCell().textContent=dt(d.last_seen_at);const a=r.insertCell();a.className='actions';a.appendChild(actionBtn('Block','danger',()=>vyronDeviceCmd(d.id,'block')));a.appendChild(actionBtn('Unblock','green',()=>vyronDeviceCmd(d.id,'unblock')));a.appendChild(actionBtn('Detach','secondary',()=>vyronDeviceCmd(d.id,'detach')))});droot.appendChild(dtb);
+  const versions={};ds.filter(x=>x.status!=='detached').forEach(d=>{const v=d.app_version||'unknown';versions[v]=(versions[v]||0)+1});const vmax=Math.max(1,...Object.values(versions));$('vyronVersionsList').innerHTML=Object.entries(versions).length?Object.entries(versions).sort((a,b)=>b[1]-a[1]).map(([v,n])=>'<div class="versionBar"><b>'+esc(v)+'</b><div class="bar"><i style="width:'+(n/vmax*100)+'%"></i></div><span>'+n+'</span></div>').join(''):'<div class="empty">Нет подключённых устройств</div>';
+  renderFeedFromData('vyronDeviceSummary',[
+    {title:'ACTIVE',body:String(ds.filter(x=>x.status==='active').length)+' устройств',created_at:vyronData.serverTime},
+    {title:'BLOCKED',body:String(ds.filter(x=>x.status==='blocked').length)+' устройств',created_at:vyronData.serverTime},
+    {title:'DETACHED',body:String(ds.filter(x=>x.status==='detached').length)+' устройств',created_at:vyronData.serverTime}
+  ],10);
+
+  // Channels / OAuth
+  const healthy=cs.filter(x=>x.oauth_status==='healthy').length,reconnect=cs.filter(x=>x.oauth_status==='reconnect_required').length,cerr=cs.filter(x=>x.oauth_status==='error').length,unknown=cs.filter(x=>x.oauth_status==='unknown').length;
+  $('vyronChannelStats').innerHTML=[['КАНАЛЫ',cs.length,'metadata'],['HEALTHY',healthy,'OAuth'],['RECONNECT',reconnect,'нужен вход'],['ERROR',cerr,'ошибка'],['UNKNOWN',unknown,'не проверено'],['КЛИЕНТЫ',new Set(cs.map(x=>x.license_id)).size,'с каналами']].map(x=>'<div class="stat"><span>'+x[0]+'</span><b>'+x[1]+'</b><small>'+x[2]+'</small></div>').join('');
+  const croot=$('vyronChannelsTable');croot.innerHTML='';const ct=table(['Клиент','Канал','OAuth','Profile','Видео','Last sync','Ошибка']),cb=ct.tBodies[0];
+  vyronFilteredChannels().forEach(x=>{const l=vyronLicense(x.license_id),r=cb.insertRow();r.insertCell().textContent=l?.customer_name||'—';r.insertCell().innerHTML='<b>'+esc(x.channel_title||x.channel_id)+'</b><br><code style="font-size:10px">'+esc(x.channel_id)+'</code>';r.insertCell().innerHTML='<span class="status"><i class="dot '+statusDot(x.oauth_status)+'"></i>'+esc(x.oauth_status)+'</span>';r.insertCell().innerHTML='<code style="font-size:10px">'+esc(x.oauth_profile_id||'—')+'</code>';r.insertCell().innerHTML='public '+(x.public_count??'—')+'<br><span class="muted">private '+(x.private_count??'—')+' • scheduled '+(x.scheduled_count??'—')+'</span>';r.insertCell().textContent=dt(x.last_sync_at);r.insertCell().innerHTML=esc(x.last_error_code||'—')+'<br><span class="muted">'+dt(x.last_error_at)+'</span>'});croot.appendChild(ct);if(!cs.length)croot.innerHTML='<div class="empty">Канальная telemetry пока не поступала. Backend и таблицы уже готовы.</div>';
+
+  // Errors
+  const e24=es.filter(x=>Date.parse(x.created_at)>=Date.now()-86400_000),oauthE=e24.filter(x=>x.category==='oauth').length,uploadE=e24.filter(x=>x.category==='upload').length;
+  $('vyronErrorStats').innerHTML=[['ВСЕ',e24.length,'24 часа'],['OAUTH',oauthE,'24 часа'],['UPLOAD',uploadE,'24 часа']].map(x=>'<div class="stat"><span>'+x[0]+'</span><b>'+x[1]+'</b><small>'+x[2]+'</small></div>').join('');
+  const counts={};es.forEach(x=>{const k=x.code||x.category||'unknown';counts[k]=(counts[k]||0)+1});renderFeedFromData('vyronErrorCodes',Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,n])=>({title:k,body:n+' событий за 30 дней',created_at:null})),10);
+  const eroot=$('vyronErrorsTable');eroot.innerHTML='';const et=table(['Время','Клиент','Категория','Код','Операция / канал','Сообщение','Версия']),eb=et.tBodies[0];
+  vyronFilteredErrors().forEach(x=>{const r=eb.insertRow(),l=vyronLicense(x.license_id);r.insertCell().textContent=dt(x.created_at);r.insertCell().textContent=l?.customer_name||'—';r.insertCell().textContent=x.category||'—';r.insertCell().innerHTML='<b>'+esc(x.code||'—')+'</b>';r.insertCell().innerHTML=esc(x.operation||'—')+'<br><span class="muted">'+esc(x.channel_id||'')+'</span>';r.insertCell().textContent=x.message||'—';r.insertCell().textContent=x.app_version||'—'});eroot.appendChild(et);if(!es.length)eroot.innerHTML='<div class="empty">Ошибок telemetry пока нет.</div>';
+
+  // Quota
+  const today=new Date().toISOString().slice(0,10),todayRows=qs.filter(x=>x.usage_date===today),req=todayRows.reduce((a,x)=>a+Number(x.request_count||0),0),units=todayRows.reduce((a,x)=>a+Number(x.estimated_quota_units||0),0);
+  $('vyronQuotaStats').innerHTML=[['REQUESTS',req,'сегодня'],['EST. UNITS',units,'сегодня'],['ENDPOINTS',new Set(todayRows.map(x=>x.endpoint)).size,'сегодня'],['КЛИЕНТЫ',new Set(todayRows.map(x=>x.license_id)).size,'сегодня'],['ROWS',qs.length,'30 дней'],['MODE','TRACKED','без секретов']].map(x=>'<div class="stat"><span>'+x[0]+'</span><b>'+x[1]+'</b><small>'+x[2]+'</small></div>').join('');
+  const ep={};todayRows.forEach(x=>{ep[x.endpoint]||(ep[x.endpoint]={r:0,u:0});ep[x.endpoint].r+=Number(x.request_count||0);ep[x.endpoint].u+=Number(x.estimated_quota_units||0)});const maxU=Math.max(1,...Object.values(ep).map(x=>x.u));$('vyronQuotaEndpoints').innerHTML=Object.entries(ep).length?Object.entries(ep).sort((a,b)=>b[1].u-a[1].u).map(([k,v])=>'<div class="versionBar"><b>'+esc(k)+'</b><div class="bar"><i style="width:'+(v.u/maxU*100)+'%"></i></div><span>'+v.u+'</span></div>').join(''):'<div class="empty">Usage telemetry пока не поступала.</div>';
+  const perClient={};todayRows.forEach(x=>{perClient[x.license_id]=(perClient[x.license_id]||0)+Number(x.estimated_quota_units||0)});renderFeedFromData('vyronQuotaClients',Object.entries(perClient).sort((a,b)=>b[1]-a[1]).map(([id,u])=>({title:vyronLicense(id)?.customer_name||id,body:u+' estimated units сегодня',created_at:null})),20);
+
+  // Releases / infrastructure
+  $('vyronReleaseAdoption').innerHTML=Object.entries(versions).length?Object.entries(versions).sort((a,b)=>b[1]-a[1]).map(([v,n])=>'<div class="versionBar"><b>'+esc(v)+'</b><div class="bar"><i style="width:'+(n/vmax*100)+'%"></i></div><span>'+n+'</span></div>').join(''):'<div class="empty">Нет device version telemetry</div>';
+  renderFeedFromData('vyronInfra',[
+    {title:'License API',body:'vyron-client-api • ACTIVE',created_at:vyronData.serverTime},
+    {title:'Admin API',body:'vyron-admin-licenses v3 • ACTIVE',created_at:vyronData.serverTime},
+    {title:'Client telemetry',body:'vyron-client-telemetry v1 • DEPLOYED • secret fields forbidden',created_at:vyronData.serverTime},
+    {title:'Telemetry schema',body:'health + channels/OAuth + errors + API usage • RLS enabled',created_at:vyronData.serverTime},
+    {title:'Windows updater',body:'OFF until physical acceptance',created_at:vyronData.serverTime}
+  ],10);
 }
-async function vyronLicenseCmd(id,command){
-  try{await callVyron({action:'mutate',license_id:id,command});vyronData=await callVyron({action:'dashboard'});renderVyron();toast('VYRON лицензия обновлена')}catch(e){toast(e.message,true)}
-}
-async function vyronDeviceCmd(id,command){
-  try{await callVyron({action:'device',device_id:id,command});vyronData=await callVyron({action:'dashboard'});renderVyron();toast('VYRON устройство обновлено')}catch(e){toast(e.message,true)}
-}
+async function vyronLicenseCmd(id,command){try{await callVyron({action:'mutate',license_id:id,command});vyronData=await callVyron({action:'dashboard'});renderVyron();toast('VYRON лицензия обновлена')}catch(e){toast(e.message,true)}}
+async function vyronDeviceCmd(id,command){try{await callVyron({action:'device',device_id:id,command});vyronData=await callVyron({action:'dashboard'});renderVyron();toast('VYRON устройство обновлено')}catch(e){toast(e.message,true)}}
 
 function renderAll(){renderStats();renderClients();renderDevices();renderRenders();renderVersions();renderNotifications();renderVyron()}
+let currentProduct='endlume';
+function showProduct(product,page){
+  currentProduct=product==='vyron'?'vyron':'endlume';
+  localStorage.setItem('scaleup-control-product',currentProduct);
+  document.querySelectorAll('[data-product]').forEach(x=>x.classList.toggle('active',x.dataset.product===currentProduct));
+  $('endlumeNav').classList.toggle('hidden',currentProduct!=='endlume');
+  $('vyronNav').classList.toggle('hidden',currentProduct!=='vyron');
+  $('productContext').textContent=currentProduct==='vyron'?'VYRON Control • Content OS':'ENDLUME Control • YT Studio PEISOV';
+  const fallback=currentProduct==='vyron'?'vyron-overview':'dashboard';
+  const saved=localStorage.getItem('scaleup-control-page-'+currentProduct)||fallback;
+  showPage(page||saved);
+}
 function showPage(name){
+  const isVyron=String(name).startsWith('vyron-');
+  if(isVyron&&currentProduct!=='vyron')currentProduct='vyron';
+  if(!isVyron&&currentProduct!=='endlume')currentProduct='endlume';
   document.querySelectorAll('[id^="page-"]').forEach(x=>x.classList.toggle('hidden',x.id!=='page-'+name));
-  document.querySelectorAll('#nav [data-page]').forEach(x=>x.classList.toggle('active',x.dataset.page===name));
+  document.querySelectorAll('#endlumeNav [data-page],#vyronNav [data-page]').forEach(x=>x.classList.toggle('active',x.dataset.page===name));
+  localStorage.setItem('scaleup-control-page-'+currentProduct,name);
   if(name==='notifications')loadNotificationSettings();
   if(name==='security')loadSecurity();
+  if(isVyron)renderVyron();
 }
 async function licenseCmd(id,command){try{await call({action:'mutate',license_id:id,command});await load();if(currentLicenseId===id)await openClient(id);toast('Лицензия обновлена')}catch(e){toast(e.message,true)}}
 async function deviceCmd(id,command){try{await call({action:'device',device_id:id,command});await load();if(currentLicenseId)await openClient(currentLicenseId);toast('Устройство обновлено')}catch(e){toast(e.message,true)}}
@@ -640,9 +752,11 @@ async function loadSecurity(){
   try{const [s,a]=await Promise.all([call({action:'security_state'}),call({action:'audit',limit:100})]);const x=s.security;$('securityState').innerHTML='<div class="feedItem"><b>'+esc(x.email||'')+'</b><small>Последний вход: '+dt(x.lastSignInAt)+'</small><small>AAL: '+esc(x.currentAal||'—')+'</small><small>2FA: '+(x.mfaEnabled?'ВКЛЮЧЕНА':'не включена')+' • enforcement: '+(x.mfaRequired?'ON':'OFF')+'</small><small>Активных owner-сессий: '+((x.sessions||[]).length)+'</small></div>'+(x.mfaFactors||[]).map(f=>'<div class="feedItem"><b>'+esc(f.friendly_name||'TOTP')+'</b><small>'+esc(f.factor_type)+' • '+esc(f.status)+'</small></div>').join('')+(x.sessions||[]).map(v=>'<div class="feedItem"><b>Owner session</b><small>Создана: '+dt(v.created_at)+'</small><small>Обновлена: '+dt(v.updated_at||v.refreshed_at)+'</small></div>').join('');$('setupMfaBtn').textContent=x.mfaEnabled?'ДОБАВИТЬ ЕЩЁ TOTP-ФАКТОР':'ВКЛЮЧИТЬ 2FA (TOTP)';renderFeedFromData('auditFeed',(a.audit||[]).map(v=>({title:v.action,body:JSON.stringify(v.metadata||{}),created_at:v.created_at})),100)}catch(e){toast(e.message,true)}
 }
 
-document.querySelectorAll('#nav [data-page]').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
+document.querySelectorAll('[data-product]').forEach(b=>b.onclick=()=>showProduct(b.dataset.product));
+document.querySelectorAll('#endlumeNav [data-page],#vyronNav [data-page]').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>showPage(b.dataset.go));
-$('clientSearch').oninput=renderClients;$('clientFilter').onchange=renderClients;$('deviceSearch').oninput=renderDevices;$('deviceFilter').onchange=renderDevices;$('renderSearch').oninput=renderRenders;$('renderFilter').onchange=renderRenders;$('vyronSearch').oninput=renderVyron;$('vyronFilter').onchange=renderVyron;$('vyronDeviceSearch').oninput=renderVyron;$('vyronDeviceFilter').onchange=renderVyron;
+document.querySelectorAll('[data-go-vyron]').forEach(b=>b.onclick=()=>showPage(b.dataset.goVyron));
+$('clientSearch').oninput=renderClients;$('clientFilter').onchange=renderClients;$('deviceSearch').oninput=renderDevices;$('deviceFilter').onchange=renderDevices;$('renderSearch').oninput=renderRenders;$('renderFilter').onchange=renderRenders;$('vyronSearch').oninput=renderVyron;$('vyronFilter').onchange=renderVyron;$('vyronDeviceSearch').oninput=renderVyron;$('vyronDeviceFilter').onchange=renderVyron;$('vyronChannelSearch').oninput=renderVyron;$('vyronChannelFilter').onchange=renderVyron;$('vyronErrorSearch').oninput=renderVyron;$('vyronErrorFilter').onchange=renderVyron;
 $('refreshBtn').onclick=()=>load(false);$('drawerClose').onclick=closeDrawer;$('drawerBackdrop').onclick=closeDrawer;$('renderModalClose').onclick=()=>$('renderModalBack').classList.add('hidden');$('renderModalBack').onclick=e=>{if(e.target===$('renderModalBack'))$('renderModalBack').classList.add('hidden')};
 
 $('vyronCreateBtn').onclick=async()=>{const b=$('vyronCreateBtn');b.disabled=true;try{const days=Number($('vyronDays').value||30),j=await callVyron({action:'create',plan:'managed',customer_name:$('vyronCust').value.trim(),expires_at:new Date(Date.now()+days*86400000).toISOString(),max_devices:Number($('vyronMaxDevices').value||1),notes:$('vyronNotes').value.trim()});$('vyronNewKey').innerHTML='<b>Скопируй ключ сейчас — полный ключ больше не показывается:</b><br><br><code>'+esc(j.key)+'</code><br><br><button id="copyVyronKey" class="btn green small">КОПИРОВАТЬ</button>';$('vyronNewKey').classList.remove('hidden');$('copyVyronKey').onclick=()=>navigator.clipboard.writeText(j.key).then(()=>toast('VYRON ключ скопирован'));vyronData=await callVyron({action:'dashboard'});renderVyron();toast('VYRON ключ создан')}catch(e){toast(e.message,true)}finally{b.disabled=false}};
