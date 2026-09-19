@@ -6,307 +6,454 @@
 <meta name="robots" content="noindex,nofollow,noarchive">
 <title>ENDLUME Control</title>
 <style>
-:root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#eef1ff;background:#070812;color-scheme:dark}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0,#202650 0,transparent 30%),#070812;min-height:100vh}
-button,input,select{font:inherit}.hidden{display:none!important}.shell{max-width:1480px;margin:auto;padding:24px}
-.card{background:rgba(17,19,38,.93);border:1px solid #2c3152;border-radius:18px;padding:18px;box-shadow:0 20px 55px #0005}
-.login{max-width:440px;margin:12vh auto;padding:28px}.brand{display:flex;align-items:center;gap:12px}.logo{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#5c62ff,#b65cff 55%,#ff5dbb);display:grid;place-items:center;font-size:28px}
-.brand b{display:block}.brand small,.muted{color:#8f97b6}.field{display:grid;gap:7px;margin:14px 0}.field label{font-size:12px;color:#929ab8}
-.field input,.field select{background:#090b17;border:1px solid #34395c;border-radius:11px;color:#fff;padding:12px;outline:none}.field input:focus{border-color:#716aff}
-.btn{border:0;border-radius:10px;padding:10px 13px;background:#5d57ff;color:#fff;font-weight:700;cursor:pointer}.btn.secondary{background:#1c2037;border:1px solid #353a5f}.btn.danger{background:#8d3149}.btn.warn{background:#76551f}.btn.green{background:#216245}.btn:disabled{opacity:.45}
-.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.topActions{display:flex;gap:8px;align-items:center}.pill{padding:8px 12px;border:1px solid #34395a;border-radius:999px;background:#111426;color:#a7afca}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}.stat b{display:block;font-size:27px}.stat small{color:#8d95b5}
-.layout{display:grid;grid-template-columns:340px 1fr;gap:16px}.head{display:flex;justify-content:space-between;align-items:center}.head h2{margin:0;font-size:16px}
-.keybox{margin-top:12px;padding:12px;border-radius:11px;background:#07150e;border:1px solid #216245;color:#84efae;word-break:break-all}
-.tabs{display:flex;gap:8px;margin-bottom:12px}.tab{background:#171a30;border:1px solid #303557;color:#9ba4c3}.tab.active{background:#5d57ff;color:white}
-.tableWrap{overflow:auto}.tbl{width:100%;border-collapse:collapse;min-width:920px}.tbl th,.tbl td{text-align:left;border-bottom:1px solid #252944;padding:10px 9px;font-size:12px;vertical-align:top}.tbl th{color:#8089aa}.actions{display:flex;gap:5px;flex-wrap:wrap}.actions button{font-size:11px;padding:6px 8px}
-.status{display:inline-flex;align-items:center;gap:6px}.dot{width:8px;height:8px;border-radius:50%;background:#6b7280}.dot.on{background:#42d17a;box-shadow:0 0 10px #42d17a}.dot.warn{background:#f3ba4f}.dot.off{background:#e35c72}
-.progress{height:7px;background:#222640;border-radius:99px;overflow:hidden;margin-top:6px}.progress i{display:block;height:100%;background:linear-gradient(90deg,#655fff,#c55bff)}
-.toast{position:fixed;right:20px;bottom:20px;max-width:420px;padding:13px 16px;background:#171a31;border:1px solid #3c4169;border-radius:12px;box-shadow:0 15px 50px #0008}
-@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}.shell{padding:14px}.top{align-items:flex-start;flex-direction:column}}
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#eef1ff;background:#070812;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 15% 0,#212859 0,transparent 28%),#070812;color:#eef1ff}button,input,select,textarea{font:inherit}.hidden{display:none!important}
+button{cursor:pointer}.app{max-width:1520px;margin:auto;padding:22px}.card{background:rgba(17,19,38,.94);border:1px solid #2c3152;border-radius:18px;box-shadow:0 18px 55px #0004}.pad{padding:18px}
+.login{max-width:440px;margin:11vh auto;padding:28px}.brand{display:flex;align-items:center;gap:12px}.logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#5966ff,#b45cff 55%,#ff5dbd);display:grid;place-items:center;font-size:27px}.brand b{display:block;font-size:17px}.brand small,.muted{color:#8f97b6}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}.topActions,.actions,.tabs,.filters,.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pill{padding:8px 11px;border:1px solid #34395a;border-radius:999px;background:#111426;color:#a7afca;font-size:12px}.btn{border:0;border-radius:10px;padding:10px 13px;background:#5d57ff;color:#fff;font-weight:750}.btn.small{padding:6px 8px;font-size:11px}.btn.secondary{background:#1b1f36;border:1px solid #353b60}.btn.green{background:#216245}.btn.warn{background:#76551f}.btn.danger{background:#8d3149}.btn.ghost{background:transparent;border:1px solid #303657;color:#aeb6d0}.btn:disabled{opacity:.42;cursor:not-allowed}
+.nav{display:flex;gap:7px;margin:12px 0 18px;overflow:auto;padding-bottom:2px}.nav button{white-space:nowrap}.nav .active,.tabs .active{background:#5d57ff;color:#fff;border-color:#5d57ff}
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:11px;margin:12px 0 16px}.stat{padding:15px}.stat small{display:block;color:#8c95b5;font-size:11px}.stat b{display:block;font-size:25px;margin-top:5px}.stat em{font-style:normal;font-size:11px;color:#7e86a6}
+.grid2{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.clientsLayout{display:grid;grid-template-columns:320px 1fr;gap:14px}
+.field{display:grid;gap:6px;margin:12px 0}.field label{font-size:11px;color:#9098b8}.field input,.field select,.field textarea{background:#090b17;border:1px solid #34395c;border-radius:10px;color:#fff;padding:11px;outline:none}.field textarea{min-height:80px;resize:vertical}.field input:focus,.field select:focus,.field textarea:focus{border-color:#716aff}
+.tableWrap{overflow:auto}.tbl{width:100%;border-collapse:collapse;min-width:980px}.tbl th,.tbl td{text-align:left;padding:10px 9px;border-bottom:1px solid #252944;font-size:12px;vertical-align:top}.tbl th{color:#7f88a8;font-weight:650;position:sticky;top:0;background:#111326;z-index:1}.tbl tr.clickable:hover{background:#171b33;cursor:pointer}
+.status{display:inline-flex;gap:6px;align-items:center}.dot{width:8px;height:8px;border-radius:50%;background:#6b7280}.dot.on{background:#42d17a;box-shadow:0 0 10px #42d17a}.dot.warn{background:#f3ba4f}.dot.off{background:#e35c72}
+.progress{height:7px;background:#222640;border-radius:99px;overflow:hidden;margin-top:5px}.progress i{display:block;height:100%;background:linear-gradient(90deg,#655fff,#c55bff)}
+.sectionTitle{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.sectionTitle h2,.sectionTitle h3{margin:0}.sectionTitle h2{font-size:18px}.sectionTitle h3{font-size:15px}
+.feed{display:grid;gap:8px}.feedItem{padding:11px 12px;border:1px solid #292f50;border-radius:12px;background:#0b0e1d}.feedItem b{font-size:12px}.feedItem small{display:block;color:#828aaa;margin-top:4px}.versionBar{display:grid;grid-template-columns:170px 1fr 44px;gap:10px;align-items:center;margin:9px 0}.bar{height:8px;background:#222640;border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,#54cfff,#a05cff)}
+.keybox{padding:12px;background:#07150e;border:1px solid #216245;border-radius:11px;color:#82efae;word-break:break-all;margin-top:12px}
+.drawerBackdrop{position:fixed;inset:0;background:#0009;z-index:30}.drawer{position:fixed;right:0;top:0;bottom:0;width:min(760px,96vw);background:#0c0f1f;border-left:1px solid #303659;z-index:31;padding:20px;overflow:auto;box-shadow:-30px 0 80px #0008}.drawer h2{margin:0}.drawerGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}.mini{padding:11px;border:1px solid #292f50;border-radius:12px;background:#111426}.mini small{color:#838cab}.mini b{display:block;font-size:18px;margin-top:4px}
+.modalBackdrop{position:fixed;inset:0;background:#0009;z-index:40;display:grid;place-items:center;padding:20px}.modal{width:min(680px,96vw);max-height:90vh;overflow:auto;padding:20px}.qr{max-width:220px;background:white;border-radius:10px;padding:8px}.tag{display:inline-block;padding:4px 7px;border-radius:999px;border:1px solid #363c61;background:#171a31;color:#aeb6d0;font-size:10px}
+.toast{position:fixed;right:18px;bottom:18px;z-index:100;max-width:430px;padding:13px 15px;background:#171a31;border:1px solid #3c4169;border-radius:12px;box-shadow:0 15px 50px #0008}.error{color:#ff8496}.ok{color:#82efae}.warnText{color:#f3ba4f}.empty{padding:34px;text-align:center;color:#8b93b2}
+@media(max-width:1100px){.stats{grid-template-columns:repeat(3,1fr)}.grid2,.clientsLayout{grid-template-columns:1fr}.grid3{grid-template-columns:1fr 1fr}}
+@media(max-width:650px){.app{padding:12px}.stats{grid-template-columns:1fr 1fr}.grid3,.drawerGrid{grid-template-columns:1fr 1fr}.top{align-items:flex-start;flex-direction:column}}
 </style>
 </head>
 <body>
 <div id="login" class="login card">
   <div class="brand"><div class="logo">∞</div><div><b>ENDLUME Control</b><small>Owner Console</small></div></div>
   <h1>Вход владельца</h1>
-  <p class="muted">Управление лицензиями, устройствами и рендерами ENDLUME.</p>
-  <div class="field"><label>Email</label><input id="email" type="email" autocomplete="username"></div>
+  <p class="muted">Лицензии, устройства, рендеры и диагностика ENDLUME.</p>
+  <div class="field"><label>Email</label><input id="email" type="email" autocomplete="username" value="peisov.business@gmail.com"></div>
   <div class="field"><label>Пароль</label><input id="password" type="password" autocomplete="current-password"></div>
   <button id="loginBtn" class="btn" style="width:100%">ВОЙТИ</button>
-  <p id="loginErr" style="color:#ff8191"></p><button id="forgotBtn" class="btn secondary" style="width:100%;margin-top:8px">ЗАБЫЛ ПАРОЛЬ</button><button id="emergencyResetBtn" class="btn warn" style="width:100%;margin-top:8px">СБРОСИТЬ СЕЙЧАС БЕЗ EMAIL</button><div id="emergencyResetBox" class="hidden" style="margin-top:14px"><div class="field"><label>Одноразовый код</label><input id="emergencyResetToken" type="password" autocomplete="off"></div><div class="field"><label>Новый пароль</label><input id="emergencyResetPassword" type="password" minlength="12" autocomplete="new-password"></div><button id="emergencyResetSaveBtn" class="btn green" style="width:100%">УСТАНОВИТЬ НОВЫЙ ПАРОЛЬ</button><p id="emergencyResetMsg" class="muted"></p></div><div id="recoveryPasteBox" style="margin-top:12px"><div class="field"><label>Если письмо открыло старый ChannelCore — вставь сюда всю ссылку из адресной строки</label><input id="recoveryUrl" type="url" placeholder="https://network-os-youtube.vercel.app/#access_token=..."></div><button id="useRecoveryUrlBtn" class="btn secondary" style="width:100%">ПРОДОЛЖИТЬ СБРОС В ENDLUME</button><p class="muted" style="font-size:12px">Ссылка разбирается только в браузере и не отправляется в базу.</p></div><div id="resetBox" class="hidden" style="margin-top:14px"><div class="field"><label>Новый пароль</label><input id="newPassword" type="password" minlength="8" autocomplete="new-password"></div><button id="savePasswordBtn" class="btn green" style="width:100%">СОХРАНИТЬ НОВЫЙ ПАРОЛЬ</button><p id="resetMsg" class="muted"></p></div>
+  <button id="forgotBtn" class="btn secondary" style="width:100%;margin-top:8px">ЗАБЫЛ ПАРОЛЬ</button>
+  <p id="loginErr" class="error"></p>
+  <div id="recoveryBox" class="hidden">
+    <div class="field"><label>Новый пароль</label><input id="recoveryPassword" type="password" minlength="12"></div>
+    <button id="recoverySave" class="btn green" style="width:100%">СОХРАНИТЬ НОВЫЙ ПАРОЛЬ</button>
+    <p id="recoveryMsg" class="muted"></p>
+  </div>
 </div>
 
-<div id="app" class="shell hidden">
+<div id="mfaLogin" class="login card hidden">
+  <div class="brand"><div class="logo">∞</div><div><b>ENDLUME Control</b><small>2FA verification</small></div></div>
+  <h2>Код из Authenticator</h2>
+  <p class="muted">Для Owner Control включена дополнительная защита.</p>
+  <div class="field"><label>6-значный код</label><input id="mfaLoginCode" inputmode="numeric" autocomplete="one-time-code"></div>
+  <button id="mfaLoginBtn" class="btn" style="width:100%">ПОДТВЕРДИТЬ</button>
+  <p id="mfaLoginErr" class="error"></p>
+</div>
+
+<div id="mainApp" class="app hidden">
   <div class="top">
     <div class="brand"><div class="logo">∞</div><div><b>ENDLUME YT Studio PEISOV</b><small>Owner Control • Managed Access</small></div></div>
     <div class="topActions"><span id="updated" class="pill">—</span><button id="refreshBtn" class="btn secondary">Обновить</button><button id="logoutBtn" class="btn secondary">Выйти</button></div>
   </div>
-
-  <div class="stats">
-    <div class="card stat"><small>ЛИЦЕНЗИИ</small><b id="sLic">0</b></div>
-    <div class="card stat"><small>УСТРОЙСТВА ONLINE</small><b id="sOnline">0</b></div>
-    <div class="card stat"><small>АКТИВНЫЕ РЕНДЕРЫ</small><b id="sRender">0</b></div>
-    <div class="card stat"><small>ЗАВЕРШЕНО</small><b id="sDone">0</b></div>
+  <div class="nav" id="nav">
+    <button class="btn secondary active" data-page="dashboard">Обзор</button>
+    <button class="btn secondary" data-page="clients">Клиенты</button>
+    <button class="btn secondary" data-page="devices">Устройства</button>
+    <button class="btn secondary" data-page="renders">Рендеры</button>
+    <button class="btn secondary" data-page="versions">Версии</button>
+    <button class="btn secondary" data-page="notifications">События</button>
+    <button class="btn secondary" data-page="security">Безопасность</button>
   </div>
 
-  <div class="layout">
-    <aside class="card">
-      <div class="head"><h2>Новый ключ</h2><span class="muted">160-bit</span></div>
-      <div class="field"><label>Клиент</label><input id="cust" placeholder="Например: Иван"></div>
-      <div class="field"><label>Срок</label><select id="days"><option value="7">7 дней</option><option value="30" selected>30 дней</option><option value="90">90 дней</option><option value="365">365 дней</option></select></div>
-      <div class="field"><label>Устройств</label><input id="maxDevices" type="number" min="1" max="100" value="1"></div>
-      <div class="field"><label>Заметка</label><input id="notes" placeholder="Необязательно"></div>
-      <button id="createBtn" class="btn" style="width:100%">СОЗДАТЬ УНИКАЛЬНЫЙ КЛЮЧ</button>
-      <div id="newKey" class="keybox hidden"></div>
-    </aside>
-
-    <main class="card">
-      <div class="tabs">
-        <button class="btn tab active" data-tab="licenses">Лицензии</button>
-        <button class="btn tab" data-tab="devices">Устройства</button>
-        <button class="btn tab" data-tab="renders">Рендеры</button>
+  <section id="page-dashboard">
+    <div id="stats" class="stats"></div>
+    <div class="grid2">
+      <div class="card pad">
+        <div class="sectionTitle"><h2>Последние события</h2><button class="btn ghost small" data-go="notifications">Все</button></div>
+        <div id="dashFeed" class="feed"></div>
       </div>
-      <div id="licenses" class="tableWrap"></div>
-      <div id="devices" class="tableWrap hidden"></div>
-      <div id="renders" class="tableWrap hidden"></div>
-    </main>
+      <div class="card pad">
+        <div class="sectionTitle"><h2>Версии ENDLUME</h2><button class="btn ghost small" data-go="versions">Подробнее</button></div>
+        <div id="dashVersions"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="page-clients" class="hidden">
+    <div class="clientsLayout">
+      <aside class="card pad">
+        <div class="sectionTitle"><h2>Новый ключ</h2><span class="tag">160-bit</span></div>
+        <div class="field"><label>Клиент</label><input id="cust" placeholder="Например: Дони"></div>
+        <div class="field"><label>Срок</label><select id="days"><option value="7">7 дней</option><option value="30" selected>30 дней</option><option value="90">90 дней</option><option value="365">365 дней</option></select></div>
+        <div class="field"><label>Устройств</label><input id="maxDevices" type="number" min="1" max="100" value="1"></div>
+        <div class="field"><label>Заметка</label><textarea id="notes" placeholder="Необязательно"></textarea></div>
+        <button id="createBtn" class="btn" style="width:100%">СОЗДАТЬ УНИКАЛЬНЫЙ КЛЮЧ</button>
+        <div id="newKey" class="keybox hidden"></div>
+      </aside>
+      <main class="card pad">
+        <div class="sectionTitle"><h2>Клиенты и лицензии</h2><span id="clientCount" class="muted"></span></div>
+        <div class="filters">
+          <input id="clientSearch" placeholder="Поиск клиента / последние 4 символа" style="min-width:280px">
+          <select id="clientFilter"><option value="all">Все</option><option value="online">ONLINE</option><option value="offline">OFFLINE</option><option value="never">Не подключались</option><option value="expiring">Истекают ≤7 дней</option><option value="revoked">Revoked</option></select>
+        </div>
+        <div id="clientsTable" class="tableWrap" style="margin-top:10px"></div>
+      </main>
+    </div>
+  </section>
+
+  <section id="page-devices" class="hidden">
+    <div class="card pad">
+      <div class="sectionTitle"><h2>Устройства</h2><span class="muted">Heartbeat каждые ~25 сек</span></div>
+      <div class="filters"><input id="deviceSearch" placeholder="Поиск устройства / клиента / версии"><select id="deviceFilter"><option value="all">Все</option><option value="online">ONLINE</option><option value="away">AWAY</option><option value="offline">OFFLINE</option><option value="blocked">Blocked</option></select></div>
+      <div id="devicesTable" class="tableWrap" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <section id="page-renders" class="hidden">
+    <div class="card pad">
+      <div class="sectionTitle"><h2>Рендеры</h2><span class="muted">Live progress + история</span></div>
+      <div class="filters"><input id="renderSearch" placeholder="Проект / клиент / файл"><select id="renderFilter"><option value="all">Все</option><option value="rendering">Рендерятся</option><option value="completed">Готово</option><option value="failed">Ошибки</option></select></div>
+      <div id="rendersTable" class="tableWrap" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <section id="page-versions" class="hidden">
+    <div class="grid2">
+      <div class="card pad"><div class="sectionTitle"><h2>Распределение версий</h2></div><div id="versionsList"></div></div>
+      <div class="card pad"><div class="sectionTitle"><h2>Контроль обновлений</h2></div><p class="muted">Здесь видно, кто работает на старой версии. Обновление выполняет штатный подписанный updater ENDLUME — без удалённого запуска произвольных команд.</p><div id="oldVersionClients"></div></div>
+    </div>
+  </section>
+
+  <section id="page-notifications" class="hidden">
+    <div class="grid2">
+      <div class="card pad">
+        <div class="sectionTitle"><h2>Уведомления</h2></div>
+        <label class="row"><input id="notifyActivation" type="checkbox"> Первое подключение клиента</label><br>
+        <label class="row"><input id="notifyStart" type="checkbox"> Запуск рендера</label><br>
+        <label class="row"><input id="notifyDone" type="checkbox"> Завершение рендера</label><br>
+        <label class="row"><input id="notifyFail" type="checkbox"> Ошибка рендера</label><br>
+        <label class="row"><input id="notifyExpire" type="checkbox"> Скорое окончание лицензии</label>
+        <hr style="border-color:#252944;border-width:1px 0 0;margin:16px 0">
+        <label class="row"><input id="telegramEnabled" type="checkbox"> Telegram</label>
+        <div class="field"><label>Chat ID</label><input id="telegramChatId" placeholder="Например: 123456789"></div>
+        <label class="row"><input id="emailEnabled" type="checkbox"> Email</label>
+        <div class="field"><label>Email</label><input id="notifyEmail" type="email"></div>
+        <button id="saveNotifyBtn" class="btn">СОХРАНИТЬ НАСТРОЙКИ</button>
+        <p id="notifyTransport" class="muted"></p>
+      </div>
+      <div class="card pad"><div class="sectionTitle"><h2>Лента событий</h2></div><div id="notificationFeed" class="feed"></div></div>
+    </div>
+  </section>
+
+  <section id="page-security" class="hidden">
+    <div class="grid2">
+      <div class="card pad">
+        <div class="sectionTitle"><h2>Owner Security</h2></div>
+        <div id="securityState"></div>
+        <button id="setupMfaBtn" class="btn" style="margin-top:12px">ВКЛЮЧИТЬ 2FA (TOTP)</button>
+        <button id="logoutAllBtn" class="btn danger" style="margin-top:12px">ЗАВЕРШИТЬ ВСЕ СЕССИИ OWNER</button>
+      </div>
+      <div class="card pad">
+        <div class="sectionTitle"><h2>Журнал действий</h2></div>
+        <div id="auditFeed" class="feed"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="drawerBackdrop" class="drawerBackdrop hidden"></div>
+<aside id="clientDrawer" class="drawer hidden">
+  <div class="sectionTitle"><div><h2 id="drawerTitle">Клиент</h2><span id="drawerSub" class="muted"></span></div><button id="drawerClose" class="btn secondary">Закрыть</button></div>
+  <div id="drawerStats" class="drawerGrid"></div>
+  <div class="card pad" style="margin-bottom:12px">
+    <div class="sectionTitle"><h3>Лицензия</h3></div>
+    <div class="grid3">
+      <div class="field"><label>Имя клиента</label><input id="editCustomer"></div>
+      <div class="field"><label>Лимит устройств</label><input id="editMaxDevices" type="number" min="1" max="100"></div>
+      <div class="field"><label>Действует до</label><input id="editExpires" type="datetime-local"></div>
+    </div>
+    <div class="field"><label>Заметка</label><textarea id="editNotes"></textarea></div>
+    <div class="actions">
+      <button id="saveClientBtn" class="btn">Сохранить</button>
+      <button id="clientActiveBtn" class="btn green">Active</button>
+      <button id="clientPauseBtn" class="btn warn">Pause</button>
+      <button id="clientRevokeBtn" class="btn danger">Revoke</button>
+      <button id="rotateKeyBtn" class="btn secondary">Rotate key</button>
+    </div>
+    <div id="rotatedKey" class="keybox hidden"></div>
+  </div>
+  <div class="card pad" style="margin-bottom:12px"><div class="sectionTitle"><h3>Устройства</h3></div><div id="drawerDevices" class="tableWrap"></div></div>
+  <div class="card pad" style="margin-bottom:12px"><div class="sectionTitle"><h3>Последние рендеры</h3></div><div id="drawerRenders" class="tableWrap"></div></div>
+  <div class="grid2">
+    <div class="card pad"><div class="sectionTitle"><h3>События</h3></div><div id="drawerEvents" class="feed"></div></div>
+    <div class="card pad"><div class="sectionTitle"><h3>История управления</h3></div><div id="drawerAudit" class="feed"></div></div>
+  </div>
+</aside>
+
+<div id="renderModalBack" class="modalBackdrop hidden">
+  <div class="modal card">
+    <div class="sectionTitle"><h2 id="renderModalTitle">Рендер</h2><button id="renderModalClose" class="btn secondary">Закрыть</button></div>
+    <div id="renderModalInfo"></div>
+    <div class="sectionTitle" style="margin-top:18px"><h3>Таймлайн</h3></div>
+    <div id="renderTimeline" class="feed"></div>
+  </div>
+</div>
+
+<div id="mfaSetupBack" class="modalBackdrop hidden">
+  <div class="modal card">
+    <div class="sectionTitle"><h2>Настройка 2FA</h2><button id="mfaSetupClose" class="btn secondary">Закрыть</button></div>
+    <p class="muted">Отсканируй QR-код в Google Authenticator / 1Password / другой TOTP-программе.</p>
+    <div id="mfaQrWrap"></div>
+    <div class="field"><label>Код из приложения</label><input id="mfaSetupCode" inputmode="numeric"></div>
+    <button id="mfaSetupVerify" class="btn green">ПОДТВЕРДИТЬ И ВКЛЮЧИТЬ</button>
+    <p id="mfaSetupMsg" class="muted"></p>
   </div>
 </div>
 
 <div id="toast" class="toast hidden"></div>
 
-<script>
-(function(){
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
 const BASE='https://odlseljmogaguyqdlkyv.supabase.co';
 const PUB='sb_publishable_zKjzhQTdTG8f9BfR2X5NVg_zQgjo70f';
 const ADMIN=BASE+'/functions/v1/endlume-admin-licenses';
+const supabase=createClient(BASE,PUB,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'endlume-owner-control'}});
 const $=id=>document.getElementById(id);
-let session=null,data={licenses:[],devices:[],renders:[]},poll=null;
+let session=null,data={licenses:[],devices:[],renders:[],notifications:[],artifacts:[],versions:{},stats:{}},poll=null,currentLicenseId=null,mfaLoginFactor=null,mfaLoginChallenge=null,mfaEnroll=null;
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const dt=v=>v?new Date(v).toLocaleString('ru-RU'):'—';
-const bytes=n=>!n?'—':n>1e9?(n/1e9).toFixed(2)+' GB':(n/1e6).toFixed(1)+' MB';
-const toast=(m,bad=false)=>{const e=$('toast');e.textContent=m;e.style.borderColor=bad?'#8d3149':'#3c4169';e.classList.remove('hidden');setTimeout(()=>e.classList.add('hidden'),3500)};
+const shortDate=v=>v?new Date(v).toLocaleDateString('ru-RU'):'—';
+const bytes=n=>!n?'—':n>=1e9?(n/1e9).toFixed(2)+' GB':n>=1e6?(n/1e6).toFixed(1)+' MB':Math.round(n/1024)+' KB';
+const dur=s=>!s?'—':s>=3600?(s/3600).toFixed(1)+' ч':Math.round(s/60)+' мин';
 const online=d=>Date.now()-Date.parse(d.last_seen_at||0)<60000;
 const away=d=>Date.now()-Date.parse(d.last_seen_at||0)<180000;
+const toast=(m,bad=false)=>{const e=$('toast');e.textContent=m;e.style.borderColor=bad?'#8d3149':'#3c4169';e.classList.remove('hidden');setTimeout(()=>e.classList.add('hidden'),3800)};
+const connection=d=>online(d)?['ONLINE','on']:away(d)?['AWAY','warn']:['OFFLINE','off'];
+const licenseDevices=id=>(data.devices||[]).filter(d=>d.license_id===id&&d.status!=='detached');
+const licenseRenders=id=>(data.renders||[]).filter(r=>r.license_id===id);
+const artifactFor=id=>(data.artifacts||[]).find(a=>a.render_id===id);
 
-async function auth(email,password){
-  const r=await fetch(BASE+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:PUB,'Content-Type':'application/json'},body:JSON.stringify({email,password})});
-  const j=await r.json();
-  if(!r.ok)throw new Error(j.error_description||j.msg||'Ошибка входа');
-  return j;
-}
-async function renewOwnerSession(){
-  if(!session?.refresh_token)throw new Error('Сессия истекла — войдите снова');
-  const r=await fetch(BASE+'/auth/v1/token?grant_type=refresh_token',{
-    method:'POST',
-    headers:{apikey:PUB,'Content-Type':'application/json'},
-    body:JSON.stringify({refresh_token:session.refresh_token})
-  });
-  const j=await r.json();
-  if(!r.ok||!j.access_token)throw new Error(j.error_description||'Не удалось обновить сессию');
-  session=j;
-  sessionStorage.setItem('endlume_owner_session',JSON.stringify(session));
-}
-async function call(body,retry=true){
-  if(!session?.access_token)throw new Error('Нет сессии');
+async function getSession(){const r=await supabase.auth.getSession();session=r.data.session;return session}
+async function call(body){
+  await getSession();
+  if(!session?.access_token)throw new Error('Нет owner-сессии');
   const r=await fetch(ADMIN,{method:'POST',headers:{apikey:PUB,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify(body)});
-  if((r.status===401||r.status===403)&&retry&&session?.refresh_token){
-    await renewOwnerSession();
-    return call(body,false);
-  }
   const j=await r.json().catch(()=>({ok:false,code:'bad_response'}));
+  if((r.status===401||r.status===403)&&j.code==='mfa_required')throw Object.assign(new Error('mfa_required'),{code:'mfa_required'});
   if(!r.ok||j.ok===false)throw new Error(j.code||'Ошибка API');
   return j;
 }
+function showLogin(){clearInterval(poll);$('mainApp').classList.add('hidden');$('mfaLogin').classList.add('hidden');$('login').classList.remove('hidden')}
+function showApp(){$('login').classList.add('hidden');$('mfaLogin').classList.add('hidden');$('mainApp').classList.remove('hidden')}
+async function maybeMfa(){
+  const aal=await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if(aal.error)throw aal.error;
+  if(aal.data.nextLevel==='aal2'&&aal.data.currentLevel!=='aal2'){
+    const factors=await supabase.auth.mfa.listFactors();
+    if(factors.error)throw factors.error;
+    const factor=factors.data.totp.find(x=>x.status==='verified');
+    if(!factor)throw new Error('2FA включена, но TOTP-фактор не найден');
+    const ch=await supabase.auth.mfa.challenge({factorId:factor.id});
+    if(ch.error)throw ch.error;
+    mfaLoginFactor=factor.id;mfaLoginChallenge=ch.data.id;
+    $('login').classList.add('hidden');$('mainApp').classList.add('hidden');$('mfaLogin').classList.remove('hidden');
+    return false;
+  }
+  return true;
+}
+async function bootstrap(){
+  await getSession();
+  if(!session){showLogin();return}
+  if(!(await maybeMfa()))return;
+  showApp();
+  await load(false);
+  clearInterval(poll);poll=setInterval(()=>load(true),5000);
+}
+async function load(silent=false){
+  try{
+    const j=await call({action:'dashboard'});data=j;renderAll();$('updated').textContent='Обновлено '+new Date().toLocaleTimeString('ru-RU')
+  }catch(e){
+    $('updated').textContent='Ошибка синхронизации';
+    if(e.code==='mfa_required'){await maybeMfa();return}
+    if(!silent)toast(String(e.message||e),true)
+  }
+}
 function table(headers){const t=document.createElement('table');t.className='tbl';const tr=t.createTHead().insertRow();headers.forEach(h=>{const th=document.createElement('th');th.textContent=h;tr.appendChild(th)});t.createTBody();return t}
-function btn(text,cls,attrs,handler){const b=document.createElement('button');b.className='btn '+cls;b.textContent=text;Object.entries(attrs).forEach(([k,v])=>b.dataset[k]=v);b.onclick=handler;return b}
-
-function renderLicenses(){
-  const root=$('licenses');root.innerHTML='';
-  const t=table(['Клиент','Ключ','Статус','Подключение','План','До','Устройств','Действия']),tb=t.tBodies[0];
-  (data.licenses||[]).forEach(l=>{
-    const linked=(data.devices||[]).filter(d=>d.license_id===l.id && d.status!=='detached');
-    const onlineDevices=linked.filter(online);
-    const awayDevices=linked.filter(d=>!online(d)&&away(d));
-    const seenTimes=linked.map(d=>Date.parse(d.last_seen_at||0)).filter(Number.isFinite);
-    const lastSeen=seenTimes.length?new Date(Math.max(...seenTimes)).toISOString():null;
-    const connection=onlineDevices.length
-      ? {label:'ONLINE',cls:'on',sub:(onlineDevices.length+' сейчас')}
-      : awayDevices.length
-        ? {label:'AWAY',cls:'warn',sub:'Последний раз '+dt(lastSeen)}
-        : linked.length
-          ? {label:'OFFLINE',cls:'off',sub:'Последний раз '+dt(lastSeen)}
-          : {label:'НЕ ПОДКЛЮЧАЛСЯ',cls:'',sub:'Ключ ещё не активирован в приложении'};
-
-    const r=tb.insertRow();
+function actionBtn(text,cls,fn){const b=document.createElement('button');b.className='btn small '+cls;b.textContent=text;b.onclick=e=>{e.stopPropagation();fn(b)};return b}
+function renderStats(){
+  const s=data.stats||{};
+  const items=[
+    ['ЛИЦЕНЗИИ',s.licenses||0,(s.activeLicenses||0)+' active'],
+    ['ONLINE',s.onlineDevices||0,(s.awayDevices||0)+' away'],
+    ['РЕНДЕРЯТСЯ',s.activeRenders||0,'сейчас'],
+    ['ГОТОВО СЕГОДНЯ',s.completedToday||0,(s.rendersToday||0)+' всего'],
+    ['ВИДЕО СЕГОДНЯ',(Number(s.videoHoursToday)||0).toFixed(1)+' ч',(s.failedToday||0)+' ошибок'],
+    ['ИСТЕКАЮТ ≤7 ДНЕЙ',s.expiring7d||0,'лицензий']
+  ];
+  $('stats').innerHTML=items.map(x=>'<div class="card stat"><small>'+esc(x[0])+'</small><b>'+esc(x[1])+'</b><em>'+esc(x[2])+'</em></div>').join('');
+}
+function renderFeed(rootId,items,limit=20){
+  const root=$(rootId);if(!items?.length){root.innerHTML='<div class="empty">Пока событий нет</div>';return}
+  root.innerHTML=items.slice(0,limit).map(n=>'<div class="feedItem"><b>'+esc(n.title||n.event_type||n.action)+'</b><small>'+esc(n.body||JSON.stringify(n.metadata||{}))+'</small><small>'+dt(n.created_at)+'</small></div>').join('');
+}
+function renderVersions(){
+  const entries=Object.entries(data.versions||{}).sort((a,b)=>b[1]-a[1]);const max=Math.max(1,...entries.map(x=>x[1]));
+  const html=entries.length?entries.map(([v,n])=>'<div class="versionBar"><b>'+esc(v)+'</b><div class="bar"><i style="width:'+Math.round(n/max*100)+'%"></i></div><span>'+n+'</span></div>').join(''):'<div class="empty">Устройства ещё не подключались</div>';
+  $('dashVersions').innerHTML=html;$('versionsList').innerHTML=html;
+  const latest=entries[0]?.[0]||null;
+  const old=(data.devices||[]).filter(d=>latest&&d.app_version!==latest);
+  $('oldVersionClients').innerHTML=old.length?old.map(d=>'<div class="feedItem"><b>'+esc(d.device_name||d.device_id)+'</b><small>'+esc(d.app_version||'—')+' • '+esc(d.platform||'')+'</small></div>').join(''):'<div class="empty">Старых подключённых версий не обнаружено</div>';
+}
+function licenseConnection(l){
+  const ds=licenseDevices(l.id),on=ds.filter(online),aw=ds.filter(d=>!online(d)&&away(d));
+  if(on.length)return ['ONLINE','on',on.length+' сейчас'];
+  if(aw.length)return ['AWAY','warn','последний heartbeat '+dt(aw[0].last_seen_at)];
+  if(ds.length){const last=ds.slice().sort((a,b)=>Date.parse(b.last_seen_at)-Date.parse(a.last_seen_at))[0];return ['OFFLINE','off','последний раз '+dt(last.last_seen_at)]}
+  return ['НЕ ПОДКЛЮЧАЛСЯ','','ключ ещё не активировали'];
+}
+function filteredLicenses(){
+  const q=$('clientSearch').value.trim().toLowerCase(),f=$('clientFilter').value;
+  return (data.licenses||[]).filter(l=>{
+    const con=licenseConnection(l),txt=((l.customer_name||'')+' '+(l.key_last4||'')+' '+(l.notes||'')).toLowerCase();
+    if(q&&!txt.includes(q))return false;
+    if(f==='online'&&con[0]!=='ONLINE')return false;
+    if(f==='offline'&&con[0]!=='OFFLINE')return false;
+    if(f==='never'&&con[0]!=='НЕ ПОДКЛЮЧАЛСЯ')return false;
+    if(f==='revoked'&&l.status!=='revoked')return false;
+    if(f==='expiring'&&!(l.expires_at&&!l.owner&&Date.parse(l.expires_at)>Date.now()&&Date.parse(l.expires_at)-Date.now()<=7*86400000))return false;
+    return true;
+  })
+}
+function renderClients(){
+  const ls=filteredLicenses();$('clientCount').textContent=ls.length+' из '+(data.licenses||[]).length;
+  const root=$('clientsTable');root.innerHTML='';const t=table(['Клиент','Ключ','Лицензия','Подключение','Версия','До','Устройства','Рендеры','Действия']),tb=t.tBodies[0];
+  ls.forEach(l=>{
+    const ds=licenseDevices(l.id),rs=licenseRenders(l.id),con=licenseConnection(l),best=ds.find(online)||ds[0];
+    const r=tb.insertRow();r.className='clickable';r.onclick=()=>openClient(l.id);
     r.insertCell().innerHTML='<b>'+esc(l.customer_name||'Без имени')+'</b><br><span class="muted">'+esc(l.notes||'')+'</span>';
-    r.insertCell().textContent='ENDLUME-••••…'+(l.key_last4||'');
+    r.insertCell().textContent='•••• '+(l.key_last4||'');
     r.insertCell().innerHTML='<span class="status"><i class="dot '+(l.status==='active'?'on':l.status==='paused'?'warn':'off')+'"></i>'+esc(l.status)+'</span>';
-    r.insertCell().innerHTML='<span class="status"><i class="dot '+connection.cls+'"></i><b>'+connection.label+'</b></span><br><span class="muted">'+esc(connection.sub)+'</span>';
-    r.insertCell().textContent=l.plan||'—';
-    r.insertCell().textContent=l.owner?'LIFETIME':dt(l.expires_at);
-    r.insertCell().innerHTML='<b>'+linked.length+' / '+String(l.max_devices||1)+'</b><br><span class="muted">активировано / лимит</span>';
-    const a=r.insertCell();a.className='actions';
-    [['Active','green','active'],['Pause','warn','paused'],['Revoke','danger','revoked']].forEach(x=>a.appendChild(btn(x[0],x[1],{lic:l.id,cmd:x[2]},licenseAction)));
-    if(!l.owner)[['+7','secondary','extend_7'],['+30','secondary','extend_30']].forEach(x=>a.appendChild(btn(x[0],x[1],{lic:l.id,cmd:x[2]},licenseAction)));
-  });
-  root.appendChild(t);
+    r.insertCell().innerHTML='<span class="status"><i class="dot '+con[1]+'"></i><b>'+esc(con[0])+'</b></span><br><span class="muted">'+esc(con[2])+'</span>';
+    r.insertCell().textContent=best?.app_version||'—';r.insertCell().textContent=l.owner?'LIFETIME':shortDate(l.expires_at);
+    r.insertCell().textContent=ds.length+' / '+l.max_devices;r.insertCell().textContent=String(rs.length);
+    const a=r.insertCell();a.className='actions';a.appendChild(actionBtn('Открыть','secondary',()=>openClient(l.id)));a.appendChild(actionBtn('Pause','warn',()=>licenseCmd(l.id,'paused')));a.appendChild(actionBtn('Revoke','danger',()=>licenseCmd(l.id,'revoked')));
+  });root.appendChild(t)
+}
+function filteredDevices(){
+  const q=$('deviceSearch').value.trim().toLowerCase(),f=$('deviceFilter').value;
+  return (data.devices||[]).filter(d=>{
+    const l=(data.licenses||[]).find(x=>x.id===d.license_id);const state=connection(d)[0];
+    const txt=((d.device_name||'')+' '+(d.device_id||'')+' '+(d.app_version||'')+' '+(l?.customer_name||'')).toLowerCase();
+    if(q&&!txt.includes(q))return false;
+    if(f==='online'&&state!=='ONLINE')return false;if(f==='away'&&state!=='AWAY')return false;if(f==='offline'&&state!=='OFFLINE')return false;if(f==='blocked'&&d.status!=='blocked')return false;
+    return true;
+  })
 }
 function renderDevices(){
-  const root=$('devices');root.innerHTML='';const t=table(['Устройство','Состояние','Экран / рендер','Прогресс','Версия','Last seen','Действия']),tb=t.tBodies[0];
-  (data.devices||[]).forEach(d=>{
-    const state=online(d)?'ONLINE':away(d)?'AWAY':'OFFLINE',cls=online(d)?'on':away(d)?'warn':'off';
-    const r=tb.insertRow();
-    r.insertCell().innerHTML='<b>'+esc(d.device_name||d.device_id)+'</b><br><span class="muted">'+esc((d.platform||'')+' '+(d.architecture||''))+'</span>';
-    r.insertCell().innerHTML='<span class="status"><i class="dot '+cls+'"></i>'+state+' · '+esc(d.status)+'</span>';
-    r.insertCell().innerHTML=esc(d.current_screen||'—')+'<br><b>'+esc(d.render_status||'—')+'</b><br><span class="muted">'+esc(d.current_job_id||'')+'</span>';
-    const p=Number(d.render_progress||0);
-    r.insertCell().innerHTML=p.toFixed(1)+'%<div class="progress"><i style="width:'+Math.max(0,Math.min(100,p))+'%"></i></div>';
-    r.insertCell().textContent=d.app_version||'—';
+  const root=$('devicesTable');root.innerHTML='';const t=table(['Клиент / устройство','Сеть','Экран','Рендер','Система','Ресурсы','Последний heartbeat','Действия']),tb=t.tBodies[0];
+  filteredDevices().forEach(d=>{
+    const l=(data.licenses||[]).find(x=>x.id===d.license_id),st=connection(d),r=tb.insertRow();
+    r.insertCell().innerHTML='<b>'+esc(l?.customer_name||'—')+'</b><br>'+esc(d.device_name||d.device_id)+'<br><span class="muted">'+esc(d.platform||'')+' '+esc(d.architecture||'')+' • '+esc(d.app_version||'')+'</span>';
+    r.insertCell().innerHTML='<span class="status"><i class="dot '+st[1]+'"></i>'+st[0]+'</span><br><span class="muted">'+esc(d.status)+'</span>';
+    r.insertCell().textContent=d.current_screen||'—';
+    const p=Number(d.render_progress||0);r.insertCell().innerHTML='<b>'+esc(d.render_status||'idle')+'</b><br>'+p.toFixed(1)+'%<div class="progress"><i style="width:'+Math.max(0,Math.min(100,p))+'%"></i></div>';
+    r.insertCell().innerHTML='<span class="muted">CPU</span> '+esc(d.cpu_model||'—')+'<br><span class="muted">GPU</span> '+esc(d.gpu_model||'—')+'<br><span class="muted">FFmpeg</span> '+esc(d.ffmpeg_version||'—');
+    r.insertCell().innerHTML='CPU '+(d.cpu_percent==null?'—':Number(d.cpu_percent).toFixed(0)+'%')+'<br>RAM '+bytes(d.memory_used_bytes)+' / '+bytes(d.memory_total_bytes)+'<br>Disk free '+bytes(d.disk_free_bytes);
     r.insertCell().textContent=dt(d.last_seen_at);
-    const a=r.insertCell();a.className='actions';
-    [['Block','danger','block'],['Unblock','green','unblock'],['Detach','secondary','detach']].forEach(x=>a.appendChild(btn(x[0],x[1],{dev:d.id,cmd:x[2]},deviceAction)));
-  });
-  root.appendChild(t);
+    const a=r.insertCell();a.className='actions';a.appendChild(actionBtn('Block','danger',()=>deviceCmd(d.id,'block')));a.appendChild(actionBtn('Unblock','green',()=>deviceCmd(d.id,'unblock')));a.appendChild(actionBtn('Detach','secondary',()=>deviceCmd(d.id,'detach')));
+  });root.appendChild(t)
+}
+function filteredRenders(){
+  const q=$('renderSearch').value.trim().toLowerCase(),f=$('renderFilter').value;
+  return (data.renders||[]).filter(r=>{
+    const l=(data.licenses||[]).find(x=>x.id===r.license_id);const txt=((r.project_name||'')+' '+(r.output_filename||'')+' '+(l?.customer_name||'')).toLowerCase();
+    return (!q||txt.includes(q))&&(f==='all'||r.status===f)
+  })
 }
 function renderRenders(){
-  const root=$('renders');root.innerHTML='';const t=table(['Проект','Статус','Прогресс','Stage','Encoder','Output','Обновлено']),tb=t.tBodies[0];
-  (data.renders||[]).forEach(x=>{
-    const r=tb.insertRow();
-    r.insertCell().innerHTML='<b>'+esc(x.project_name||x.project_id||'—')+'</b><br><span class="muted">'+esc(x.job_id||'')+'</span>';
-    r.insertCell().textContent=x.status||'—';
+  const root=$('rendersTable');root.innerHTML='';const t=table(['Клиент','Проект','Статус','Прогресс','Stage / ETA','Encoder','Результат','Время','Действия']),tb=t.tBodies[0];
+  filteredRenders().forEach(x=>{
+    const l=(data.licenses||[]).find(y=>y.id===x.license_id),a=artifactFor(x.id),r=tb.insertRow();
+    r.insertCell().textContent=l?.customer_name||'—';r.insertCell().innerHTML='<b>'+esc(x.project_name||x.project_id||'—')+'</b><br><span class="muted">'+esc(x.job_id||'')+'</span>';
+    r.insertCell().innerHTML='<span class="status"><i class="dot '+(x.status==='completed'?'on':x.status==='failed'?'off':'warn')+'"></i>'+esc(x.status)+'</span>';
     const p=Number(x.progress||0);r.insertCell().innerHTML=p.toFixed(1)+'%<div class="progress"><i style="width:'+Math.max(0,Math.min(100,p))+'%"></i></div>';
     r.insertCell().innerHTML=esc(x.stage||'—')+'<br><span class="muted">ETA '+(x.eta_seconds==null?'—':Math.round(x.eta_seconds)+'s')+'</span>';
     r.insertCell().innerHTML=esc(x.encoder||'—')+'<br><span class="muted">'+(x.width||'—')+'×'+(x.height||'—')+' @ '+(x.fps||'—')+'</span>';
-    r.insertCell().innerHTML=esc(x.output_filename||'—')+'<br><span class="muted">'+bytes(x.output_bytes)+'</span>';
-    r.insertCell().textContent=dt(x.updated_at);
-  });
-  root.appendChild(t);
+    r.insertCell().innerHTML=esc(x.output_filename||'—')+'<br><span class="muted">'+bytes(x.output_bytes)+' • '+dur(x.duration_seconds)+'</span><br><span class="tag">'+esc(a?.status||'local only')+'</span>';
+    r.insertCell().textContent=dt(x.updated_at);const ac=r.insertCell();ac.appendChild(actionBtn('Подробнее','secondary',()=>openRender(x.id)));
+  });root.appendChild(t)
 }
-function render(){
-  const ls=data.licenses||[],ds=data.devices||[],rs=data.renders||[];
-  $('sLic').textContent=ls.length;$('sOnline').textContent=ds.filter(online).length;
-  $('sRender').textContent=rs.filter(r=>['rendering','queued'].includes(r.status||r.render_status)).length;
-  $('sDone').textContent=rs.filter(r=>r.status==='completed').length;
-  renderLicenses();renderDevices();renderRenders();
+function renderNotifications(){renderFeed('notificationFeed',data.notifications||[],50);renderFeed('dashFeed',data.notifications||[],12)}
+function renderAll(){renderStats();renderClients();renderDevices();renderRenders();renderVersions();renderNotifications()}
+function showPage(name){
+  document.querySelectorAll('[id^="page-"]').forEach(x=>x.classList.toggle('hidden',x.id!=='page-'+name));
+  document.querySelectorAll('#nav [data-page]').forEach(x=>x.classList.toggle('active',x.dataset.page===name));
+  if(name==='notifications')loadNotificationSettings();
+  if(name==='security')loadSecurity();
 }
-async function load(silent=false){
-  try{data=await call({action:'dashboard'});render();$('updated').textContent='Обновлено '+new Date().toLocaleTimeString('ru-RU')}
-  catch(e){if(!silent)toast(String(e),true)}
+async function licenseCmd(id,command){try{await call({action:'mutate',license_id:id,command});await load();if(currentLicenseId===id)await openClient(id);toast('Лицензия обновлена')}catch(e){toast(e.message,true)}}
+async function deviceCmd(id,command){try{await call({action:'device',device_id:id,command});await load();if(currentLicenseId)await openClient(currentLicenseId);toast('Устройство обновлено')}catch(e){toast(e.message,true)}}
+async function openClient(id){
+  currentLicenseId=id;const j=await call({action:'client_detail',license_id:id}),l=j.license,ds=j.devices||[],rs=j.renders||[];
+  $('drawerTitle').textContent=l.customer_name||'Без имени';$('drawerSub').textContent='•••• '+l.key_last4+' • '+l.status+' • '+l.plan;
+  $('drawerStats').innerHTML=[
+    ['УСТРОЙСТВА',ds.length+'/'+l.max_devices],['ONLINE',ds.filter(online).length],['РЕНДЕРЫ',j.summary.renderCount],['ВИДЕО',Number(j.summary.videoHours||0).toFixed(1)+' ч']
+  ].map(x=>'<div class="mini"><small>'+x[0]+'</small><b>'+x[1]+'</b></div>').join('');
+  $('editCustomer').value=l.customer_name||'';$('editMaxDevices').value=l.max_devices||1;$('editNotes').value=l.notes||'';
+  $('editExpires').disabled=!!l.owner;$('editExpires').value=l.expires_at?new Date(Date.parse(l.expires_at)-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16):'';
+  const td=$('drawerDevices');td.innerHTML='';const t=table(['Устройство','Сеть','Версия','Экран','Последний раз']),tb=t.tBodies[0];ds.forEach(d=>{const r=tb.insertRow(),st=connection(d);r.insertCell().textContent=d.device_name||d.device_id;r.insertCell().innerHTML='<span class="status"><i class="dot '+st[1]+'"></i>'+st[0]+'</span>';r.insertCell().textContent=d.app_version||'—';r.insertCell().textContent=d.current_screen||'—';r.insertCell().textContent=dt(d.last_seen_at)});td.appendChild(t);
+  const rr=$('drawerRenders');rr.innerHTML='';const rt=table(['Проект','Статус','Результат','Дата']),rb=rt.tBodies[0];rs.slice(0,20).forEach(x=>{const r=rb.insertRow();r.className='clickable';r.onclick=()=>openRender(x.id);r.insertCell().textContent=x.project_name||x.project_id||'—';r.insertCell().textContent=x.status;r.insertCell().textContent=(x.output_filename||'—')+' • '+bytes(x.output_bytes);r.insertCell().textContent=dt(x.updated_at)});rr.appendChild(rt);
+  renderFeedFromData('drawerEvents',j.notifications||[],20);renderFeedFromData('drawerAudit',(j.audit||[]).map(a=>({title:a.action,body:JSON.stringify(a.metadata||{}),created_at:a.created_at})),20);
+  $('rotatedKey').classList.add('hidden');$('drawerBackdrop').classList.remove('hidden');$('clientDrawer').classList.remove('hidden')
 }
-async function licenseAction(e){const b=e.currentTarget;b.disabled=true;try{await call({action:'mutate',license_id:b.dataset.lic,command:b.dataset.cmd});await load();toast('Лицензия обновлена')}catch(err){toast(String(err),true)}finally{b.disabled=false}}
-async function deviceAction(e){const b=e.currentTarget;b.disabled=true;try{await call({action:'device',device_id:b.dataset.dev,command:b.dataset.cmd});await load();toast('Устройство обновлено')}catch(err){toast(String(err),true)}finally{b.disabled=false}}
+function renderFeedFromData(rootId,items,limit){const root=$(rootId);root.innerHTML=items.length?items.slice(0,limit).map(n=>'<div class="feedItem"><b>'+esc(n.title||n.action||n.event_type)+'</b><small>'+esc(n.body||JSON.stringify(n.metadata||{}))+'</small><small>'+dt(n.created_at)+'</small></div>').join(''):'<div class="empty">Нет данных</div>'}
+function closeDrawer(){$('drawerBackdrop').classList.add('hidden');$('clientDrawer').classList.add('hidden');currentLicenseId=null}
+async function openRender(id){
+  const r=(data.renders||[]).find(x=>x.id===id);if(!r)return;
+  const j=await call({action:'render_events',render_id:id});$('renderModalTitle').textContent=r.project_name||r.project_id||'Рендер';
+  const art=j.artifact;
+  $('renderModalInfo').innerHTML='<div class="grid3"><div class="mini"><small>СТАТУС</small><b>'+esc(r.status)+'</b></div><div class="mini"><small>РАЗМЕР</small><b>'+bytes(r.output_bytes)+'</b></div><div class="mini"><small>ДЛИТЕЛЬНОСТЬ</small><b>'+dur(r.duration_seconds)+'</b></div></div><p><b>Файл:</b> '+esc(r.output_filename||'—')+'</p><p><b>Видео:</b> '+esc(r.codec||'—')+' • '+(r.width||'—')+'×'+(r.height||'—')+' @ '+(r.fps||'—')+' • '+esc(r.encoder||'—')+'</p><p><b>Cloud artifact:</b> '+esc(art?.status||'не загружен — файл пока хранится только на компьютере клиента')+'</p>';
+  renderFeedFromData('renderTimeline',(j.events||[]).map(e=>({title:e.event_type+' • '+(e.stage||''),body:(e.progress==null?'':Number(e.progress).toFixed(1)+'%')+(e.eta_seconds==null?'':' • ETA '+Math.round(e.eta_seconds)+'s'),created_at:e.created_at})),100);
+  $('renderModalBack').classList.remove('hidden')
+}
+async function loadNotificationSettings(){
+  try{const j=await call({action:'notification_settings',mode:'get'}),s=j.settings||{};$('notifyActivation').checked=s.notify_first_activation!==false;$('notifyStart').checked=s.notify_render_started!==false;$('notifyDone').checked=s.notify_render_completed!==false;$('notifyFail').checked=s.notify_render_failed!==false;$('notifyExpire').checked=s.notify_license_expiring!==false;$('telegramEnabled').checked=!!s.telegram_enabled;$('telegramChatId').value=s.telegram_chat_id||'';$('emailEnabled').checked=!!s.email_enabled;$('notifyEmail').value=s.email_to||'';$('notifyTransport').textContent='Control Center события работают. Telegram/Email transport: '+((j.telegramTransportConfigured||j.emailTransportConfigured)?'частично настроен':'нужны серверные credentials (bot token / mail provider).')}catch(e){toast(e.message,true)}
+}
+async function loadSecurity(){
+  try{const [s,a]=await Promise.all([call({action:'security_state'}),call({action:'audit',limit:100})]);const x=s.security;$('securityState').innerHTML='<div class="feedItem"><b>'+esc(x.email||'')+'</b><small>Последний вход: '+dt(x.lastSignInAt)+'</small><small>AAL: '+esc(x.currentAal||'—')+'</small><small>2FA: '+(x.mfaEnabled?'ВКЛЮЧЕНА':'не включена')+' • enforcement: '+(x.mfaRequired?'ON':'OFF')+'</small></div>'+(x.mfaFactors||[]).map(f=>'<div class="feedItem"><b>'+esc(f.friendly_name||'TOTP')+'</b><small>'+esc(f.factor_type)+' • '+esc(f.status)+'</small></div>').join('');$('setupMfaBtn').textContent=x.mfaEnabled?'ДОБАВИТЬ ЕЩЁ TOTP-ФАКТОР':'ВКЛЮЧИТЬ 2FA (TOTP)';renderFeedFromData('auditFeed',(a.audit||[]).map(v=>({title:v.action,body:JSON.stringify(v.metadata||{}),created_at:v.created_at})),100)}catch(e){toast(e.message,true)}
+}
 
+document.querySelectorAll('#nav [data-page]').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
+document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>showPage(b.dataset.go));
+$('clientSearch').oninput=renderClients;$('clientFilter').onchange=renderClients;$('deviceSearch').oninput=renderDevices;$('deviceFilter').onchange=renderDevices;$('renderSearch').oninput=renderRenders;$('renderFilter').onchange=renderRenders;
+$('refreshBtn').onclick=()=>load(false);$('drawerClose').onclick=closeDrawer;$('drawerBackdrop').onclick=closeDrawer;$('renderModalClose').onclick=()=>$('renderModalBack').classList.add('hidden');$('renderModalBack').onclick=e=>{if(e.target===$('renderModalBack'))$('renderModalBack').classList.add('hidden')};
 
-async function sendRecovery(){
-  const email=$('email').value.trim();
-  if(!email){$('loginErr').textContent='Введите email владельца';return}
-  $('loginErr').textContent='';
-  const redirect=location.origin+location.pathname;
-  const r=await fetch(BASE+'/auth/v1/recover?redirect_to='+encodeURIComponent(redirect),{
-    method:'POST',
-    headers:{apikey:PUB,'Content-Type':'application/json'},
-    body:JSON.stringify({email})
-  });
-  const j=await r.json().catch(()=>({}));
-  if(!r.ok){
-    const msg=String(j.msg||j.error_description||'Не удалось отправить письмо');
-    if(/rate limit/i.test(msg)){
-      $('loginErr').style.color='#ffb86b';
-      $('loginErr').textContent='Лимит писем Supabase исчерпан. Подожди до 1 часа и запроси одно новое письмо.';
-    }else{
-      $('loginErr').style.color='#ff8191';
-      $('loginErr').textContent=msg;
-    }
-    return
-  }
-  $('loginErr').style.color='#84efae';
-  $('loginErr').textContent='Ссылка для сброса пароля отправлена на email. Используй только самое новое письмо.';
-}
-function recoveryTokenFromHash(){
-  const p=new URLSearchParams((location.hash||'').replace(/^#/,''));
-  return p.get('type')==='recovery'?p.get('access_token'):null;
-}
-async function saveRecoveredPassword(){
-  const token=recoveryTokenFromHash();
-  const password=$('newPassword').value;
-  if(!token){$('resetMsg').textContent='Recovery-сессия не найдена.';return}
-  if(!password||password.length<8){$('resetMsg').textContent='Пароль должен быть не короче 8 символов.';return}
-  const r=await fetch(BASE+'/auth/v1/user',{
-    method:'PUT',
-    headers:{apikey:PUB,Authorization:'Bearer '+token,'Content-Type':'application/json'},
-    body:JSON.stringify({password})
-  });
-  const j=await r.json().catch(()=>({}));
-  if(!r.ok){$('resetMsg').textContent=j.msg||j.error_description||'Не удалось изменить пароль';return}
-  $('resetMsg').style.color='#84efae';
-  $('resetMsg').textContent='Пароль изменён. Теперь войди с новым паролем.';
-  history.replaceState(null,'',location.pathname);
-  $('resetBox').classList.add('hidden');
-}
-$('forgotBtn').onclick=()=>sendRecovery().catch(e=>$('loginErr').textContent=String(e));
-async function emergencyResetNow(){
-  const token=$('emergencyResetToken').value.trim();
-  const password=$('emergencyResetPassword').value;
-  const msg=$('emergencyResetMsg');
-  msg.style.color='#8f97b6';
-  msg.textContent='';
-  if(token.length<32){msg.textContent='Введи одноразовый код.';return}
-  if(password.length<12){msg.textContent='Пароль должен быть не короче 12 символов.';return}
-  const r=await fetch(BASE+'/functions/v1/endlume-owner-reset-now',{
-    method:'POST',
-    headers:{apikey:PUB,'Content-Type':'application/json'},
-    body:JSON.stringify({token,password})
-  });
-  const j=await r.json().catch(()=>({}));
-  if(!r.ok||j.ok!==true){
-    msg.style.color='#ff8191';
-    const map={invalid_or_expired_reset:'Код недействителен или истёк.',password_too_short:'Пароль слишком короткий.',not_owner:'Аккаунт не является OWNER.',password_update_failed:'Не удалось изменить пароль.'};
-    msg.textContent=map[j.code]||j.code||'Не удалось изменить пароль';
-    return
-  }
-  msg.style.color='#84efae';
-  msg.textContent='Пароль изменён. Теперь войди выше с новым паролем.';
-  $('password').value=password;
-  $('emergencyResetToken').value='';
-  $('emergencyResetPassword').value='';
-}
-$('emergencyResetBtn').onclick=()=>{$('emergencyResetBox').classList.toggle('hidden')};
-$('emergencyResetSaveBtn').onclick=()=>emergencyResetNow().catch(e=>$('emergencyResetMsg').textContent=String(e));
+$('createBtn').onclick=async()=>{const b=$('createBtn');b.disabled=true;try{const days=Number($('days').value||30),j=await call({action:'create',plan:'managed',customer_name:$('cust').value.trim(),expires_at:new Date(Date.now()+days*86400000).toISOString(),max_devices:Number($('maxDevices').value||1),notes:$('notes').value.trim()});$('newKey').innerHTML='<b>Скопируй ключ сейчас — потом полный ключ не показывается:</b><br><br><code>'+esc(j.key)+'</code><br><br><button id="copyNewKey" class="btn green small">КОПИРОВАТЬ</button>';$('newKey').classList.remove('hidden');$('copyNewKey').onclick=()=>navigator.clipboard.writeText(j.key).then(()=>toast('Ключ скопирован'));await load();toast('Уникальный ключ создан')}catch(e){toast(e.message,true)}finally{b.disabled=false}};
+$('saveClientBtn').onclick=async()=>{if(!currentLicenseId)return;try{const payload={action:'update_license',license_id:currentLicenseId,customer_name:$('editCustomer').value.trim(),notes:$('editNotes').value,max_devices:Number($('editMaxDevices').value||1)};if(!$('editExpires').disabled&&$('editExpires').value)payload.expires_at=new Date($('editExpires').value).toISOString();await call(payload);await load();await openClient(currentLicenseId);toast('Карточка клиента сохранена')}catch(e){toast(e.message,true)}};
+$('clientActiveBtn').onclick=()=>currentLicenseId&&licenseCmd(currentLicenseId,'active');$('clientPauseBtn').onclick=()=>currentLicenseId&&licenseCmd(currentLicenseId,'paused');$('clientRevokeBtn').onclick=()=>currentLicenseId&&licenseCmd(currentLicenseId,'revoked');
+$('rotateKeyBtn').onclick=async()=>{if(!currentLicenseId||!confirm('Старый ключ перестанет работать, все текущие сессии будут закрыты. Продолжить?'))return;try{const j=await call({action:'rotate_key',license_id:currentLicenseId});$('rotatedKey').innerHTML='<b>Новый ключ — скопируй сейчас:</b><br><br><code>'+esc(j.key)+'</code><br><br><button id="copyRotated" class="btn green small">КОПИРОВАТЬ</button>';$('rotatedKey').classList.remove('hidden');$('copyRotated').onclick=()=>navigator.clipboard.writeText(j.key);await load();toast('Ключ заменён, старые сессии отозваны')}catch(e){toast(e.message,true)}};
+$('saveNotifyBtn').onclick=async()=>{try{await call({action:'notification_settings',mode:'save',telegram_enabled:$('telegramEnabled').checked,telegram_chat_id:$('telegramChatId').value.trim(),email_enabled:$('emailEnabled').checked,email_to:$('notifyEmail').value.trim(),notify_first_activation:$('notifyActivation').checked,notify_render_started:$('notifyStart').checked,notify_render_completed:$('notifyDone').checked,notify_render_failed:$('notifyFail').checked,notify_license_expiring:$('notifyExpire').checked});toast('Настройки событий сохранены');await loadNotificationSettings()}catch(e){toast(e.message,true)}};
 
-function importRecoveryUrl(){
-  const raw=$('recoveryUrl').value.trim();
-  if(!raw){$('loginErr').textContent='Вставь ссылку из адресной строки ChannelCore';return}
-  let u;
-  try{u=new URL(raw)}catch{ $('loginErr').textContent='Это не похоже на ссылку'; return }
-  const h=new URLSearchParams((u.hash||'').replace(/^#/,''));
-  const token=h.get('access_token');
-  const type=h.get('type');
-  if(!token||type!=='recovery'){ $('loginErr').textContent='В ссылке нет recovery access_token'; return }
-  const safeHash='#access_token='+encodeURIComponent(token)+'&type=recovery';
-  history.replaceState(null,'',location.pathname+safeHash);
-  $('resetBox').classList.remove('hidden');
-  $('recoveryPasteBox').classList.add('hidden');
-  $('loginErr').style.color='#84efae';
-  $('loginErr').textContent='Recovery-ссылка принята. Задай новый пароль.';
-}
-$('useRecoveryUrlBtn').onclick=()=>importRecoveryUrl();
+$('loginBtn').onclick=async()=>{const b=$('loginBtn');b.disabled=true;$('loginErr').textContent='';try{const r=await supabase.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(r.error)throw r.error;await bootstrap()}catch(e){$('loginErr').textContent=e.message||String(e)}finally{b.disabled=false}};
+$('logoutBtn').onclick=async()=>{await supabase.auth.signOut();showLogin()};
+$('forgotBtn').onclick=async()=>{try{const r=await supabase.auth.resetPasswordForEmail($('email').value.trim(),{redirectTo:location.origin+location.pathname});if(r.error)throw r.error;$('loginErr').className='ok';$('loginErr').textContent='Письмо отправлено. Используй только самое новое.'}catch(e){$('loginErr').className='error';$('loginErr').textContent=/rate limit/i.test(e.message)?'Лимит писем Supabase. Повтори позже или используй server reset.':e.message}};
+$('recoverySave').onclick=async()=>{try{const p=$('recoveryPassword').value;if(p.length<12)throw new Error('Минимум 12 символов');const r=await supabase.auth.updateUser({password:p});if(r.error)throw r.error;$('recoveryMsg').className='ok';$('recoveryMsg').textContent='Пароль изменён.';history.replaceState(null,'',location.pathname);await bootstrap()}catch(e){$('recoveryMsg').className='error';$('recoveryMsg').textContent=e.message}};
+$('mfaLoginBtn').onclick=async()=>{try{const r=await supabase.auth.mfa.verify({factorId:mfaLoginFactor,challengeId:mfaLoginChallenge,code:$('mfaLoginCode').value.trim()});if(r.error)throw r.error;await bootstrap()}catch(e){$('mfaLoginErr').textContent=e.message}};
 
-$('savePasswordBtn').onclick=()=>saveRecoveredPassword().catch(e=>$('resetMsg').textContent=String(e));
-if(recoveryTokenFromHash()){
-  $('resetBox').classList.remove('hidden');
-  $('loginErr').style.color='#84efae';
-  $('loginErr').textContent='Придумай новый пароль.';
-}
-$('loginBtn').onclick=async()=>{const b=$('loginBtn');b.disabled=true;$('loginErr').textContent='';try{session=await auth($('email').value.trim(),$('password').value);sessionStorage.setItem('endlume_owner_session',JSON.stringify(session));$('login').classList.add('hidden');$('app').classList.remove('hidden');await load();poll=setInterval(()=>load(true),5000)}catch(e){$('loginErr').textContent=String(e)}finally{b.disabled=false}};
-$('logoutBtn').onclick=()=>{sessionStorage.removeItem('endlume_owner_session');location.reload()};
-$('refreshBtn').onclick=()=>load();
-$('createBtn').onclick=async()=>{const b=$('createBtn');b.disabled=true;try{const days=Number($('days').value||30);const j=await call({action:'create',plan:'managed',customer_name:$('cust').value.trim(),expires_at:new Date(Date.now()+days*86400000).toISOString(),max_devices:Number($('maxDevices').value||1),notes:$('notes').value.trim()});$('newKey').innerHTML='<b>Скопируй ключ сейчас — потом он не показывается:</b><br><br><code>'+esc(j.key)+'</code><br><br><button id="copyKey" class="btn green">КОПИРОВАТЬ</button>';$('newKey').classList.remove('hidden');$('copyKey').onclick=()=>navigator.clipboard.writeText(j.key).then(()=>toast('Ключ скопирован'));await load();toast('Уникальный ключ создан')}catch(e){toast(String(e),true)}finally{b.disabled=false}};
-document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));['licenses','devices','renders'].forEach(x=>$(x).classList.toggle('hidden',x!==b.dataset.tab))});
-try{const s=JSON.parse(sessionStorage.getItem('endlume_owner_session')||'null');if(s?.access_token){session=s;$('login').classList.add('hidden');$('app').classList.remove('hidden');load();poll=setInterval(()=>load(true),5000)}}catch{}
-})();
+$('setupMfaBtn').onclick=async()=>{try{const r=await supabase.auth.mfa.enroll({factorType:'totp',friendlyName:'ENDLUME Control'});if(r.error)throw r.error;mfaEnroll=r.data;$('mfaQrWrap').innerHTML='<img class="qr" src="'+esc(r.data.totp.qr_code)+'"><p class="muted">Secret: <code>'+esc(r.data.totp.secret)+'</code></p>';$('mfaSetupMsg').textContent='';$('mfaSetupBack').classList.remove('hidden')}catch(e){toast(e.message,true)}};
+$('mfaSetupClose').onclick=()=>$('mfaSetupBack').classList.add('hidden');
+$('mfaSetupVerify').onclick=async()=>{try{if(!mfaEnroll)throw new Error('Enrollment не начат');const ch=await supabase.auth.mfa.challenge({factorId:mfaEnroll.id});if(ch.error)throw ch.error;const vr=await supabase.auth.mfa.verify({factorId:mfaEnroll.id,challengeId:ch.data.id,code:$('mfaSetupCode').value.trim()});if(vr.error)throw vr.error;await call({action:'security_mfa',mode:'enable'});$('mfaSetupMsg').className='ok';$('mfaSetupMsg').textContent='2FA включена и будет требоваться для Owner Control.';setTimeout(()=>{$('mfaSetupBack').classList.add('hidden');loadSecurity()},900)}catch(e){$('mfaSetupMsg').className='error';$('mfaSetupMsg').textContent=e.message}};
+$('logoutAllBtn').onclick=async()=>{if(!confirm('Завершить все owner-сессии на всех браузерах?'))return;await supabase.auth.signOut({scope:'global'});showLogin()};
+
+supabase.auth.onAuthStateChange((event,s)=>{session=s;if(event==='PASSWORD_RECOVERY'){$('login').classList.remove('hidden');$('recoveryBox').classList.remove('hidden')}});
+const init=await supabase.auth.getSession();session=init.data.session;if(location.hash.includes('type=recovery')){$('login').classList.remove('hidden');$('recoveryBox').classList.remove('hidden')}else await bootstrap();
 </script>
 </body>
 </html>
