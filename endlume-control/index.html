@@ -192,6 +192,7 @@ button{cursor:pointer}.app{max-width:1520px;margin:auto;padding:22px}.card{backg
     </div>
     <div id="rotatedKey" class="keybox hidden"></div>
   </div>
+  <div class="card pad" style="margin-bottom:12px"><div class="sectionTitle"><h3>Ключи доступа</h3></div><div id="drawerKeys" class="feed"></div></div>
   <div class="card pad" style="margin-bottom:12px"><div class="sectionTitle"><h3>Устройства</h3></div><div id="drawerDevices" class="tableWrap"></div></div>
   <div class="card pad" style="margin-bottom:12px"><div class="sectionTitle"><h3>Последние рендеры</h3></div><div id="drawerRenders" class="tableWrap"></div></div>
   <div class="grid2">
@@ -418,6 +419,11 @@ async function openClient(id){
   const td=$('drawerDevices');td.innerHTML='';const t=table(['Устройство','Сеть','Версия','Экран','Последний раз']),tb=t.tBodies[0];ds.forEach(d=>{const r=tb.insertRow(),st=connection(d);r.insertCell().textContent=d.device_name||d.device_id;r.insertCell().innerHTML='<span class="status"><i class="dot '+st[1]+'"></i>'+st[0]+'</span>';r.insertCell().textContent=d.app_version||'—';r.insertCell().textContent=d.current_screen||'—';r.insertCell().textContent=dt(d.last_seen_at)});td.appendChild(t);
   const rr=$('drawerRenders');rr.innerHTML='';const rt=table(['Проект','Статус','Результат','Дата']),rb=rt.tBodies[0];rs.slice(0,20).forEach(x=>{const r=rb.insertRow();r.className='clickable';r.onclick=()=>openRender(x.id);r.insertCell().textContent=x.project_name||x.project_id||'—';r.insertCell().textContent=x.status;r.insertCell().textContent=(x.output_filename||'—')+' • '+bytes(x.output_bytes);r.insertCell().textContent=dt(x.updated_at)});rr.appendChild(rt);
   renderFeedFromData('drawerEvents',j.notifications||[],20);renderFeedFromData('drawerAudit',(j.audit||[]).map(a=>({title:a.action,body:JSON.stringify(a.metadata||{}),created_at:a.created_at})),20);
+  const keyItems=[
+    {title:'Основной ключ',body:'ENDLUME •••• '+(l.key_last4||'—')+' • '+(l.owner?'OWNER/LIFETIME':l.plan),created_at:l.created_at},
+    ...(j.keys||[]).map(k=>({title:k.label||'Дополнительный ключ',body:'ENDLUME •••• '+(k.key_last4||'—')+' • '+(k.active?'ACTIVE':'DISABLED')+(k.last_used_at?' • использован '+dt(k.last_used_at):''),created_at:k.created_at}))
+  ];
+  renderFeedFromData('drawerKeys',keyItems,20);
   $('rotatedKey').classList.add('hidden');$('drawerBackdrop').classList.remove('hidden');$('clientDrawer').classList.remove('hidden')
 }
 function renderFeedFromData(rootId,items,limit){const root=$(rootId);root.innerHTML=items.length?items.slice(0,limit).map(n=>'<div class="feedItem"><b>'+esc(n.title||n.action||n.event_type)+'</b><small>'+esc(n.body||JSON.stringify(n.metadata||{}))+'</small><small>'+dt(n.created_at)+'</small></div>').join(''):'<div class="empty">Нет данных</div>'}
