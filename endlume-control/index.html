@@ -34,7 +34,7 @@ button,input,select{font:inherit}.hidden{display:none!important}.shell{max-width
   <div class="field"><label>Email</label><input id="email" type="email" autocomplete="username"></div>
   <div class="field"><label>Пароль</label><input id="password" type="password" autocomplete="current-password"></div>
   <button id="loginBtn" class="btn" style="width:100%">ВОЙТИ</button>
-  <p id="loginErr" style="color:#ff8191"></p><button id="forgotBtn" class="btn secondary" style="width:100%;margin-top:8px">ЗАБЫЛ ПАРОЛЬ</button><div id="resetBox" class="hidden" style="margin-top:14px"><div class="field"><label>Новый пароль</label><input id="newPassword" type="password" minlength="8" autocomplete="new-password"></div><button id="savePasswordBtn" class="btn green" style="width:100%">СОХРАНИТЬ НОВЫЙ ПАРОЛЬ</button><p id="resetMsg" class="muted"></p></div>
+  <p id="loginErr" style="color:#ff8191"></p><button id="forgotBtn" class="btn secondary" style="width:100%;margin-top:8px">ЗАБЫЛ ПАРОЛЬ</button><div id="recoveryPasteBox" style="margin-top:12px"><div class="field"><label>Если письмо открыло старый ChannelCore — вставь сюда всю ссылку из адресной строки</label><input id="recoveryUrl" type="url" placeholder="https://network-os-youtube.vercel.app/#access_token=..."></div><button id="useRecoveryUrlBtn" class="btn secondary" style="width:100%">ПРОДОЛЖИТЬ СБРОС В ENDLUME</button><p class="muted" style="font-size:12px">Ссылка разбирается только в браузере и не отправляется в базу.</p></div><div id="resetBox" class="hidden" style="margin-top:14px"><div class="field"><label>Новый пароль</label><input id="newPassword" type="password" minlength="8" autocomplete="new-password"></div><button id="savePasswordBtn" class="btn green" style="width:100%">СОХРАНИТЬ НОВЫЙ ПАРОЛЬ</button><p id="resetMsg" class="muted"></p></div>
 </div>
 
 <div id="app" class="shell hidden">
@@ -206,6 +206,24 @@ async function saveRecoveredPassword(){
   $('resetBox').classList.add('hidden');
 }
 $('forgotBtn').onclick=()=>sendRecovery().catch(e=>$('loginErr').textContent=String(e));
+function importRecoveryUrl(){
+  const raw=$('recoveryUrl').value.trim();
+  if(!raw){$('loginErr').textContent='Вставь ссылку из адресной строки ChannelCore';return}
+  let u;
+  try{u=new URL(raw)}catch{ $('loginErr').textContent='Это не похоже на ссылку'; return }
+  const h=new URLSearchParams((u.hash||'').replace(/^#/,''));
+  const token=h.get('access_token');
+  const type=h.get('type');
+  if(!token||type!=='recovery'){ $('loginErr').textContent='В ссылке нет recovery access_token'; return }
+  const safeHash='#access_token='+encodeURIComponent(token)+'&type=recovery';
+  history.replaceState(null,'',location.pathname+safeHash);
+  $('resetBox').classList.remove('hidden');
+  $('recoveryPasteBox').classList.add('hidden');
+  $('loginErr').style.color='#84efae';
+  $('loginErr').textContent='Recovery-ссылка принята. Задай новый пароль.';
+}
+$('useRecoveryUrlBtn').onclick=()=>importRecoveryUrl();
+
 $('savePasswordBtn').onclick=()=>saveRecoveredPassword().catch(e=>$('resetMsg').textContent=String(e));
 if(recoveryTokenFromHash()){
   $('resetBox').classList.remove('hidden');
