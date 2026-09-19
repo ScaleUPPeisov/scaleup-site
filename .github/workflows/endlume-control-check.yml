@@ -32,9 +32,13 @@ jobs:
           s=Path("endlume-control/index.html").read_text(encoding="utf-8")
           required=[
             "page-dashboard","page-clients","page-devices","page-renders",
-            "page-versions","page-notifications","page-security","page-vyron",
+            "page-versions","page-notifications","page-security",
+            "page-vyron-overview","page-vyron-clients","page-vyron-devices",
+            "page-vyron-channels","page-vyron-errors","page-vyron-quota","page-vyron-releases",
+            "productSwitch","endlumeNav","vyronNav",
             "client_detail","rotate_key","security_mfa",
             "vyron-admin-licenses","vyronCreateBtn","vyronLicenseCmd","vyronDeviceCmd",
+            "vyronHealthTable","vyronChannelsTable","vyronErrorsTable","vyronQuotaStats",
             "VYRON_2.1.9_x64-setup.exe"
           ]
           missing=[x for x in required if x not in s]
