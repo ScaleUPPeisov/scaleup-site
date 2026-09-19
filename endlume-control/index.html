@@ -97,9 +97,25 @@ async function auth(email,password){
   if(!r.ok)throw new Error(j.error_description||j.msg||'Ошибка входа');
   return j;
 }
-async function call(body){
+async function renewOwnerSession(){
+  if(!session?.refresh_token)throw new Error('Сессия истекла — войдите снова');
+  const r=await fetch(BASE+'/auth/v1/token?grant_type=refresh_token',{
+    method:'POST',
+    headers:{apikey:PUB,'Content-Type':'application/json'},
+    body:JSON.stringify({refresh_token:session.refresh_token})
+  });
+  const j=await r.json();
+  if(!r.ok||!j.access_token)throw new Error(j.error_description||'Не удалось обновить сессию');
+  session=j;
+  sessionStorage.setItem('endlume_owner_session',JSON.stringify(session));
+}
+async function call(body,retry=true){
   if(!session?.access_token)throw new Error('Нет сессии');
   const r=await fetch(ADMIN,{method:'POST',headers:{apikey:PUB,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if((r.status===401||r.status===403)&&retry&&session?.refresh_token){
+    await renewOwnerSession();
+    return call(body,false);
+  }
   const j=await r.json().catch(()=>({ok:false,code:'bad_response'}));
   if(!r.ok||j.ok===false)throw new Error(j.code||'Ошибка API');
   return j;
