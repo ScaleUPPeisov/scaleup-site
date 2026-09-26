@@ -1,0 +1,785 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>Owner Control • ENDLUME + VYRON</title>
+<style>
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#eef1ff;background:#070812;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 15% 0,#212859 0,transparent 28%),#070812;color:#eef1ff}button,input,select,textarea{font:inherit}.hidden{display:none!important}
+button{cursor:pointer}.app{max-width:1520px;margin:auto;padding:22px}.card{background:rgba(17,19,38,.94);border:1px solid #2c3152;border-radius:18px;box-shadow:0 18px 55px #0004}.pad{padding:18px}
+.login{max-width:440px;margin:11vh auto;padding:28px}.brand{display:flex;align-items:center;gap:12px}.logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#5966ff,#b45cff 55%,#ff5dbd);display:grid;place-items:center;font-size:27px}.brand b{display:block;font-size:17px}.brand small,.muted{color:#8f97b6}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}.topActions,.actions,.tabs,.filters,.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pill{padding:8px 11px;border:1px solid #34395a;border-radius:999px;background:#111426;color:#a7afca;font-size:12px}.btn{border:0;border-radius:10px;padding:10px 13px;background:#5d57ff;color:#fff;font-weight:750}.btn.small{padding:6px 8px;font-size:11px}.btn.secondary{background:#1b1f36;border:1px solid #353b60}.btn.green{background:#216245}.btn.warn{background:#76551f}.btn.danger{background:#8d3149}.btn.ghost{background:transparent;border:1px solid #303657;color:#aeb6d0}.btn:disabled{opacity:.42;cursor:not-allowed}
+.productSwitch{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0 10px}.productBtn{display:flex;align-items:center;justify-content:space-between;gap:14px;text-align:left;padding:15px 18px;border-radius:15px;border:1px solid #303657;background:#101326;color:#c8cee7;font-weight:800}.productBtn span{display:block;font-size:17px}.productBtn small{display:block;color:#7f88a8;font-size:11px;font-weight:600;margin-top:2px}.productBtn.active{background:linear-gradient(135deg,#5d57ff,#7447d9);border-color:#8c80ff;color:#fff;box-shadow:0 10px 35px #5d57ff33}.productBtn.active small{color:#d9dcff}.productBtn[data-product="vyron"].active{background:linear-gradient(135deg,#126c62,#2460c7);border-color:#4bb8ac}.nav{display:flex;gap:7px;margin:8px 0 18px;overflow:auto;padding-bottom:2px}.nav button{white-space:nowrap}.nav .active,.tabs .active{background:#5d57ff;color:#fff;border-color:#5d57ff}.nav.vyronNav .active{background:#167f72;border-color:#2da899}.productContext{display:flex;align-items:center;gap:8px;color:#8f97b6;font-size:11px;margin-top:-4px}
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:11px;margin:12px 0 16px}.stat{padding:15px}.stat small{display:block;color:#8c95b5;font-size:11px}.stat b{display:block;font-size:25px;margin-top:5px}.stat em{font-style:normal;font-size:11px;color:#7e86a6}
+.grid2{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.clientsLayout{display:grid;grid-template-columns:320px 1fr;gap:14px}
+.field{display:grid;gap:6px;margin:12px 0}.field label{font-size:11px;color:#9098b8}.field input,.field select,.field textarea{background:#090b17;border:1px solid #34395c;border-radius:10px;color:#fff;padding:11px;outline:none}.field textarea{min-height:80px;resize:vertical}.field input:focus,.field select:focus,.field textarea:focus{border-color:#716aff}
+.tableWrap{overflow:auto}.tbl{width:100%;border-collapse:collapse;min-width:980px}.tbl th,.tbl td{text-align:left;padding:10px 9px;border-bottom:1px solid #252944;font-size:12px;vertical-align:top}.tbl th{color:#7f88a8;font-weight:650;position:sticky;top:0;background:#111326;z-index:1}.tbl tr.clickable:hover{background:#171b33;cursor:pointer}
+.status{display:inline-flex;gap:6px;align-items:center}.dot{width:8px;height:8px;border-radius:50%;background:#6b7280}.dot.on{background:#42d17a;box-shadow:0 0 10px #42d17a}.dot.warn{background:#f3ba4f}.dot.off{background:#e35c72}
+.progress{height:7px;background:#222640;border-radius:99px;overflow:hidden;margin-top:5px}.progress i{display:block;height:100%;background:linear-gradient(90deg,#655fff,#c55bff)}
+.sectionTitle{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.sectionTitle h2,.sectionTitle h3{margin:0}.sectionTitle h2{font-size:18px}.sectionTitle h3{font-size:15px}
+.feed{display:grid;gap:8px}.feedItem{padding:11px 12px;border:1px solid #292f50;border-radius:12px;background:#0b0e1d}.feedItem b{font-size:12px}.feedItem small{display:block;color:#828aaa;margin-top:4px}.versionBar{display:grid;grid-template-columns:170px 1fr 44px;gap:10px;align-items:center;margin:9px 0}.bar{height:8px;background:#222640;border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,#54cfff,#a05cff)}
+.keybox{padding:12px;background:#07150e;border:1px solid #216245;border-radius:11px;color:#82efae;word-break:break-all;margin-top:12px}
+.drawerBackdrop{position:fixed;inset:0;background:#0009;z-index:30}.drawer{position:fixed;right:0;top:0;bottom:0;width:min(760px,96vw);background:#0c0f1f;border-left:1px solid #303659;z-index:31;padding:20px;overflow:auto;box-shadow:-30px 0 80px #0008}.drawer h2{margin:0}.drawerGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}.mini{padding:11px;border:1px solid #292f50;border-radius:12px;background:#111426}.mini small{color:#838cab}.mini b{display:block;font-size:18px;margin-top:4px}
+.modalBackdrop{position:fixed;inset:0;background:#0009;z-index:40;display:grid;place-items:center;padding:20px}.modal{width:min(680px,96vw);max-height:90vh;overflow:auto;padding:20px}.qr{max-width:220px;background:white;border-radius:10px;padding:8px}.tag{display:inline-block;padding:4px 7px;border-radius:999px;border:1px solid #363c61;background:#171a31;color:#aeb6d0;font-size:10px}
+.toast{position:fixed;right:18px;bottom:18px;z-index:100;max-width:430px;padding:13px 15px;background:#171a31;border:1px solid #3c4169;border-radius:12px;box-shadow:0 15px 50px #0008}.error{color:#ff8496}.ok{color:#82efae}.warnText{color:#f3ba4f}.empty{padding:34px;text-align:center;color:#8b93b2}
+@media(max-width:1100px){.stats{grid-template-columns:repeat(3,1fr)}.grid2,.clientsLayout{grid-template-columns:1fr}.grid3{grid-template-columns:1fr 1fr}}
+@media(max-width:650px){.app{padding:12px}.stats{grid-template-columns:1fr 1fr}.grid3,.drawerGrid{grid-template-columns:1fr 1fr}.top{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div id="login" class="login card">
+  <div class="brand"><div class="logo">∞</div><div><b>Owner Control</b><small>ENDLUME • VYRON • Owner Console</small></div></div>
+  <h1>Вход владельца</h1>
+  <p class="muted">Единая owner-панель для ENDLUME и VYRON: лицензии, устройства, статусы, рендеры и диагностика.</p>
+  <div class="field"><label>Email</label><input id="email" type="email" autocomplete="username" value="peisov.business@gmail.com"></div>
+  <div class="field"><label>Пароль</label><input id="password" type="password" autocomplete="current-password"></div>
+  <button id="loginBtn" class="btn" style="width:100%">ВОЙТИ</button>
+  <button id="forgotBtn" class="btn secondary" style="width:100%;margin-top:8px">ЗАБЫЛ ПАРОЛЬ</button>
+  <p id="loginErr" class="error"></p>
+  <div id="recoveryBox" class="hidden">
+    <div class="field"><label>Новый пароль</label><input id="recoveryPassword" type="password" minlength="12"></div>
+    <button id="recoverySave" class="btn green" style="width:100%">СОХРАНИТЬ НОВЫЙ ПАРОЛЬ</button>
+    <p id="recoveryMsg" class="muted"></p>
+  </div>
+</div>
+
+<div id="mfaLogin" class="login card hidden">
+  <div class="brand"><div class="logo">∞</div><div><b>Owner Control</b><small>ENDLUME • VYRON • 2FA verification</small></div></div>
+  <h2>Код из Authenticator</h2>
+  <p class="muted">Для Owner Control включена дополнительная защита.</p>
+  <div class="field"><label>6-значный код</label><input id="mfaLoginCode" inputmode="numeric" autocomplete="one-time-code"></div>
+  <button id="mfaLoginBtn" class="btn" style="width:100%">ПОДТВЕРДИТЬ</button>
+  <p id="mfaLoginErr" class="error"></p>
+</div>
+
+<div id="mainApp" class="app hidden">
+  <div class="top">
+    <div class="brand"><div class="logo">∞</div><div><b>Owner Control</b><small>ENDLUME • VYRON • Managed Access</small></div></div>
+    <div class="topActions"><span id="updated" class="pill">—</span><button id="refreshBtn" class="btn secondary">Обновить</button><button id="logoutBtn" class="btn secondary">Выйти</button></div>
+  </div>
+  <div class="productSwitch" id="productSwitch">
+    <button class="productBtn active" data-product="endlume"><div><span>∞ ENDLUME</span><small>YT Studio PEISOV • рендеры и Managed Access</small></div><b>→</b></button>
+    <button class="productBtn" data-product="vyron"><div><span>▶ VYRON</span><small>Content OS • YouTube, OAuth, каналы и лицензии</small></div><b>→</b></button>
+  </div>
+  <div class="productContext"><span id="productContext">ENDLUME Control</span></div>
+
+  <div class="nav" id="endlumeNav">
+    <button class="btn secondary active" data-page="dashboard">Обзор</button>
+    <button class="btn secondary" data-page="clients">Клиенты</button>
+    <button class="btn secondary" data-page="devices">Устройства</button>
+    <button class="btn secondary" data-page="renders">Рендеры</button>
+    <button class="btn secondary" data-page="versions">Версии</button>
+    <button class="btn secondary" data-page="notifications">События</button>
+    <button class="btn secondary" data-page="security">Безопасность</button>
+  </div>
+
+  <div class="nav vyronNav hidden" id="vyronNav">
+    <button class="btn secondary active" data-page="vyron-overview">Обзор</button>
+    <button class="btn secondary" data-page="vyron-clients">Клиенты</button>
+    <button class="btn secondary" data-page="vyron-devices">Устройства</button>
+    <button class="btn secondary" data-page="vyron-channels">Каналы / OAuth</button>
+    <button class="btn secondary" data-page="vyron-errors">Ошибки</button>
+    <button class="btn secondary" data-page="vyron-quota">Quota</button>
+    <button class="btn secondary" data-page="vyron-releases">Релизы</button>
+  </div>
+
+  <section id="page-dashboard">
+    <div id="stats" class="stats"></div>
+    <div class="grid2">
+      <div class="card pad">
+        <div class="sectionTitle"><h2>Последние события</h2><button class="btn ghost small" data-go="notifications">Все</button></div>
+        <div id="dashFeed" class="feed"></div>
+      </div>
+      <div class="card pad">
+        <div class="sectionTitle"><h2>Версии ENDLUME</h2><button class="btn ghost small" data-go="versions">Подробнее</button></div>
+        <div id="dashVersions"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="page-clients" class="hidden">
+    <div class="clientsLayout">
+      <aside class="card pad">
+        <div class="sectionTitle"><h2>Новый ключ</h2><span class="tag">160-bit</span></div>
+        <div class="field"><label>Клиент</label><input id="cust" placeholder="Например: Дони"></div>
+        <div class="field"><label>Срок</label><select id="days"><option value="7">7 дней</option><option value="30" selected>30 дней</option><option value="90">90 дней</option><option value="365">365 дней</option></select></div>
+        <div class="field"><label>Устройств</label><input id="maxDevices" type="number" min="1" max="100" value="1"></div>
+        <div class="field"><label>Заметка</label><textarea id="notes" placeholder="Необязательно"></textarea></div>
+        <button id="createBtn" class="btn" style="width:100%">СОЗДАТЬ УНИКАЛЬНЫЙ КЛЮЧ</button>
+        <div id="newKey" class="keybox hidden"></div>
+      </aside>
+      <main class="card pad">
+        <div class="sectionTitle"><h2>Клиенты и лицензии</h2><span id="clientCount" class="muted"></span></div>
+        <div class="filters">
+          <input id="clientSearch" placeholder="Поиск клиента / последние 4 символа" style="min-width:280px">
+          <select id="clientFilter"><option value="all">Все</option><option value="online">ONLINE</option><option value="offline">OFFLINE</option><option value="never">Не подключались</option><option value="expiring">Истекают ≤7 дней</option><option value="revoked">Revoked</option></select>
+        </div>
+        <div id="clientsTable" class="tableWrap" style="margin-top:10px"></div>
+      </main>
+    </div>
+  </section>
+
+  <section id="page-devices" class="hidden">
+    <div class="card pad">
+      <div class="sectionTitle"><h2>Устройства</h2><span class="muted">Heartbeat каждые ~25 сек</span></div>
+      <div class="filters"><input id="deviceSearch" placeholder="Поиск устройства / клиента / версии"><select id="deviceFilter"><option value="all">Все</option><option value="online">ONLINE</option><option value="away">AWAY</option><option value="offline">OFFLINE</option><option value="blocked">Blocked</option></select></div>
+      <div id="devicesTable" class="tableWrap" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <section id="page-renders" class="hidden">
+    <div class="card pad">
+      <div class="sectionTitle"><h2>Рендеры</h2><span class="muted">Live progress + история</span></div>
+      <div class="filters"><input id="renderSearch" placeholder="Проект / клиент / файл"><select id="renderFilter"><option value="all">Все</option><option value="rendering">Рендерятся</option><option value="completed">Готово</option><option value="failed">Ошибки</option></select></div>
+      <div id="rendersTable" class="tableWrap" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <section id="page-versions" class="hidden">
+    <div class="grid2">
+      <div class="card pad"><div class="sectionTitle"><h2>Распределение версий</h2></div><div id="versionsList"></div></div>
+      <div class="card pad"><div class="sectionTitle"><h2>Контроль обновлений</h2></div><p class="muted">Здесь видно, кто работает на старой версии. Обновление выполняет штатный подписанный updater ENDLUME — без удалённого запуска произвольных команд.</p><div id="oldVersionClients"></div></div>
+    </div>
+  </section>
+
+  <section id="page-notifications" class="hidden">
+    <div class="grid2">
+      <div class="card pad">
+        <div class="sectionTitle"><h2>Уведомления</h2></div>
+        <label class="row"><input id="notifyActivation" type="checkbox"> Первое подключение клиента</label><br>
+        <label class="row"><input id="notifyStart" type="checkbox"> Запуск рендера</label><br>
+        <label class="row"><input id="notifyDone" type="checkbox"> Завершение рендера</label><br>
+        <label class="row"><input id="notifyFail" type="checkbox"> Ошибка рендера</label><br>
+        <label class="row"><input id="notifyExpire" type="checkbox"> Скорое окончание лицензии</label>
+        <hr style="border-color:#252944;border-width:1px 0 0;margin:16px 0">
+        <label class="row"><input id="telegramEnabled" type="checkbox"> Telegram</label>
+        <div class="field"><label>Chat ID</label><input id="telegramChatId" placeholder="Например: 123456789"></div>
+        <label class="row"><input id="emailEnabled" type="checkbox"> Email</label>
+        <div class="field"><label>Email</label><input id="notifyEmail" type="email"></div>
+        <button id="saveNotifyBtn" class="btn">СОХРАНИТЬ НАСТРОЙКИ</button>
+        <p id="notifyTransport" class="muted"></p>
+      </div>
+      <div class="card pad"><div class="sectionTitle"><h2>Лента событий</h2></div><div id="notificationFeed" class="feed"></div></div>
+    </div>
+  </section>
+
+  <section id="page-security" class="hidden">
+    <div class="grid2">
+      <div class="card pad">
+        <div class="sectionTitle"><h2>Owner Security</h2></div>
+        <div id="securityState"></div>
+        <button id="setupMfaBtn" class="btn" style="margin-top:12px">ВКЛЮЧИТЬ 2FA (TOTP)</button>
+        <button id="logoutAllBtn" class="btn danger" style="margin-top:12px">ЗАВЕРШИТЬ ВСЕ СЕССИИ OWNER</button>
+      </div>
+      <div class="card pad">
+        <div class="sectionTitle"><h2>Журнал действий</h2></div>
+        <div id="auditFeed" class="feed"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="page-vyron-overview" class="hidden">
+    <div class="card pad" style="margin-bottom:14px;border-color:#23594f">
+      <div class="sectionTitle">
+        <div><h2>VYRON Control Center</h2><span class="muted">Клиенты • OAuth • каналы • ошибки • API usage • Windows releases</span></div>
+        <div class="actions"><span class="tag">2.1.9 WINDOWS</span><span id="vyronTelemetryState" class="tag">TELEMETRY READY</span></div>
+      </div>
+      <div id="vyronStats" class="stats"></div>
+      <div id="vyronLoadError" class="error"></div>
+    </div>
+    <div class="grid2">
+      <div class="card pad">
+        <div class="sectionTitle"><h2>Client Health</h2><span class="muted">без OAuth-секретов</span></div>
+        <div id="vyronHealthTable" class="tableWrap"></div>
+      </div>
+      <div class="card pad">
+        <div class="sectionTitle"><h2>Последние ошибки</h2><button class="btn ghost small" data-go-vyron="vyron-errors">Все</button></div>
+        <div id="vyronRecentErrors" class="feed"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="page-vyron-clients" class="hidden">
+    <div class="clientsLayout">
+      <aside class="card pad">
+        <div class="sectionTitle"><h2>Новый ключ VYRON</h2><span class="tag">Managed</span></div>
+        <div class="field"><label>Клиент</label><input id="vyronCust" placeholder="Например: Клиент 01"></div>
+        <div class="field"><label>Срок</label><select id="vyronDays"><option value="7">7 дней</option><option value="30" selected>30 дней</option><option value="90">90 дней</option><option value="365">365 дней</option></select></div>
+        <div class="field"><label>Устройств</label><input id="vyronMaxDevices" type="number" min="1" max="100" value="1"></div>
+        <div class="field"><label>Заметка</label><textarea id="vyronNotes" placeholder="Необязательно"></textarea></div>
+        <button id="vyronCreateBtn" class="btn" style="width:100%">СОЗДАТЬ КЛЮЧ VYRON</button>
+        <div id="vyronNewKey" class="keybox hidden"></div>
+      </aside>
+      <main class="card pad">
+        <div class="sectionTitle"><h2>Клиенты и лицензии VYRON</h2><span id="vyronClientCount" class="muted"></span></div>
+        <div class="filters">
+          <input id="vyronSearch" placeholder="Клиент / userId / последние 4 символа" style="min-width:320px">
+          <select id="vyronFilter"><option value="all">Все</option><option value="active">Active</option><option value="paused">Paused</option><option value="revoked">Revoked</option><option value="expired">Expired</option><option value="never">Не активировались</option></select>
+        </div>
+        <div id="vyronLicensesTable" class="tableWrap" style="margin-top:10px"></div>
+      </main>
+    </div>
+  </section>
+
+  <section id="page-vyron-devices" class="hidden">
+    <div class="grid2" style="margin-bottom:14px">
+      <div class="card pad"><div class="sectionTitle"><h2>Версии VYRON</h2></div><div id="vyronVersionsList"></div></div>
+      <div class="card pad"><div class="sectionTitle"><h2>Состояние устройств</h2></div><div id="vyronDeviceSummary" class="feed"></div></div>
+    </div>
+    <div class="card pad">
+      <div class="sectionTitle"><h2>Устройства VYRON</h2><span class="muted">binding + session control</span></div>
+      <div class="filters">
+        <input id="vyronDeviceSearch" placeholder="Клиент / устройство / версия / платформа" style="min-width:320px">
+        <select id="vyronDeviceFilter"><option value="all">Все</option><option value="active">Active</option><option value="blocked">Blocked</option><option value="detached">Detached</option></select>
+      </div>
+      <div id="vyronDevicesTable" class="tableWrap" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <section id="page-vyron-channels" class="hidden">
+    <div class="card pad" style="margin-bottom:14px">
+      <div class="sectionTitle"><h2>Каналы / OAuth Health</h2><span class="muted">metadata only • без refresh/access tokens</span></div>
+      <div id="vyronChannelStats" class="stats"></div>
+      <div class="filters">
+        <input id="vyronChannelSearch" placeholder="Клиент / канал / Channel ID / OAuth profile" style="min-width:330px">
+        <select id="vyronChannelFilter"><option value="all">Все</option><option value="healthy">Healthy</option><option value="reconnect_required">Reconnect required</option><option value="error">Error</option><option value="unknown">Unknown</option></select>
+      </div>
+      <div id="vyronChannelsTable" class="tableWrap" style="margin-top:10px"></div>
+    </div>
+    <div class="card pad">
+      <div class="sectionTitle"><h2>Google / tenant isolation</h2><span class="tag">SECURITY</span></div>
+      <div class="grid2">
+        <div class="feed">
+          <div class="feedItem"><b>Tenant per license</b><small>Каждая лицензия имеет уникальный userId и собственный private data scope.</small></div>
+          <div class="feedItem"><b>Credential Manager</b><small>Refresh token namespace: tenant.&lt;userId&gt;.oauth.&lt;profile&gt;.refresh_token</small></div>
+          <div class="feedItem"><b>Admin privacy</b><small>Control Center принимает только health metadata. Секретные поля telemetry endpoint отклоняет.</small></div>
+        </div>
+        <div class="feed">
+          <div class="feedItem"><b>Один Google project</b><small>Может обслуживать много OAuth profiles/каналов. Каждый канал остаётся отдельным OAuth profile.</small></div>
+          <div class="feedItem"><b>Много каналов</b><small>Панель готова отображать сотни каналов; фактическая работа зависит от Google OAuth и YouTube API quota.</small></div>
+          <div class="feedItem"><b>2.1.9</b><small>Текущий Windows release ещё не отправляет новый Control telemetry. Данные появятся после интеграции telemetry в клиент.</small></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="page-vyron-errors" class="hidden">
+    <div class="grid2" style="margin-bottom:14px">
+      <div class="card pad"><div class="sectionTitle"><h2>Ошибки за 24 часа</h2></div><div id="vyronErrorStats" class="stats" style="grid-template-columns:repeat(3,1fr)"></div></div>
+      <div class="card pad"><div class="sectionTitle"><h2>Частые коды</h2></div><div id="vyronErrorCodes" class="feed"></div></div>
+    </div>
+    <div class="card pad">
+      <div class="sectionTitle"><h2>VYRON incidents</h2><span class="muted">OAuth • YouTube • FFmpeg • render • upload • storage</span></div>
+      <div class="filters"><input id="vyronErrorSearch" placeholder="Клиент / код / сообщение / операция"><select id="vyronErrorFilter"><option value="all">Все категории</option><option value="oauth">OAuth</option><option value="youtube">YouTube</option><option value="render">Render</option><option value="upload">Upload</option><option value="storage">Storage</option><option value="runtime">Runtime</option></select></div>
+      <div id="vyronErrorsTable" class="tableWrap" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <section id="page-vyron-quota" class="hidden">
+    <div class="card pad" style="margin-bottom:14px">
+      <div class="sectionTitle"><h2>YouTube API Usage</h2><span class="muted">tracked telemetry • последние 30 дней</span></div>
+      <div id="vyronQuotaStats" class="stats"></div>
+    </div>
+    <div class="grid2">
+      <div class="card pad"><div class="sectionTitle"><h2>Сегодня по endpoint</h2></div><div id="vyronQuotaEndpoints"></div></div>
+      <div class="card pad"><div class="sectionTitle"><h2>Клиенты</h2></div><div id="vyronQuotaClients" class="feed"></div></div>
+    </div>
+  </section>
+
+  <section id="page-vyron-releases" class="hidden">
+    <div class="grid2" style="margin-bottom:14px">
+      <div class="card pad">
+        <div class="sectionTitle"><h2>Windows Production</h2><span class="tag">v2.1.9-windows-x64</span></div>
+        <div class="feed">
+          <div class="feedItem"><b>Installer</b><small>VYRON_2.1.9_x64-setup.exe • 58 459 772 байта</small></div>
+          <div class="feedItem"><b>SHA-256</b><small style="word-break:break-all">cf0aabef811a8b3cc8cbb9c8ca2fee44f2ed9d1af9fb2e56b81117a3836790f0</small></div>
+          <div class="feedItem"><b>Source</b><small style="word-break:break-all">276e7e5aa50ed0010a91dca2de90625dd8668bc6</small></div>
+          <div class="feedItem"><b>Production gates</b><small>Rust 123/123 • MSVC PASS • Tauri PASS • NSIS PASS • PE x64 PASS</small></div>
+          <div class="feedItem"><b>Updater</b><small>OFF — не активирован до physical acceptance.</small></div>
+          <div class="feedItem"><b>Authenticode</b><small>UNSIGNED — SmartScreen возможен.</small></div>
+        </div>
+      </div>
+      <div class="card pad">
+        <div class="sectionTitle"><h2>Release adoption</h2><span class="muted">по подключённым устройствам</span></div>
+        <div id="vyronReleaseAdoption"></div>
+      </div>
+    </div>
+    <div class="card pad">
+      <div class="sectionTitle"><h2>Control infrastructure</h2><span class="tag">V1</span></div>
+      <div id="vyronInfra" class="feed"></div>
+    </div>
+  </section>
+</div>
+
+<div id="drawerBackdrop" class="drawerBackdrop hidden"></div>
+<aside id="clientDrawer" class="drawer hidden">
+  <div class="sectionTitle"><div><h2 id="drawerTitle">Клиент</h2><span id="drawerSub" class="muted"></span></div><button id="drawerClose" class="btn secondary">Закрыть</button></div>
+  <div id="drawerStats" class="drawerGrid"></div>
+  <div class="card pad" style="margin-bottom:12px">
+    <div class="sectionTitle"><h3>Лицензия</h3></div>
+    <div class="grid3">
+      <div class="field"><label>Имя клиента</label><input id="editCustomer"></div>
+      <div class="field"><label>Лимит устройств</label><input id="editMaxDevices" type="number" min="1" max="100"></div>
+      <div class="field"><label>Действует до</label><input id="editExpires" type="datetime-local"></div>
+    </div>
+    <div class="field"><label>Заметка</label><textarea id="editNotes"></textarea></div>
+    <div class="grid3">
+      <label class="row"><input id="editCloudArtifacts" type="checkbox"> Хранить готовые MP4 в приватном облаке</label>
+      <div class="field"><label>Хранить дней</label><input id="editCloudRetention" type="number" min="1" max="30" value="3"></div>
+      <div class="field"><label>Cloud</label><div id="editCloudStatus" class="pill">—</div></div>
+    </div>
+    <div class="actions">
+      <button id="saveClientBtn" class="btn">Сохранить</button>
+      <button id="clientActiveBtn" class="btn green">Active</button>
+      <button id="clientPauseBtn" class="btn warn">Pause</button>
+      <button id="clientRevokeBtn" class="btn danger">Revoke</button>
+      <button id="rotateKeyBtn" class="btn secondary">Rotate key</button>
+    </div>
+    <div id="rotatedKey" class="keybox hidden"></div>
+  </div>
+  <div class="card pad" style="margin-bottom:12px"><div class="sectionTitle"><h3>Ключи доступа</h3></div><div id="drawerKeys" class="feed"></div></div>
+  <div class="card pad" style="margin-bottom:12px"><div class="sectionTitle"><h3>Устройства</h3></div><div id="drawerDevices" class="tableWrap"></div></div>
+  <div class="card pad" style="margin-bottom:12px"><div class="sectionTitle"><h3>Последние рендеры</h3></div><div id="drawerRenders" class="tableWrap"></div></div>
+  <div class="grid2">
+    <div class="card pad"><div class="sectionTitle"><h3>События</h3></div><div id="drawerEvents" class="feed"></div></div>
+    <div class="card pad"><div class="sectionTitle"><h3>История управления</h3></div><div id="drawerAudit" class="feed"></div></div>
+  </div>
+</aside>
+
+<div id="renderModalBack" class="modalBackdrop hidden">
+  <div class="modal card">
+    <div class="sectionTitle"><h2 id="renderModalTitle">Рендер</h2><button id="renderModalClose" class="btn secondary">Закрыть</button></div>
+    <div id="renderModalInfo"></div>
+    <div class="sectionTitle" style="margin-top:18px"><h3>Таймлайн</h3></div>
+    <div id="renderTimeline" class="feed"></div>
+  </div>
+</div>
+
+<div id="mfaSetupBack" class="modalBackdrop hidden">
+  <div class="modal card">
+    <div class="sectionTitle"><h2>Настройка 2FA</h2><button id="mfaSetupClose" class="btn secondary">Закрыть</button></div>
+    <p class="muted">Отсканируй QR-код в Google Authenticator / 1Password / другой TOTP-программе.</p>
+    <div id="mfaQrWrap"></div>
+    <div class="field"><label>Код из приложения</label><input id="mfaSetupCode" inputmode="numeric"></div>
+    <button id="mfaSetupVerify" class="btn green">ПОДТВЕРДИТЬ И ВКЛЮЧИТЬ</button>
+    <p id="mfaSetupMsg" class="muted"></p>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const BASE='https://odlseljmogaguyqdlkyv.supabase.co';
+const PUB='sb_publishable_zKjzhQTdTG8f9BfR2X5NVg_zQgjo70f';
+const ADMIN=BASE+'/functions/v1/endlume-admin-licenses';
+const VYRON_ADMIN=BASE+'/functions/v1/vyron-admin-licenses';
+const supabase=createClient(BASE,PUB,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'endlume-owner-control'}});
+const $=id=>document.getElementById(id);
+let session=null,data={licenses:[],devices:[],renders:[],notifications:[],artifacts:[],versions:{},stats:{}},vyronData={licenses:[],devices:[],health:[],channels:[],errors:[],quota:[],stats:{},telemetry:{},serverTime:null},vyronLoadError='',poll=null,currentLicenseId=null,mfaLoginFactor=null,mfaLoginChallenge=null,mfaEnroll=null;
+
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const dt=v=>v?new Date(v).toLocaleString('ru-RU'):'—';
+const shortDate=v=>v?new Date(v).toLocaleDateString('ru-RU'):'—';
+const bytes=n=>!n?'—':n>=1e9?(n/1e9).toFixed(2)+' GB':n>=1e6?(n/1e6).toFixed(1)+' MB':Math.round(n/1024)+' KB';
+const dur=s=>!s?'—':s>=3600?(s/3600).toFixed(1)+' ч':Math.round(s/60)+' мин';
+const online=d=>Date.now()-Date.parse(d.last_seen_at||0)<60000;
+const away=d=>Date.now()-Date.parse(d.last_seen_at||0)<180000;
+const toast=(m,bad=false)=>{const e=$('toast');e.textContent=m;e.style.borderColor=bad?'#8d3149':'#3c4169';e.classList.remove('hidden');setTimeout(()=>e.classList.add('hidden'),3800)};
+const connection=d=>online(d)?['ONLINE','on']:away(d)?['AWAY','warn']:['OFFLINE','off'];
+const licenseDevices=id=>(data.devices||[]).filter(d=>d.license_id===id&&d.status!=='detached');
+const licenseRenders=id=>(data.renders||[]).filter(r=>r.license_id===id);
+const artifactFor=id=>(data.artifacts||[]).find(a=>a.render_id===id);
+
+async function getSession(){const r=await supabase.auth.getSession();session=r.data.session;return session}
+async function call(body){
+  await getSession();
+  if(!session?.access_token)throw new Error('Нет owner-сессии');
+  const r=await fetch(ADMIN,{method:'POST',headers:{apikey:PUB,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const j=await r.json().catch(()=>({ok:false,code:'bad_response'}));
+  if((r.status===401||r.status===403)&&j.code==='mfa_required')throw Object.assign(new Error('mfa_required'),{code:'mfa_required'});
+  if(!r.ok||j.ok===false)throw new Error(j.code||'Ошибка API');
+  return j;
+}
+async function callVyron(body){
+  await getSession();
+  if(!session?.access_token)throw new Error('Нет owner-сессии');
+  const r=await fetch(VYRON_ADMIN,{method:'POST',headers:{apikey:PUB,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const j=await r.json().catch(()=>({ok:false,code:'bad_response'}));
+  if(!r.ok||j.ok===false)throw new Error(j.code||'Ошибка VYRON API');
+  return j;
+}
+function showLogin(){clearInterval(poll);$('mainApp').classList.add('hidden');$('mfaLogin').classList.add('hidden');$('login').classList.remove('hidden')}
+function showApp(){$('login').classList.add('hidden');$('mfaLogin').classList.add('hidden');$('mainApp').classList.remove('hidden')}
+async function maybeMfa(){
+  const aal=await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if(aal.error)throw aal.error;
+  if(aal.data.nextLevel==='aal2'&&aal.data.currentLevel!=='aal2'){
+    const factors=await supabase.auth.mfa.listFactors();
+    if(factors.error)throw factors.error;
+    const factor=factors.data.totp.find(x=>x.status==='verified');
+    if(!factor)throw new Error('2FA включена, но TOTP-фактор не найден');
+    const ch=await supabase.auth.mfa.challenge({factorId:factor.id});
+    if(ch.error)throw ch.error;
+    mfaLoginFactor=factor.id;mfaLoginChallenge=ch.data.id;
+    $('login').classList.add('hidden');$('mainApp').classList.add('hidden');$('mfaLogin').classList.remove('hidden');
+    return false;
+  }
+  return true;
+}
+async function bootstrap(){
+  await getSession();
+  if(!session){showLogin();return}
+  if(!(await maybeMfa()))return;
+  showApp();
+  await load(false);
+  showProduct(localStorage.getItem('scaleup-control-product')||'endlume');
+  clearInterval(poll);poll=setInterval(()=>load(true),5000);
+}
+async function load(silent=false){
+  try{
+    const j=await call({action:'dashboard'});data=j;
+    try{vyronData=await callVyron({action:'dashboard'});vyronLoadError=''}catch(ve){vyronLoadError=String(ve.message||ve)}
+    renderAll();$('updated').textContent='Обновлено '+new Date().toLocaleTimeString('ru-RU')
+  }catch(e){
+    $('updated').textContent='Ошибка синхронизации';
+    if(e.code==='mfa_required'){await maybeMfa();return}
+    if(!silent)toast(String(e.message||e),true)
+  }
+}
+function table(headers){const t=document.createElement('table');t.className='tbl';const tr=t.createTHead().insertRow();headers.forEach(h=>{const th=document.createElement('th');th.textContent=h;tr.appendChild(th)});t.createTBody();return t}
+function actionBtn(text,cls,fn){const b=document.createElement('button');b.className='btn small '+cls;b.textContent=text;b.onclick=e=>{e.stopPropagation();fn(b)};return b}
+function renderStats(){
+  const s=data.stats||{};
+  const items=[
+    ['ЛИЦЕНЗИИ',s.licenses||0,(s.activeLicenses||0)+' active'],
+    ['ONLINE',s.onlineDevices||0,(s.awayDevices||0)+' away'],
+    ['РЕНДЕРЯТСЯ',s.activeRenders||0,'сейчас'],
+    ['ГОТОВО СЕГОДНЯ',s.completedToday||0,(s.rendersToday||0)+' всего'],
+    ['ВИДЕО СЕГОДНЯ',(Number(s.videoHoursToday)||0).toFixed(1)+' ч',(s.failedToday||0)+' ошибок'],
+    ['ИСТЕКАЮТ ≤7 ДНЕЙ',s.expiring7d||0,'лицензий']
+  ];
+  $('stats').innerHTML=items.map(x=>'<div class="card stat"><small>'+esc(x[0])+'</small><b>'+esc(x[1])+'</b><em>'+esc(x[2])+'</em></div>').join('');
+}
+function renderFeed(rootId,items,limit=20){
+  const root=$(rootId);if(!items?.length){root.innerHTML='<div class="empty">Пока событий нет</div>';return}
+  root.innerHTML=items.slice(0,limit).map(n=>'<div class="feedItem"><b>'+esc(n.title||n.event_type||n.action)+'</b><small>'+esc(n.body||JSON.stringify(n.metadata||{}))+'</small><small>'+dt(n.created_at)+'</small></div>').join('');
+}
+function renderVersions(){
+  const entries=Object.entries(data.versions||{}).sort((a,b)=>b[1]-a[1]);const max=Math.max(1,...entries.map(x=>x[1]));
+  const html=entries.length?entries.map(([v,n])=>'<div class="versionBar"><b>'+esc(v)+'</b><div class="bar"><i style="width:'+Math.round(n/max*100)+'%"></i></div><span>'+n+'</span></div>').join(''):'<div class="empty">Устройства ещё не подключались</div>';
+  $('dashVersions').innerHTML=html;$('versionsList').innerHTML=html;
+  const latest=entries[0]?.[0]||null;
+  const old=(data.devices||[]).filter(d=>latest&&d.app_version!==latest);
+  $('oldVersionClients').innerHTML=old.length?old.map(d=>'<div class="feedItem"><b>'+esc(d.device_name||d.device_id)+'</b><small>'+esc(d.app_version||'—')+' • '+esc(d.platform||'')+'</small></div>').join(''):'<div class="empty">Старых подключённых версий не обнаружено</div>';
+}
+function licenseConnection(l){
+  const ds=licenseDevices(l.id),on=ds.filter(online),aw=ds.filter(d=>!online(d)&&away(d));
+  if(on.length)return ['ONLINE','on',on.length+' сейчас'];
+  if(aw.length)return ['AWAY','warn','последний heartbeat '+dt(aw[0].last_seen_at)];
+  if(ds.length){const last=ds.slice().sort((a,b)=>Date.parse(b.last_seen_at)-Date.parse(a.last_seen_at))[0];return ['OFFLINE','off','последний раз '+dt(last.last_seen_at)]}
+  return ['НЕ ПОДКЛЮЧАЛСЯ','','ключ ещё не активировали'];
+}
+function filteredLicenses(){
+  const q=$('clientSearch').value.trim().toLowerCase(),f=$('clientFilter').value;
+  return (data.licenses||[]).filter(l=>{
+    const con=licenseConnection(l),txt=((l.customer_name||'')+' '+(l.key_last4||'')+' '+(l.notes||'')).toLowerCase();
+    if(q&&!txt.includes(q))return false;
+    if(f==='online'&&con[0]!=='ONLINE')return false;
+    if(f==='offline'&&con[0]!=='OFFLINE')return false;
+    if(f==='never'&&con[0]!=='НЕ ПОДКЛЮЧАЛСЯ')return false;
+    if(f==='revoked'&&l.status!=='revoked')return false;
+    if(f==='expiring'&&!(l.expires_at&&!l.owner&&Date.parse(l.expires_at)>Date.now()&&Date.parse(l.expires_at)-Date.now()<=7*86400000))return false;
+    return true;
+  })
+}
+function renderClients(){
+  const ls=filteredLicenses();$('clientCount').textContent=ls.length+' из '+(data.licenses||[]).length;
+  const root=$('clientsTable');root.innerHTML='';const t=table(['Клиент','Ключ','Лицензия','Подключение','Версия','До','Устройства','Рендеры','Действия']),tb=t.tBodies[0];
+  ls.forEach(l=>{
+    const ds=licenseDevices(l.id),rs=licenseRenders(l.id),con=licenseConnection(l),best=ds.find(online)||ds[0];
+    const r=tb.insertRow();r.className='clickable';r.onclick=()=>openClient(l.id);
+    r.insertCell().innerHTML='<b>'+esc(l.customer_name||'Без имени')+'</b><br><span class="muted">'+esc(l.notes||'')+'</span>';
+    r.insertCell().textContent='•••• '+(l.key_last4||'');
+    r.insertCell().innerHTML='<span class="status"><i class="dot '+(l.status==='active'?'on':l.status==='paused'?'warn':'off')+'"></i>'+esc(l.status)+'</span>';
+    r.insertCell().innerHTML='<span class="status"><i class="dot '+con[1]+'"></i><b>'+esc(con[0])+'</b></span><br><span class="muted">'+esc(con[2])+'</span>';
+    r.insertCell().textContent=best?.app_version||'—';r.insertCell().textContent=l.owner?'LIFETIME':shortDate(l.expires_at);
+    r.insertCell().textContent=ds.length+' / '+l.max_devices;r.insertCell().textContent=String(rs.length);
+    const a=r.insertCell();a.className='actions';a.appendChild(actionBtn('Открыть','secondary',()=>openClient(l.id)));a.appendChild(actionBtn('Pause','warn',()=>licenseCmd(l.id,'paused')));a.appendChild(actionBtn('Revoke','danger',()=>licenseCmd(l.id,'revoked')));
+  });root.appendChild(t)
+}
+function filteredDevices(){
+  const q=$('deviceSearch').value.trim().toLowerCase(),f=$('deviceFilter').value;
+  return (data.devices||[]).filter(d=>{
+    const l=(data.licenses||[]).find(x=>x.id===d.license_id);const state=connection(d)[0];
+    const txt=((d.device_name||'')+' '+(d.device_id||'')+' '+(d.app_version||'')+' '+(l?.customer_name||'')).toLowerCase();
+    if(q&&!txt.includes(q))return false;
+    if(f==='online'&&state!=='ONLINE')return false;if(f==='away'&&state!=='AWAY')return false;if(f==='offline'&&state!=='OFFLINE')return false;if(f==='blocked'&&d.status!=='blocked')return false;
+    return true;
+  })
+}
+function renderDevices(){
+  const root=$('devicesTable');root.innerHTML='';const t=table(['Клиент / устройство','Сеть','Экран','Рендер','Система','Ресурсы','Последний heartbeat','Действия']),tb=t.tBodies[0];
+  filteredDevices().forEach(d=>{
+    const l=(data.licenses||[]).find(x=>x.id===d.license_id),st=connection(d),r=tb.insertRow();
+    r.insertCell().innerHTML='<b>'+esc(l?.customer_name||'—')+'</b><br>'+esc(d.device_name||d.device_id)+'<br><span class="muted">'+esc(d.platform||'')+' '+esc(d.architecture||'')+' • '+esc(d.app_version||'')+'</span>';
+    r.insertCell().innerHTML='<span class="status"><i class="dot '+st[1]+'"></i>'+st[0]+'</span><br><span class="muted">'+esc(d.status)+'</span>';
+    r.insertCell().textContent=d.current_screen||'—';
+    const p=Number(d.render_progress||0);r.insertCell().innerHTML='<b>'+esc(d.render_status||'idle')+'</b><br>'+p.toFixed(1)+'%<div class="progress"><i style="width:'+Math.max(0,Math.min(100,p))+'%"></i></div>';
+    r.insertCell().innerHTML='<span class="muted">CPU</span> '+esc(d.cpu_model||'—')+'<br><span class="muted">GPU</span> '+esc(d.gpu_model||'—')+'<br><span class="muted">FFmpeg</span> '+esc(d.ffmpeg_version||'—');
+    r.insertCell().innerHTML='CPU '+(d.cpu_percent==null?'—':Number(d.cpu_percent).toFixed(0)+'%')+'<br>RAM '+bytes(d.memory_used_bytes)+' / '+bytes(d.memory_total_bytes)+'<br>Disk free '+bytes(d.disk_free_bytes);
+    r.insertCell().textContent=dt(d.last_seen_at);
+    const a=r.insertCell();a.className='actions';a.appendChild(actionBtn('Block','danger',()=>deviceCmd(d.id,'block')));a.appendChild(actionBtn('Unblock','green',()=>deviceCmd(d.id,'unblock')));a.appendChild(actionBtn('Detach','secondary',()=>deviceCmd(d.id,'detach')));
+  });root.appendChild(t)
+}
+function filteredRenders(){
+  const q=$('renderSearch').value.trim().toLowerCase(),f=$('renderFilter').value;
+  return (data.renders||[]).filter(r=>{
+    const l=(data.licenses||[]).find(x=>x.id===r.license_id);const txt=((r.project_name||'')+' '+(r.output_filename||'')+' '+(l?.customer_name||'')).toLowerCase();
+    return (!q||txt.includes(q))&&(f==='all'||r.status===f)
+  })
+}
+function renderRenders(){
+  const root=$('rendersTable');root.innerHTML='';const t=table(['Клиент','Проект','Path / Audio','Статус','Прогресс','Stage / ETA','Encoder / Codec','Результат','Render / Final','Время','Действия']),tb=t.tBodies[0];
+  filteredRenders().forEach(x=>{
+    const l=(data.licenses||[]).find(y=>y.id===x.license_id),a=artifactFor(x.id),r=tb.insertRow();
+    r.insertCell().textContent=l?.customer_name||'—';r.insertCell().innerHTML='<b>'+esc(x.project_name||x.project_id||'—')+'</b><br><span class="muted">'+esc(x.job_id||'')+'</span>';
+    const pathLabel=x.fast_path===true?'FAST':x.fast_path===false?'GENERIC':'LEGACY';r.insertCell().innerHTML='<b>'+pathLabel+'</b><br><span class="muted">'+esc(x.fast_path_reason||'—')+'</span><br><span class="tag">'+esc(x.audio_mode||'—')+'</span>';
+    r.insertCell().innerHTML='<span class="status"><i class="dot '+(x.status==='completed'?'on':x.status==='failed'?'off':'warn')+'"></i>'+esc(x.status)+'</span>';
+    const p=Number(x.progress||0);r.insertCell().innerHTML=p.toFixed(1)+'%<div class="progress"><i style="width:'+Math.max(0,Math.min(100,p))+'%"></i></div>';
+    r.insertCell().innerHTML=esc(x.stage||'—')+'<br><span class="muted">ETA '+(x.eta_seconds==null?'—':Math.round(x.eta_seconds)+'s')+'</span>';
+    r.insertCell().innerHTML=esc(x.encoder||'—')+'<br><span class="muted">'+esc(x.video_codec||x.codec||'—')+' / '+esc(x.audio_codec||'—')+' • '+(x.width||'—')+'×'+(x.height||'—')+' @ '+(x.fps||'—')+'</span>';
+    r.insertCell().innerHTML=esc(x.output_filename||'—')+'<br><span class="muted">'+bytes(x.output_bytes)+'</span><br><span class="tag">'+esc(a?.status||'local only')+'</span>';
+    const wall=x.render_wall_seconds==null?(x.duration_seconds==null?'—':'legacy '+dur(x.duration_seconds)):dur(x.render_wall_seconds);const finalDur=x.final_video_duration_seconds==null?'—':dur(x.final_video_duration_seconds);r.insertCell().innerHTML='<b>'+wall+'</b><br><span class="muted">final '+finalDur+'</span>';
+    r.insertCell().textContent=dt(x.updated_at);const ac=r.insertCell();ac.appendChild(actionBtn('Подробнее','secondary',()=>openRender(x.id)));
+  });root.appendChild(t)
+}
+function renderNotifications(){renderFeed('notificationFeed',data.notifications||[],50);renderFeed('dashFeed',data.notifications||[],12)}
+
+const vyronLicenseDevices=id=>(vyronData.devices||[]).filter(d=>d.license_id===id&&d.status!=='detached');
+const vyronLicense=id=>(vyronData.licenses||[]).find(x=>x.id===id);
+const vyronHealth=id=>(vyronData.health||[]).find(x=>x.license_id===id);
+const statusDot=s=>s==='healthy'||s==='active'?'on':s==='error'||s==='blocked'||s==='revoked'?'off':'warn';
+function vyronFilteredLicenses(){
+  const q=($('vyronSearch')?.value||'').trim().toLowerCase(),f=$('vyronFilter')?.value||'all';
+  return (vyronData.licenses||[]).filter(l=>{
+    const txt=((l.customer_name||'')+' '+(l.user_id||'')+' '+(l.key_last4||'')+' '+(l.notes||'')).toLowerCase();
+    if(q&&!txt.includes(q))return false;if(f==='never')return !l.activated_at;if(f!=='all')return l.status===f;return true;
+  });
+}
+function vyronFilteredDevices(){
+  const q=($('vyronDeviceSearch')?.value||'').trim().toLowerCase(),f=$('vyronDeviceFilter')?.value||'all';
+  return (vyronData.devices||[]).filter(d=>{
+    const l=vyronLicense(d.license_id),txt=((l?.customer_name||'')+' '+(d.device_name||'')+' '+(d.device_id||'')+' '+(d.platform||'')+' '+(d.architecture||'')+' '+(d.app_version||'')).toLowerCase();
+    return (!q||txt.includes(q))&&(f==='all'||d.status===f);
+  });
+}
+function vyronFilteredChannels(){
+  const q=($('vyronChannelSearch')?.value||'').trim().toLowerCase(),f=$('vyronChannelFilter')?.value||'all';
+  return (vyronData.channels||[]).filter(x=>{
+    const l=vyronLicense(x.license_id),txt=((l?.customer_name||'')+' '+(x.channel_title||'')+' '+(x.channel_id||'')+' '+(x.oauth_profile_id||'')+' '+(x.last_error_code||'')).toLowerCase();
+    return (!q||txt.includes(q))&&(f==='all'||x.oauth_status===f);
+  });
+}
+function vyronFilteredErrors(){
+  const q=($('vyronErrorSearch')?.value||'').trim().toLowerCase(),f=$('vyronErrorFilter')?.value||'all';
+  return (vyronData.errors||[]).filter(x=>{
+    const l=vyronLicense(x.license_id),txt=((l?.customer_name||'')+' '+(x.category||'')+' '+(x.code||'')+' '+(x.operation||'')+' '+(x.message||'')+' '+(x.channel_id||'')).toLowerCase();
+    return (!q||txt.includes(q))&&(f==='all'||x.category===f);
+  });
+}
+function renderVyron(){
+  if(!$('vyronStats'))return;
+  $('vyronLoadError').textContent=vyronLoadError?('VYRON API: '+vyronLoadError):'';
+  $('vyronTelemetryState').textContent=vyronData.telemetry?.schemaVersion===1?'TELEMETRY BACKEND READY':'TELEMETRY —';
+  const ls=vyronData.licenses||[],ds=vyronData.devices||[],hs=vyronData.health||[],cs=vyronData.channels||[],es=vyronData.errors||[],qs=vyronData.quota||[],s=vyronData.stats||{};
+  const items=[
+    ['ЛИЦЕНЗИИ',ls.length,(s.activeLicenses||0)+' active'],
+    ['УСТРОЙСТВА',ds.filter(x=>x.status!=='detached').length,(s.blockedDevices||0)+' blocked'],
+    ['КАНАЛЫ',cs.length,(s.oauthHealthy||0)+' OAuth healthy'],
+    ['OAUTH ERROR',s.oauthErrors||0,'reconnect/error'],
+    ['ОШИБКИ 24Ч',s.errors24h||0,'telemetry events'],
+    ['VYRON','2.1.9','Windows x64']
+  ];
+  $('vyronStats').innerHTML=items.map(x=>'<div class="stat"><span>'+x[0]+'</span><b>'+x[1]+'</b><small>'+x[2]+'</small></div>').join('');
+
+  // Health overview
+  const hroot=$('vyronHealthTable');hroot.innerHTML='';
+  if(!hs.length){hroot.innerHTML='<div class="empty">Telemetry backend готов. VYRON 2.1.9 ещё не отправляет client health — данные появятся после следующей интеграции клиента.</div>'}
+  else{
+    const t=table(['Клиент','Версия / экран','Каналы','OAuth','Credential Manager','FFmpeg','Последний sync','Последняя ошибка']),tb=t.tBodies[0];
+    hs.forEach(h=>{const l=vyronLicense(h.license_id),r=tb.insertRow();r.insertCell().innerHTML='<b>'+esc(l?.customer_name||'—')+'</b><br><span class="muted">•••• '+esc(l?.key_last4||'—')+'</span>';r.insertCell().innerHTML='<b>'+esc(h.app_version||'—')+'</b><br><span class="muted">'+esc(h.current_screen||'—')+'</span>';r.insertCell().textContent=String(h.channel_count||0);r.insertCell().innerHTML='<b>'+Number(h.oauth_healthy||0)+' OK</b><br><span class="'+(Number(h.oauth_errors||0)?'error':'muted')+'">'+Number(h.oauth_errors||0)+' error</span>';r.insertCell().textContent=h.credential_manager_status||'—';r.insertCell().textContent=(h.ffmpeg_status||'—')+' / '+(h.ffprobe_status||'—');r.insertCell().textContent=dt(h.last_sync_at);r.insertCell().innerHTML=esc(h.last_error_code||'—')+'<br><span class="muted">'+dt(h.last_error_at)+'</span>'});hroot.appendChild(t)
+  }
+  renderFeedFromData('vyronRecentErrors',es.slice(0,8).map(e=>({title:(vyronLicense(e.license_id)?.customer_name||'Клиент')+' • '+(e.code||e.category),body:(e.operation?e.operation+' • ':'')+(e.message||e.category),created_at:e.created_at})),8);
+
+  // Clients
+  const rows=vyronFilteredLicenses();$('vyronClientCount').textContent=rows.length+' из '+ls.length;
+  const root=$('vyronLicensesTable');root.innerHTML='';const t=table(['Клиент','User ID','Ключ','Статус','Health','До','Устройства','Последний контакт','Действия']),tb=t.tBodies[0];
+  rows.forEach(l=>{const r=tb.insertRow(),lds=vyronLicenseDevices(l.id),h=vyronHealth(l.id);r.insertCell().innerHTML='<b>'+esc(l.customer_name||'Без имени')+'</b><br><span class="muted">'+esc(l.notes||'')+'</span>';r.insertCell().innerHTML='<code style="font-size:10px">'+esc(l.user_id||'—')+'</code>';r.insertCell().innerHTML='VYRON •••• <b>'+esc(l.key_last4||'—')+'</b>';r.insertCell().innerHTML='<span class="status"><i class="dot '+statusDot(l.status)+'"></i>'+esc(String(l.status||'—').toUpperCase())+'</span>';r.insertCell().innerHTML=h?('<b>'+Number(h.channel_count||0)+' ch</b><br><span class="muted">'+Number(h.oauth_healthy||0)+' OAuth OK / '+Number(h.oauth_errors||0)+' err</span>'):'<span class="muted">нет telemetry</span>';r.insertCell().textContent=l.owner?'∞':shortDate(l.expires_at);r.insertCell().textContent=lds.length+' / '+(l.max_devices||1);r.insertCell().textContent=dt(l.last_seen_at||l.activated_at);const a=r.insertCell();a.className='actions';a.appendChild(actionBtn('Active','green',()=>vyronLicenseCmd(l.id,'active')));a.appendChild(actionBtn('Pause','warn',()=>vyronLicenseCmd(l.id,'paused')));a.appendChild(actionBtn('Revoke','danger',()=>vyronLicenseCmd(l.id,'revoked')))});root.appendChild(t);
+
+  // Devices and versions
+  const droot=$('vyronDevicesTable');droot.innerHTML='';const dtb=table(['Клиент','Устройство','Статус','Система','Версия','Последний контакт','Действия']),db=dtb.tBodies[0];
+  vyronFilteredDevices().forEach(d=>{const l=vyronLicense(d.license_id),r=db.insertRow();r.insertCell().innerHTML='<b>'+esc(l?.customer_name||'—')+'</b><br><span class="muted">•••• '+esc(l?.key_last4||'—')+'</span>';r.insertCell().innerHTML='<b>'+esc(d.device_name||'Без имени')+'</b><br><code style="font-size:10px">'+esc(d.device_id||'—')+'</code>';r.insertCell().innerHTML='<span class="status"><i class="dot '+statusDot(d.status)+'"></i>'+esc(String(d.status||'—').toUpperCase())+'</span>';r.insertCell().textContent=(d.platform||'—')+' '+(d.architecture||'');r.insertCell().textContent=d.app_version||'—';r.insertCell().textContent=dt(d.last_seen_at);const a=r.insertCell();a.className='actions';a.appendChild(actionBtn('Block','danger',()=>vyronDeviceCmd(d.id,'block')));a.appendChild(actionBtn('Unblock','green',()=>vyronDeviceCmd(d.id,'unblock')));a.appendChild(actionBtn('Detach','secondary',()=>vyronDeviceCmd(d.id,'detach')))});droot.appendChild(dtb);
+  const versions={};ds.filter(x=>x.status!=='detached').forEach(d=>{const v=d.app_version||'unknown';versions[v]=(versions[v]||0)+1});const vmax=Math.max(1,...Object.values(versions));$('vyronVersionsList').innerHTML=Object.entries(versions).length?Object.entries(versions).sort((a,b)=>b[1]-a[1]).map(([v,n])=>'<div class="versionBar"><b>'+esc(v)+'</b><div class="bar"><i style="width:'+(n/vmax*100)+'%"></i></div><span>'+n+'</span></div>').join(''):'<div class="empty">Нет подключённых устройств</div>';
+  renderFeedFromData('vyronDeviceSummary',[
+    {title:'ACTIVE',body:String(ds.filter(x=>x.status==='active').length)+' устройств',created_at:vyronData.serverTime},
+    {title:'BLOCKED',body:String(ds.filter(x=>x.status==='blocked').length)+' устройств',created_at:vyronData.serverTime},
+    {title:'DETACHED',body:String(ds.filter(x=>x.status==='detached').length)+' устройств',created_at:vyronData.serverTime}
+  ],10);
+
+  // Channels / OAuth
+  const healthy=cs.filter(x=>x.oauth_status==='healthy').length,reconnect=cs.filter(x=>x.oauth_status==='reconnect_required').length,cerr=cs.filter(x=>x.oauth_status==='error').length,unknown=cs.filter(x=>x.oauth_status==='unknown').length;
+  $('vyronChannelStats').innerHTML=[['КАНАЛЫ',cs.length,'metadata'],['HEALTHY',healthy,'OAuth'],['RECONNECT',reconnect,'нужен вход'],['ERROR',cerr,'ошибка'],['UNKNOWN',unknown,'не проверено'],['КЛИЕНТЫ',new Set(cs.map(x=>x.license_id)).size,'с каналами']].map(x=>'<div class="stat"><span>'+x[0]+'</span><b>'+x[1]+'</b><small>'+x[2]+'</small></div>').join('');
+  const croot=$('vyronChannelsTable');croot.innerHTML='';const ct=table(['Клиент','Канал','OAuth','Profile','Видео','Last sync','Ошибка']),cb=ct.tBodies[0];
+  vyronFilteredChannels().forEach(x=>{const l=vyronLicense(x.license_id),r=cb.insertRow();r.insertCell().textContent=l?.customer_name||'—';r.insertCell().innerHTML='<b>'+esc(x.channel_title||x.channel_id)+'</b><br><code style="font-size:10px">'+esc(x.channel_id)+'</code>';r.insertCell().innerHTML='<span class="status"><i class="dot '+statusDot(x.oauth_status)+'"></i>'+esc(x.oauth_status)+'</span>';r.insertCell().innerHTML='<code style="font-size:10px">'+esc(x.oauth_profile_id||'—')+'</code>';r.insertCell().innerHTML='public '+(x.public_count??'—')+'<br><span class="muted">private '+(x.private_count??'—')+' • scheduled '+(x.scheduled_count??'—')+'</span>';r.insertCell().textContent=dt(x.last_sync_at);r.insertCell().innerHTML=esc(x.last_error_code||'—')+'<br><span class="muted">'+dt(x.last_error_at)+'</span>'});croot.appendChild(ct);if(!cs.length)croot.innerHTML='<div class="empty">Канальная telemetry пока не поступала. Backend и таблицы уже готовы.</div>';
+
+  // Errors
+  const e24=es.filter(x=>Date.parse(x.created_at)>=Date.now()-86400_000),oauthE=e24.filter(x=>x.category==='oauth').length,uploadE=e24.filter(x=>x.category==='upload').length;
+  $('vyronErrorStats').innerHTML=[['ВСЕ',e24.length,'24 часа'],['OAUTH',oauthE,'24 часа'],['UPLOAD',uploadE,'24 часа']].map(x=>'<div class="stat"><span>'+x[0]+'</span><b>'+x[1]+'</b><small>'+x[2]+'</small></div>').join('');
+  const counts={};es.forEach(x=>{const k=x.code||x.category||'unknown';counts[k]=(counts[k]||0)+1});renderFeedFromData('vyronErrorCodes',Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,n])=>({title:k,body:n+' событий за 30 дней',created_at:null})),10);
+  const eroot=$('vyronErrorsTable');eroot.innerHTML='';const et=table(['Время','Клиент','Категория','Код','Операция / канал','Сообщение','Версия']),eb=et.tBodies[0];
+  vyronFilteredErrors().forEach(x=>{const r=eb.insertRow(),l=vyronLicense(x.license_id);r.insertCell().textContent=dt(x.created_at);r.insertCell().textContent=l?.customer_name||'—';r.insertCell().textContent=x.category||'—';r.insertCell().innerHTML='<b>'+esc(x.code||'—')+'</b>';r.insertCell().innerHTML=esc(x.operation||'—')+'<br><span class="muted">'+esc(x.channel_id||'')+'</span>';r.insertCell().textContent=x.message||'—';r.insertCell().textContent=x.app_version||'—'});eroot.appendChild(et);if(!es.length)eroot.innerHTML='<div class="empty">Ошибок telemetry пока нет.</div>';
+
+  // Quota
+  const today=new Date().toISOString().slice(0,10),todayRows=qs.filter(x=>x.usage_date===today),req=todayRows.reduce((a,x)=>a+Number(x.request_count||0),0),units=todayRows.reduce((a,x)=>a+Number(x.estimated_quota_units||0),0);
+  $('vyronQuotaStats').innerHTML=[['REQUESTS',req,'сегодня'],['EST. UNITS',units,'сегодня'],['ENDPOINTS',new Set(todayRows.map(x=>x.endpoint)).size,'сегодня'],['КЛИЕНТЫ',new Set(todayRows.map(x=>x.license_id)).size,'сегодня'],['ROWS',qs.length,'30 дней'],['MODE','TRACKED','без секретов']].map(x=>'<div class="stat"><span>'+x[0]+'</span><b>'+x[1]+'</b><small>'+x[2]+'</small></div>').join('');
+  const ep={};todayRows.forEach(x=>{ep[x.endpoint]||(ep[x.endpoint]={r:0,u:0});ep[x.endpoint].r+=Number(x.request_count||0);ep[x.endpoint].u+=Number(x.estimated_quota_units||0)});const maxU=Math.max(1,...Object.values(ep).map(x=>x.u));$('vyronQuotaEndpoints').innerHTML=Object.entries(ep).length?Object.entries(ep).sort((a,b)=>b[1].u-a[1].u).map(([k,v])=>'<div class="versionBar"><b>'+esc(k)+'</b><div class="bar"><i style="width:'+(v.u/maxU*100)+'%"></i></div><span>'+v.u+'</span></div>').join(''):'<div class="empty">Usage telemetry пока не поступала.</div>';
+  const perClient={};todayRows.forEach(x=>{perClient[x.license_id]=(perClient[x.license_id]||0)+Number(x.estimated_quota_units||0)});renderFeedFromData('vyronQuotaClients',Object.entries(perClient).sort((a,b)=>b[1]-a[1]).map(([id,u])=>({title:vyronLicense(id)?.customer_name||id,body:u+' estimated units сегодня',created_at:null})),20);
+
+  // Releases / infrastructure
+  $('vyronReleaseAdoption').innerHTML=Object.entries(versions).length?Object.entries(versions).sort((a,b)=>b[1]-a[1]).map(([v,n])=>'<div class="versionBar"><b>'+esc(v)+'</b><div class="bar"><i style="width:'+(n/vmax*100)+'%"></i></div><span>'+n+'</span></div>').join(''):'<div class="empty">Нет device version telemetry</div>';
+  renderFeedFromData('vyronInfra',[
+    {title:'License API',body:'vyron-client-api • ACTIVE',created_at:vyronData.serverTime},
+    {title:'Admin API',body:'vyron-admin-licenses v3 • ACTIVE',created_at:vyronData.serverTime},
+    {title:'Client telemetry',body:'vyron-client-telemetry v1 • DEPLOYED • secret fields forbidden',created_at:vyronData.serverTime},
+    {title:'Telemetry schema',body:'health + channels/OAuth + errors + API usage • RLS enabled',created_at:vyronData.serverTime},
+    {title:'Windows updater',body:'OFF until physical acceptance',created_at:vyronData.serverTime}
+  ],10);
+}
+async function vyronLicenseCmd(id,command){try{await callVyron({action:'mutate',license_id:id,command});vyronData=await callVyron({action:'dashboard'});renderVyron();toast('VYRON лицензия обновлена')}catch(e){toast(e.message,true)}}
+async function vyronDeviceCmd(id,command){try{await callVyron({action:'device',device_id:id,command});vyronData=await callVyron({action:'dashboard'});renderVyron();toast('VYRON устройство обновлено')}catch(e){toast(e.message,true)}}
+
+function renderAll(){renderStats();renderClients();renderDevices();renderRenders();renderVersions();renderNotifications();renderVyron()}
+let currentProduct='endlume';
+function showProduct(product,page){
+  currentProduct=product==='vyron'?'vyron':'endlume';
+  localStorage.setItem('scaleup-control-product',currentProduct);
+  document.querySelectorAll('[data-product]').forEach(x=>x.classList.toggle('active',x.dataset.product===currentProduct));
+  $('endlumeNav').classList.toggle('hidden',currentProduct!=='endlume');
+  $('vyronNav').classList.toggle('hidden',currentProduct!=='vyron');
+  $('productContext').textContent=currentProduct==='vyron'?'VYRON Control • Content OS':'ENDLUME Control • YT Studio PEISOV';
+  const fallback=currentProduct==='vyron'?'vyron-overview':'dashboard';
+  const saved=localStorage.getItem('scaleup-control-page-'+currentProduct)||fallback;
+  showPage(page||saved);
+}
+function showPage(name){
+  const isVyron=String(name).startsWith('vyron-');
+  if(isVyron&&currentProduct!=='vyron')currentProduct='vyron';
+  if(!isVyron&&currentProduct!=='endlume')currentProduct='endlume';
+  document.querySelectorAll('[id^="page-"]').forEach(x=>x.classList.toggle('hidden',x.id!=='page-'+name));
+  document.querySelectorAll('#endlumeNav [data-page],#vyronNav [data-page]').forEach(x=>x.classList.toggle('active',x.dataset.page===name));
+  localStorage.setItem('scaleup-control-page-'+currentProduct,name);
+  if(name==='notifications')loadNotificationSettings();
+  if(name==='security')loadSecurity();
+  if(isVyron)renderVyron();
+}
+async function licenseCmd(id,command){try{await call({action:'mutate',license_id:id,command});await load();if(currentLicenseId===id)await openClient(id);toast('Лицензия обновлена')}catch(e){toast(e.message,true)}}
+async function deviceCmd(id,command){try{await call({action:'device',device_id:id,command});await load();if(currentLicenseId)await openClient(currentLicenseId);toast('Устройство обновлено')}catch(e){toast(e.message,true)}}
+async function openClient(id){
+  currentLicenseId=id;const j=await call({action:'client_detail',license_id:id}),l=j.license,ds=j.devices||[],rs=j.renders||[];
+  $('drawerTitle').textContent=l.customer_name||'Без имени';$('drawerSub').textContent='•••• '+l.key_last4+' • '+l.status+' • '+l.plan;
+  $('drawerStats').innerHTML=[
+    ['УСТРОЙСТВА',ds.length+'/'+l.max_devices],['ONLINE',ds.filter(online).length],['РЕНДЕРЫ',j.summary.renderCount],['ВИДЕО',Number(j.summary.videoHours||0).toFixed(1)+' ч']
+  ].map(x=>'<div class="mini"><small>'+x[0]+'</small><b>'+x[1]+'</b></div>').join('');
+  $('editCustomer').value=l.customer_name||'';$('editMaxDevices').value=l.max_devices||1;$('editNotes').value=l.notes||'';
+  $('editExpires').disabled=!!l.owner;$('editExpires').value=l.expires_at?new Date(Date.parse(l.expires_at)-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16):'';
+  $('editCloudArtifacts').checked=!!l.cloud_artifacts_enabled;$('editCloudRetention').value=l.cloud_artifact_retention_days||3;
+  const cloud=data.systemSettings?.artifact_service||{};$('editCloudStatus').textContent=cloud.enabled?'R2 ONLINE':'R2 PENDING';
+  const td=$('drawerDevices');td.innerHTML='';const t=table(['Устройство','Сеть','Версия','Экран','Последний раз']),tb=t.tBodies[0];ds.forEach(d=>{const r=tb.insertRow(),st=connection(d);r.insertCell().textContent=d.device_name||d.device_id;r.insertCell().innerHTML='<span class="status"><i class="dot '+st[1]+'"></i>'+st[0]+'</span>';r.insertCell().textContent=d.app_version||'—';r.insertCell().textContent=d.current_screen||'—';r.insertCell().textContent=dt(d.last_seen_at)});td.appendChild(t);
+  const rr=$('drawerRenders');rr.innerHTML='';const rt=table(['Проект','Статус','Результат','Дата']),rb=rt.tBodies[0];rs.slice(0,20).forEach(x=>{const r=rb.insertRow();r.className='clickable';r.onclick=()=>openRender(x.id);r.insertCell().textContent=x.project_name||x.project_id||'—';r.insertCell().textContent=x.status;r.insertCell().textContent=(x.output_filename||'—')+' • '+bytes(x.output_bytes);r.insertCell().textContent=dt(x.updated_at)});rr.appendChild(rt);
+  renderFeedFromData('drawerEvents',j.notifications||[],20);renderFeedFromData('drawerAudit',(j.audit||[]).map(a=>({title:a.action,body:JSON.stringify(a.metadata||{}),created_at:a.created_at})),20);
+  const keyItems=[
+    {title:'Основной ключ',body:'ENDLUME •••• '+(l.key_last4||'—')+' • '+(l.owner?'OWNER/LIFETIME':l.plan),created_at:l.created_at},
+    ...(j.keys||[]).map(k=>({title:k.label||'Дополнительный ключ',body:'ENDLUME •••• '+(k.key_last4||'—')+' • '+(k.active?'ACTIVE':'DISABLED')+(k.last_used_at?' • использован '+dt(k.last_used_at):''),created_at:k.created_at}))
+  ];
+  renderFeedFromData('drawerKeys',keyItems,20);
+  $('rotatedKey').classList.add('hidden');$('drawerBackdrop').classList.remove('hidden');$('clientDrawer').classList.remove('hidden')
+}
+function renderFeedFromData(rootId,items,limit){const root=$(rootId);root.innerHTML=items.length?items.slice(0,limit).map(n=>'<div class="feedItem"><b>'+esc(n.title||n.action||n.event_type)+'</b><small>'+esc(n.body||JSON.stringify(n.metadata||{}))+'</small><small>'+dt(n.created_at)+'</small></div>').join(''):'<div class="empty">Нет данных</div>'}
+function closeDrawer(){$('drawerBackdrop').classList.add('hidden');$('clientDrawer').classList.add('hidden');currentLicenseId=null}
+async function openRender(id){
+  const r=(data.renders||[]).find(x=>x.id===id);if(!r)return;
+  const j=await call({action:'render_events',render_id:id});$('renderModalTitle').textContent=r.project_name||r.project_id||'Рендер';
+  const art=j.artifact;
+  const cloud=data.systemSettings?.artifact_service||{};
+  const cloudReady=!!(art&&art.status==='ready'&&cloud.enabled&&cloud.base_url);
+  const wall=r.render_wall_seconds==null?(r.duration_seconds==null?'—':'legacy '+dur(r.duration_seconds)):dur(r.render_wall_seconds);const finalDur=r.final_video_duration_seconds==null?'—':dur(r.final_video_duration_seconds);const pathLabel=r.fast_path===true?'FAST':r.fast_path===false?'GENERIC':'LEGACY';
+  $('renderModalInfo').innerHTML='<div class="grid3"><div class="mini"><small>СТАТУС</small><b>'+esc(r.status)+'</b></div><div class="mini"><small>РАЗМЕР</small><b>'+bytes(r.output_bytes)+'</b></div><div class="mini"><small>RENDER WALL</small><b>'+wall+'</b></div></div><div class="grid3"><div class="mini"><small>FINAL DURATION</small><b>'+finalDur+'</b></div><div class="mini"><small>FAST PATH</small><b>'+pathLabel+'</b></div><div class="mini"><small>AUDIO MODE</small><b>'+esc(r.audio_mode||'—')+'</b></div></div><p><b>Fast reason:</b> '+esc(r.fast_path_reason||'—')+'</p><p><b>Файл:</b> '+esc(r.output_filename||'—')+'</p><p><b>Видео:</b> '+esc(r.video_codec||r.codec||'—')+' • '+(r.width||'—')+'×'+(r.height||'—')+' @ '+(r.fps||'—')+' • '+esc(r.encoder||'—')+'</p><p><b>Аудио:</b> '+esc(r.audio_codec||'—')+'</p><p><b>Cloud artifact:</b> '+esc(art?.status||'не загружен — файл пока хранится только на компьютере клиента')+'</p><div class="actions"><button id="artifactDownloadBtn" class="btn green" '+(cloudReady?'':'disabled')+'>СКАЧАТЬ MP4</button><button id="artifactDeleteBtn" class="btn danger" '+(cloudReady?'':'disabled')+'>УДАЛИТЬ ИЗ ОБЛАКА</button></div>';
+  if(cloudReady){
+    $('artifactDownloadBtn').onclick=()=>downloadArtifact(r.id);
+    $('artifactDeleteBtn').onclick=()=>deleteArtifact(r.id);
+  }
+  renderFeedFromData('renderTimeline',(j.events||[]).map(e=>({title:e.event_type+' • '+(e.stage||''),body:(e.progress==null?'':Number(e.progress).toFixed(1)+'%')+(e.eta_seconds==null?'':' • ETA '+Math.round(e.eta_seconds)+'s'),created_at:e.created_at})),100);
+  $('renderModalBack').classList.remove('hidden')
+}
+async function downloadArtifact(renderId){
+  const cloud=data.systemSettings?.artifact_service||{};
+  if(!cloud.enabled||!cloud.base_url){toast('R2 artifact service ещё не опубликован',true);return}
+  await getSession();
+  const r=await fetch(cloud.base_url+'/v1/render-download-ticket?render_id='+encodeURIComponent(renderId),{headers:{Authorization:'Bearer '+session.access_token,apikey:PUB}});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok||!j.url){toast(j.error||'Не удалось получить ссылку',true);return}
+  window.location.href=j.url;
+}
+async function deleteArtifact(renderId){
+  const cloud=data.systemSettings?.artifact_service||{};
+  if(!cloud.enabled||!cloud.base_url)return;
+  if(!confirm('Удалить облачную копию MP4? Локальный файл клиента не удаляется.'))return;
+  await getSession();
+  const r=await fetch(cloud.base_url+'/v1/render-delete?render_id='+encodeURIComponent(renderId),{method:'DELETE',headers:{Authorization:'Bearer '+session.access_token,apikey:PUB}});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok||!j.ok){toast(j.error||'Не удалось удалить файл',true);return}
+  $('renderModalBack').classList.add('hidden');await load(false);toast('Облачная копия удалена');
+}
+async function loadNotificationSettings(){
+  try{const j=await call({action:'notification_settings',mode:'get'}),s=j.settings||{};$('notifyActivation').checked=s.notify_first_activation!==false;$('notifyStart').checked=s.notify_render_started!==false;$('notifyDone').checked=s.notify_render_completed!==false;$('notifyFail').checked=s.notify_render_failed!==false;$('notifyExpire').checked=s.notify_license_expiring!==false;$('telegramEnabled').checked=!!s.telegram_enabled;$('telegramChatId').value=s.telegram_chat_id||'';$('emailEnabled').checked=!!s.email_enabled;$('notifyEmail').value=s.email_to||'';$('notifyTransport').textContent='Control Center события работают. Telegram/Email transport: '+((j.telegramTransportConfigured||j.emailTransportConfigured)?'частично настроен':'нужны серверные credentials (bot token / mail provider).')}catch(e){toast(e.message,true)}
+}
+async function loadSecurity(){
+  try{const [s,a]=await Promise.all([call({action:'security_state'}),call({action:'audit',limit:100})]);const x=s.security;$('securityState').innerHTML='<div class="feedItem"><b>'+esc(x.email||'')+'</b><small>Последний вход: '+dt(x.lastSignInAt)+'</small><small>AAL: '+esc(x.currentAal||'—')+'</small><small>2FA: '+(x.mfaEnabled?'ВКЛЮЧЕНА':'не включена')+' • enforcement: '+(x.mfaRequired?'ON':'OFF')+'</small><small>Активных owner-сессий: '+((x.sessions||[]).length)+'</small></div>'+(x.mfaFactors||[]).map(f=>'<div class="feedItem"><b>'+esc(f.friendly_name||'TOTP')+'</b><small>'+esc(f.factor_type)+' • '+esc(f.status)+'</small></div>').join('')+(x.sessions||[]).map(v=>'<div class="feedItem"><b>Owner session</b><small>Создана: '+dt(v.created_at)+'</small><small>Обновлена: '+dt(v.updated_at||v.refreshed_at)+'</small></div>').join('');$('setupMfaBtn').textContent=x.mfaEnabled?'ДОБАВИТЬ ЕЩЁ TOTP-ФАКТОР':'ВКЛЮЧИТЬ 2FA (TOTP)';renderFeedFromData('auditFeed',(a.audit||[]).map(v=>({title:v.action,body:JSON.stringify(v.metadata||{}),created_at:v.created_at})),100)}catch(e){toast(e.message,true)}
+}
+
+document.querySelectorAll('[data-product]').forEach(b=>b.onclick=()=>showProduct(b.dataset.product));
+document.querySelectorAll('#endlumeNav [data-page],#vyronNav [data-page]').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
+document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>showPage(b.dataset.go));
+document.querySelectorAll('[data-go-vyron]').forEach(b=>b.onclick=()=>showPage(b.dataset.goVyron));
+$('clientSearch').oninput=renderClients;$('clientFilter').onchange=renderClients;$('deviceSearch').oninput=renderDevices;$('deviceFilter').onchange=renderDevices;$('renderSearch').oninput=renderRenders;$('renderFilter').onchange=renderRenders;$('vyronSearch').oninput=renderVyron;$('vyronFilter').onchange=renderVyron;$('vyronDeviceSearch').oninput=renderVyron;$('vyronDeviceFilter').onchange=renderVyron;$('vyronChannelSearch').oninput=renderVyron;$('vyronChannelFilter').onchange=renderVyron;$('vyronErrorSearch').oninput=renderVyron;$('vyronErrorFilter').onchange=renderVyron;
+$('refreshBtn').onclick=()=>load(false);$('drawerClose').onclick=closeDrawer;$('drawerBackdrop').onclick=closeDrawer;$('renderModalClose').onclick=()=>$('renderModalBack').classList.add('hidden');$('renderModalBack').onclick=e=>{if(e.target===$('renderModalBack'))$('renderModalBack').classList.add('hidden')};
+
+$('vyronCreateBtn').onclick=async()=>{const b=$('vyronCreateBtn');b.disabled=true;try{const days=Number($('vyronDays').value||30),j=await callVyron({action:'create',plan:'managed',customer_name:$('vyronCust').value.trim(),expires_at:new Date(Date.now()+days*86400000).toISOString(),max_devices:Number($('vyronMaxDevices').value||1),notes:$('vyronNotes').value.trim()});$('vyronNewKey').innerHTML='<b>Скопируй ключ сейчас — полный ключ больше не показывается:</b><br><br><code>'+esc(j.key)+'</code><br><br><button id="copyVyronKey" class="btn green small">КОПИРОВАТЬ</button>';$('vyronNewKey').classList.remove('hidden');$('copyVyronKey').onclick=()=>navigator.clipboard.writeText(j.key).then(()=>toast('VYRON ключ скопирован'));vyronData=await callVyron({action:'dashboard'});renderVyron();toast('VYRON ключ создан')}catch(e){toast(e.message,true)}finally{b.disabled=false}};
+
+$('createBtn').onclick=async()=>{const b=$('createBtn');b.disabled=true;try{const days=Number($('days').value||30),j=await call({action:'create',plan:'managed',customer_name:$('cust').value.trim(),expires_at:new Date(Date.now()+days*86400000).toISOString(),max_devices:Number($('maxDevices').value||1),notes:$('notes').value.trim()});$('newKey').innerHTML='<b>Скопируй ключ сейчас — потом полный ключ не показывается:</b><br><br><code>'+esc(j.key)+'</code><br><br><button id="copyNewKey" class="btn green small">КОПИРОВАТЬ</button>';$('newKey').classList.remove('hidden');$('copyNewKey').onclick=()=>navigator.clipboard.writeText(j.key).then(()=>toast('Ключ скопирован'));await load();toast('Уникальный ключ создан')}catch(e){toast(e.message,true)}finally{b.disabled=false}};
+$('saveClientBtn').onclick=async()=>{if(!currentLicenseId)return;try{const payload={action:'update_license',license_id:currentLicenseId,customer_name:$('editCustomer').value.trim(),notes:$('editNotes').value,max_devices:Number($('editMaxDevices').value||1),cloud_artifacts_enabled:$('editCloudArtifacts').checked,cloud_artifact_retention_days:Number($('editCloudRetention').value||3)};if(!$('editExpires').disabled&&$('editExpires').value)payload.expires_at=new Date($('editExpires').value).toISOString();await call(payload);await load();await openClient(currentLicenseId);toast('Карточка клиента сохранена')}catch(e){toast(e.message,true)}};
+$('clientActiveBtn').onclick=()=>currentLicenseId&&licenseCmd(currentLicenseId,'active');$('clientPauseBtn').onclick=()=>currentLicenseId&&licenseCmd(currentLicenseId,'paused');$('clientRevokeBtn').onclick=()=>currentLicenseId&&licenseCmd(currentLicenseId,'revoked');
+$('rotateKeyBtn').onclick=async()=>{if(!currentLicenseId||!confirm('Старый ключ перестанет работать, все текущие сессии будут закрыты. Продолжить?'))return;try{const j=await call({action:'rotate_key',license_id:currentLicenseId});$('rotatedKey').innerHTML='<b>Новый ключ — скопируй сейчас:</b><br><br><code>'+esc(j.key)+'</code><br><br><button id="copyRotated" class="btn green small">КОПИРОВАТЬ</button>';$('rotatedKey').classList.remove('hidden');$('copyRotated').onclick=()=>navigator.clipboard.writeText(j.key);await load();toast('Ключ заменён, старые сессии отозваны')}catch(e){toast(e.message,true)}};
+$('saveNotifyBtn').onclick=async()=>{try{await call({action:'notification_settings',mode:'save',telegram_enabled:$('telegramEnabled').checked,telegram_chat_id:$('telegramChatId').value.trim(),email_enabled:$('emailEnabled').checked,email_to:$('notifyEmail').value.trim(),notify_first_activation:$('notifyActivation').checked,notify_render_started:$('notifyStart').checked,notify_render_completed:$('notifyDone').checked,notify_render_failed:$('notifyFail').checked,notify_license_expiring:$('notifyExpire').checked});toast('Настройки событий сохранены');await loadNotificationSettings()}catch(e){toast(e.message,true)}};
+
+$('loginBtn').onclick=async()=>{const b=$('loginBtn');b.disabled=true;$('loginErr').textContent='';try{const r=await supabase.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(r.error)throw r.error;await bootstrap()}catch(e){$('loginErr').textContent=e.message||String(e)}finally{b.disabled=false}};
+$('logoutBtn').onclick=async()=>{await supabase.auth.signOut();showLogin()};
+$('forgotBtn').onclick=async()=>{try{const r=await supabase.auth.resetPasswordForEmail($('email').value.trim(),{redirectTo:location.origin+location.pathname});if(r.error)throw r.error;$('loginErr').className='ok';$('loginErr').textContent='Письмо отправлено. Используй только самое новое.'}catch(e){$('loginErr').className='error';$('loginErr').textContent=/rate limit/i.test(e.message)?'Лимит писем Supabase. Повтори позже или используй server reset.':e.message}};
+$('recoverySave').onclick=async()=>{try{const p=$('recoveryPassword').value;if(p.length<12)throw new Error('Минимум 12 символов');const r=await supabase.auth.updateUser({password:p});if(r.error)throw r.error;$('recoveryMsg').className='ok';$('recoveryMsg').textContent='Пароль изменён.';history.replaceState(null,'',location.pathname);await bootstrap()}catch(e){$('recoveryMsg').className='error';$('recoveryMsg').textContent=e.message}};
+$('mfaLoginBtn').onclick=async()=>{try{const r=await supabase.auth.mfa.verify({factorId:mfaLoginFactor,challengeId:mfaLoginChallenge,code:$('mfaLoginCode').value.trim()});if(r.error)throw r.error;await bootstrap()}catch(e){$('mfaLoginErr').textContent=e.message}};
+
+$('setupMfaBtn').onclick=async()=>{try{const r=await supabase.auth.mfa.enroll({factorType:'totp',friendlyName:'Owner Control'});if(r.error)throw r.error;mfaEnroll=r.data;$('mfaQrWrap').innerHTML='<img class="qr" src="'+esc(r.data.totp.qr_code)+'"><p class="muted">Secret: <code>'+esc(r.data.totp.secret)+'</code></p>';$('mfaSetupMsg').textContent='';$('mfaSetupBack').classList.remove('hidden')}catch(e){toast(e.message,true)}};
+$('mfaSetupClose').onclick=()=>$('mfaSetupBack').classList.add('hidden');
+$('mfaSetupVerify').onclick=async()=>{try{if(!mfaEnroll)throw new Error('Enrollment не начат');const ch=await supabase.auth.mfa.challenge({factorId:mfaEnroll.id});if(ch.error)throw ch.error;const vr=await supabase.auth.mfa.verify({factorId:mfaEnroll.id,challengeId:ch.data.id,code:$('mfaSetupCode').value.trim()});if(vr.error)throw vr.error;await call({action:'security_mfa',mode:'enable'});$('mfaSetupMsg').className='ok';$('mfaSetupMsg').textContent='2FA включена и будет требоваться для Owner Control.';setTimeout(()=>{$('mfaSetupBack').classList.add('hidden');loadSecurity()},900)}catch(e){$('mfaSetupMsg').className='error';$('mfaSetupMsg').textContent=e.message}};
+$('logoutAllBtn').onclick=async()=>{if(!confirm('Завершить все owner-сессии на всех браузерах?'))return;await supabase.auth.signOut({scope:'global'});showLogin()};
+
+supabase.auth.onAuthStateChange((event,s)=>{session=s;if(event==='PASSWORD_RECOVERY'){$('login').classList.remove('hidden');$('recoveryBox').classList.remove('hidden')}});
+const init=await supabase.auth.getSession();session=init.data.session;if(location.hash.includes('type=recovery')){$('login').classList.remove('hidden');$('recoveryBox').classList.remove('hidden')}else await bootstrap();
+</script>
+</body>
+</html>
