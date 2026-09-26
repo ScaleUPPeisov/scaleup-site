@@ -27,6 +27,446 @@ button{cursor:pointer}.app{max-width:1520px;margin:auto;padding:22px}.card{backg
 .toast{position:fixed;right:18px;bottom:18px;z-index:100;max-width:430px;padding:13px 15px;background:#171a31;border:1px solid #3c4169;border-radius:12px;box-shadow:0 15px 50px #0008}.error{color:#ff8496}.ok{color:#82efae}.warnText{color:#f3ba4f}.empty{padding:34px;text-align:center;color:#8b93b2}
 @media(max-width:1100px){.stats{grid-template-columns:repeat(3,1fr)}.grid2,.clientsLayout{grid-template-columns:1fr}.grid3{grid-template-columns:1fr 1fr}}
 @media(max-width:650px){.app{padding:12px}.stats{grid-template-columns:1fr 1fr}.grid3,.drawerGrid{grid-template-columns:1fr 1fr}.top{align-items:flex-start;flex-direction:column}}
+
+/* ================================================================
+   OWNER CONTROL 2.0 — INFORMATION ARCHITECTURE / UX LAYER
+   Preserves existing API, IDs and business logic.
+   ================================================================ */
+:root{
+  --oc-bg:#090b0f;
+  --oc-panel:#101319;
+  --oc-panel-2:#141820;
+  --oc-line:#242a35;
+  --oc-line-strong:#303846;
+  --oc-text:#f3f5f7;
+  --oc-muted:#8993a4;
+  --oc-soft:#b8c0cc;
+  --oc-primary:#6d6aff;
+  --oc-primary-soft:rgba(109,106,255,.12);
+  --oc-vyron:#35b7a4;
+  --oc-vyron-soft:rgba(53,183,164,.11);
+  --oc-ok:#47c97a;
+  --oc-warn:#e6ae57;
+  --oc-danger:#ef6c7b;
+}
+body{
+  background:
+    radial-gradient(circle at 80% -10%,rgba(109,106,255,.09),transparent 30%),
+    var(--oc-bg);
+  color:var(--oc-text);
+}
+.card{
+  background:var(--oc-panel);
+  border:1px solid var(--oc-line);
+  border-radius:16px;
+  box-shadow:0 14px 44px rgba(0,0,0,.18);
+}
+.btn{
+  min-height:38px;
+  border-radius:10px;
+  background:var(--oc-primary);
+  letter-spacing:-.01em;
+  transition:.16s ease;
+}
+.btn:hover:not(:disabled){transform:translateY(-1px);filter:brightness(1.06)}
+.btn.secondary,.btn.ghost{
+  background:#151922;
+  border:1px solid var(--oc-line);
+  color:#d8dde6;
+}
+.btn.green{background:#267553}
+.btn.warn{background:#76531f}
+.btn.danger{background:#873547}
+.pill,.tag{
+  border-color:var(--oc-line-strong);
+  background:#141821;
+  color:#aab3c2;
+}
+.field input,.field select,.field textarea,.filters input,.filters select{
+  background:#0b0e13!important;
+  border:1px solid var(--oc-line)!important;
+  color:var(--oc-text)!important;
+  border-radius:10px!important;
+  min-height:40px;
+}
+.field input:focus,.field select:focus,.field textarea:focus,.filters input:focus,.filters select:focus{
+  border-color:#686cff!important;
+  box-shadow:0 0 0 3px rgba(104,108,255,.10);
+}
+.app.ownerUx2{
+  max-width:none;
+  width:100%;
+  min-height:100vh;
+  padding:0;
+  display:grid;
+  grid-template-columns:268px minmax(0,1fr);
+  background:transparent;
+}
+.ownerSidebar{
+  position:sticky;
+  top:0;
+  height:100vh;
+  overflow:auto;
+  padding:20px 16px;
+  background:rgba(10,12,17,.96);
+  border-right:1px solid var(--oc-line);
+  backdrop-filter:blur(22px);
+  z-index:20;
+}
+.ownerSidebar .brand{
+  padding:4px 8px 18px;
+  border-bottom:1px solid var(--oc-line);
+}
+.ownerSidebar .logo{
+  width:38px;
+  height:38px;
+  border-radius:11px;
+  font-size:22px;
+  background:#f3f5f7;
+  color:#0c0e12;
+}
+.ownerSidebar .brand b{font-size:15px;letter-spacing:-.02em}
+.ownerSidebar .brand small{font-size:10px}
+.ownerEyebrow{
+  padding:18px 10px 7px;
+  color:#626c7d;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.ownerSidebar .productSwitch{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:7px;
+  margin:0;
+}
+.ownerSidebar .productBtn{
+  padding:11px 12px;
+  border-radius:12px;
+  border:1px solid transparent;
+  background:transparent;
+  color:#aeb6c4;
+  box-shadow:none;
+}
+.ownerSidebar .productBtn span{font-size:13px}
+.ownerSidebar .productBtn small{font-size:9px;color:#6f7889}
+.ownerSidebar .productBtn b{display:none}
+.ownerSidebar .productBtn.active{
+  background:var(--oc-primary-soft);
+  border-color:rgba(109,106,255,.26);
+  color:#fff;
+  box-shadow:none;
+}
+.ownerUx2[data-product="vyron"] .ownerSidebar .productBtn[data-product="vyron"].active{
+  background:var(--oc-vyron-soft);
+  border-color:rgba(53,183,164,.26);
+}
+.ownerSidebar .productContext{
+  margin:8px 10px 0;
+  color:#687284;
+  font-size:10px;
+}
+.ownerSidebar .nav{
+  display:grid;
+  gap:3px;
+  margin:0;
+  overflow:visible;
+  padding:0;
+}
+.ownerSidebar .nav .btn{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:10px;
+  width:100%;
+  min-height:41px;
+  padding:9px 10px;
+  border:0;
+  border-radius:10px;
+  background:transparent;
+  color:#8993a4;
+  font-size:12px;
+  font-weight:650;
+  text-align:left;
+  box-shadow:none;
+}
+.ownerSidebar .nav .btn:hover{
+  background:#141820;
+  color:#eef1f6;
+  transform:none;
+}
+.ownerSidebar .nav .btn.active{
+  background:var(--oc-primary-soft);
+  color:#fff;
+  border:0;
+}
+.ownerUx2[data-product="vyron"] .ownerSidebar .vyronNav .btn.active{
+  background:var(--oc-vyron-soft);
+  color:#e7fffb;
+}
+.navIcon{
+  width:23px;
+  height:23px;
+  display:grid;
+  place-items:center;
+  border-radius:7px;
+  background:#171b23;
+  color:#a6afbd;
+  font-size:12px;
+  flex:0 0 23px;
+}
+.ownerSidebar .nav .active .navIcon{
+  background:rgba(255,255,255,.08);
+  color:#fff;
+}
+.ownerSidebarFooter{
+  margin-top:22px;
+  padding:13px 11px;
+  border:1px solid var(--oc-line);
+  border-radius:12px;
+  background:#0d1016;
+}
+.ownerSidebarFooter b{display:block;font-size:11px}
+.ownerSidebarFooter small{display:block;color:#6f7889;font-size:10px;margin-top:4px;line-height:1.45}
+.ownerWorkspace{
+  min-width:0;
+  width:100%;
+  padding:18px 26px 40px;
+}
+.ownerWorkspace>.top{
+  min-height:46px;
+  margin:0 0 14px;
+  justify-content:flex-end;
+  border-bottom:1px solid var(--oc-line);
+  padding-bottom:14px;
+}
+.ownerWorkspace>.top>.brand{display:none}
+.ownerWorkspace .topActions{width:100%;justify-content:flex-end}
+.ownerWorkspace #updated{
+  margin-right:auto;
+  background:transparent;
+  border:0;
+  padding-left:0;
+}
+.workspaceHeader{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:20px;
+  padding:8px 0 20px;
+}
+.workspaceBreadcrumb{
+  display:block;
+  margin-bottom:7px;
+  color:#697386;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.workspaceHeader h1{
+  margin:0;
+  font-size:28px;
+  line-height:1.05;
+  letter-spacing:-.04em;
+}
+.workspaceHeader p{
+  max-width:760px;
+  margin:7px 0 0;
+  color:var(--oc-muted);
+  font-size:12px;
+  line-height:1.55;
+}
+.workspaceStatus{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+  border:1px solid var(--oc-line);
+  border-radius:10px;
+  background:#0d1016;
+  color:#9ca6b5;
+  font-size:11px;
+  white-space:nowrap;
+}
+.workspaceStatus i{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--oc-ok);
+  box-shadow:0 0 10px rgba(71,201,122,.45);
+}
+.attentionCenter{
+  margin:0 0 14px;
+  padding:14px;
+  border:1px solid var(--oc-line);
+  border-radius:15px;
+  background:linear-gradient(180deg,#10141b,#0d1016);
+}
+.attentionHeader{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  margin-bottom:10px;
+}
+.attentionHeader b{font-size:13px}
+.attentionHeader span{font-size:10px;color:#707a8b}
+.attentionGrid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+.attentionItem{
+  width:100%;
+  border:1px solid var(--oc-line);
+  border-radius:12px;
+  background:#12161e;
+  color:var(--oc-text);
+  padding:11px 12px;
+  text-align:left;
+  cursor:pointer;
+  transition:.15s ease;
+}
+.attentionItem:hover{border-color:#3a4351;background:#151a23}
+.attentionItem strong{display:block;font-size:12px}
+.attentionItem small{display:block;margin-top:4px;color:#7f8999;font-size:10px;line-height:1.4}
+.attentionItem.ok{cursor:default;border-color:rgba(71,201,122,.22);background:rgba(71,201,122,.05)}
+.attentionItem.warn{border-color:rgba(230,174,87,.24)}
+.attentionItem.danger{border-color:rgba(239,108,123,.28)}
+.attentionItem.action strong{color:#dce0ff}
+.quickActions{
+  display:flex;
+  gap:7px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+.quickActions .btn{min-height:32px;padding:6px 10px;font-size:10px}
+.stats{
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:8px;
+  margin:0 0 14px;
+}
+.stat{
+  min-height:104px;
+  padding:14px!important;
+  background:var(--oc-panel)!important;
+  border:1px solid var(--oc-line)!important;
+  border-radius:14px!important;
+  box-shadow:none!important;
+}
+.stat small,.stat span{
+  color:#707a8b!important;
+  font-size:9px!important;
+  font-weight:750;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+}
+.stat b{
+  font-size:24px!important;
+  margin-top:8px!important;
+  letter-spacing:-.04em;
+}
+.stat em,.stat small:last-child{
+  margin-top:4px;
+  color:#697385!important;
+  font-size:10px!important;
+  font-style:normal;
+  text-transform:none;
+  letter-spacing:0;
+}
+.grid2{gap:10px}
+.grid3{gap:9px}
+.card.pad{padding:15px}
+.sectionTitle{margin-bottom:11px}
+.sectionTitle h2{font-size:15px;letter-spacing:-.02em}
+.sectionTitle h3{font-size:13px}
+.feed{gap:6px}
+.feedItem{
+  padding:10px 11px;
+  background:#0d1016;
+  border:1px solid #202632;
+  border-radius:10px;
+}
+.feedItem b{font-size:11px}
+.feedItem small{font-size:10px;color:#788294;line-height:1.45}
+.tableWrap{
+  border:1px solid var(--oc-line);
+  border-radius:12px;
+  background:#0c0f14;
+}
+.tbl th,.tbl td{
+  padding:10px 9px;
+  border-bottom:1px solid #1c222c;
+}
+.tbl th{
+  background:#10141a;
+  color:#717b8c;
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.tbl td{font-size:11px;color:#cfd5df}
+.tbl tr.clickable:hover{background:#131820}
+.clientsLayout{grid-template-columns:310px minmax(0,1fr);gap:10px}
+.clientsLayout>aside{align-self:start;position:sticky;top:18px}
+.drawer{
+  width:min(820px,96vw);
+  background:#0d1016;
+  border-left:1px solid var(--oc-line);
+}
+.drawer .card{box-shadow:none}
+.modal{background:#0e1117}
+.login{
+  margin:10vh auto;
+  padding:28px;
+  background:#0e1117;
+  border-color:var(--oc-line);
+  box-shadow:0 30px 100px rgba(0,0,0,.35);
+}
+.login .logo{background:#f3f5f7;color:#0b0d11}
+.login h1,.login h2{letter-spacing:-.04em}
+.mobileNavBtn{display:none}
+.advancedCard{
+  opacity:.86;
+}
+.advancedCard .sectionTitle h2:after{
+  content:" · технический раздел";
+  color:#5f6979;
+  font-size:9px;
+  font-weight:500;
+}
+@media(max-width:1250px){
+  .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .attentionGrid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:940px){
+  .app.ownerUx2{grid-template-columns:1fr}
+  .ownerSidebar{
+    position:fixed;
+    left:0;top:0;bottom:0;
+    width:268px;
+    transform:translateX(-102%);
+    transition:transform .2s ease;
+    box-shadow:24px 0 70px rgba(0,0,0,.45);
+  }
+  .ownerUx2.mobileNavOpen .ownerSidebar{transform:translateX(0)}
+  .ownerWorkspace{padding:14px}
+  .mobileNavBtn{display:inline-flex}
+  .workspaceHeader{align-items:flex-start}
+  .workspaceStatus{display:none}
+  .clientsLayout{grid-template-columns:1fr}
+  .clientsLayout>aside{position:static}
+}
+@media(max-width:680px){
+  .ownerWorkspace{padding:12px}
+  .workspaceHeader h1{font-size:23px}
+  .workspaceHeader p{font-size:11px}
+  .attentionGrid,.stats,.grid2,.grid3{grid-template-columns:1fr!important}
+  .topActions{gap:6px}
+  .topActions .btn{font-size:10px;padding:8px 9px}
+  .tbl{min-width:820px}
+}
+
 </style>
 </head>
 <body>
@@ -777,6 +1217,189 @@ $('setupMfaBtn').onclick=async()=>{try{const r=await supabase.auth.mfa.enroll({f
 $('mfaSetupClose').onclick=()=>$('mfaSetupBack').classList.add('hidden');
 $('mfaSetupVerify').onclick=async()=>{try{if(!mfaEnroll)throw new Error('Enrollment не начат');const ch=await supabase.auth.mfa.challenge({factorId:mfaEnroll.id});if(ch.error)throw ch.error;const vr=await supabase.auth.mfa.verify({factorId:mfaEnroll.id,challengeId:ch.data.id,code:$('mfaSetupCode').value.trim()});if(vr.error)throw vr.error;await call({action:'security_mfa',mode:'enable'});$('mfaSetupMsg').className='ok';$('mfaSetupMsg').textContent='2FA включена и будет требоваться для Owner Control.';setTimeout(()=>{$('mfaSetupBack').classList.add('hidden');loadSecurity()},900)}catch(e){$('mfaSetupMsg').className='error';$('mfaSetupMsg').textContent=e.message}};
 $('logoutAllBtn').onclick=async()=>{if(!confirm('Завершить все owner-сессии на всех браузерах?'))return;await supabase.auth.signOut({scope:'global'});showLogin()};
+
+
+/* OWNER CONTROL 2.0 — UX shell; business logic above remains authoritative. */
+const ownerPageMeta={
+  dashboard:['Главная','Состояние ENDLUME, активность клиентов и то, что требует внимания прямо сейчас.'],
+  clients:['Клиенты и лицензии','Выдача ключей, сроки доступа, устройства и управление лицензиями ENDLUME.'],
+  devices:['Устройства','Кто сейчас в сети, на какой версии работает и какие устройства требуют проверки.'],
+  renders:['Рендеры','Текущие задачи, завершённые видео, ошибки и фактическое время рендера.'],
+  versions:['Обновления','Распределение версий ENDLUME и клиенты, которым требуется обновление.'],
+  notifications:['Уведомления','Какие события отправлять владельцу и куда доставлять уведомления.'],
+  security:['Безопасность','2FA, owner-сессии и журнал административных действий.'],
+  'vyron-overview':['Главная','Общее состояние VYRON: клиенты, каналы, OAuth, ошибки и telemetry.'],
+  'vyron-clients':['Клиенты и лицензии','Управление доступом VYRON, сроками лицензий и привязанными устройствами.'],
+  'vyron-devices':['Устройства','Версии VYRON, привязки, статусы и управление активными сессиями.'],
+  'vyron-channels':['YouTube и OAuth','Состояние каналов и OAuth-профилей без отображения секретов и токенов.'],
+  'vyron-errors':['Ошибки','Инциденты VYRON за последние 24 часа с фильтрацией по категории и коду.'],
+  'vyron-quota':['YouTube API','Использование API по endpoint и клиентам за текущий период.'],
+  'vyron-releases':['Релизы','Production-сборка Windows, adoption, updater и инфраструктура Control Center.']
+};
+const ownerNavMeta={
+  dashboard:['⌂','Главная'],
+  clients:['◎','Клиенты'],
+  devices:['▣','Устройства'],
+  renders:['▶','Рендеры'],
+  versions:['↻','Обновления'],
+  notifications:['◉','Уведомления'],
+  security:['◇','Безопасность'],
+  'vyron-overview':['⌂','Главная'],
+  'vyron-clients':['◎','Клиенты'],
+  'vyron-devices':['▣','Устройства'],
+  'vyron-channels':['◌','YouTube / OAuth'],
+  'vyron-errors':['!','Ошибки'],
+  'vyron-quota':['∿','API лимиты'],
+  'vyron-releases':['↟','Релизы']
+};
+function ownerGo(product,page){
+  showProduct(product,page);
+  if($('mainApp'))$('mainApp').classList.remove('mobileNavOpen');
+}
+function ownerIssue(title,body,tone,product,page){
+  return '<button class="attentionItem '+tone+'" data-owner-product="'+product+'" data-owner-page="'+page+'"><strong>'+esc(title)+'</strong><small>'+esc(body)+'</small></button>';
+}
+function updateOwnerHeader(name){
+  const meta=ownerPageMeta[name]||['Owner Control','Управление системами ENDLUME и VYRON.'];
+  if($('workspaceTitle'))$('workspaceTitle').textContent=meta[0];
+  if($('workspaceDesc'))$('workspaceDesc').textContent=meta[1];
+  if($('workspaceCrumb'))$('workspaceCrumb').textContent='OWNER / '+(String(name).startsWith('vyron-')?'VYRON':'ENDLUME');
+  if($('mainApp'))$('mainApp').dataset.product=String(name).startsWith('vyron-')?'vyron':'endlume';
+}
+function installOwnerUx2(){
+  const app=$('mainApp');
+  if(!app||$('ownerSidebar'))return;
+  app.classList.add('ownerUx2');
+
+  const oldTop=app.querySelector(':scope > .top');
+  const brand=oldTop?.querySelector('.brand');
+  const productSwitch=$('productSwitch');
+  const productContext=app.querySelector(':scope > .productContext');
+  const endlumeNav=$('endlumeNav');
+  const vyronNav=$('vyronNav');
+  const sections=[...app.querySelectorAll(':scope > section')];
+
+  const sidebar=document.createElement('aside');
+  sidebar.id='ownerSidebar';
+  sidebar.className='ownerSidebar';
+  if(brand)sidebar.appendChild(brand);
+  const prodLabel=document.createElement('div');
+  prodLabel.className='ownerEyebrow';
+  prodLabel.textContent='Продукт';
+  sidebar.appendChild(prodLabel);
+  sidebar.appendChild(productSwitch);
+  sidebar.appendChild(productContext);
+  const navLabel=document.createElement('div');
+  navLabel.className='ownerEyebrow';
+  navLabel.textContent='Разделы';
+  sidebar.appendChild(navLabel);
+  sidebar.appendChild(endlumeNav);
+  sidebar.appendChild(vyronNav);
+  const foot=document.createElement('div');
+  foot.className='ownerSidebarFooter';
+  foot.innerHTML='<b>Owner Control 2.0</b><small>Рабочая логика API сохранена. Интерфейс перестроен вокруг состояния системы и действий.</small>';
+  sidebar.appendChild(foot);
+
+  document.querySelectorAll('#endlumeNav [data-page],#vyronNav [data-page]').forEach(function(b){
+    const m=ownerNavMeta[b.dataset.page];
+    if(m)b.innerHTML='<span class="navIcon">'+m[0]+'</span><span>'+m[1]+'</span>';
+  });
+
+  const workspace=document.createElement('main');
+  workspace.id='ownerWorkspace';
+  workspace.className='ownerWorkspace';
+  if(oldTop){
+    const menu=document.createElement('button');
+    menu.className='btn secondary mobileNavBtn';
+    menu.textContent='Меню';
+    menu.onclick=function(){app.classList.toggle('mobileNavOpen')};
+    oldTop.querySelector('.topActions')?.prepend(menu);
+    workspace.appendChild(oldTop);
+  }
+
+  const header=document.createElement('div');
+  header.className='workspaceHeader';
+  header.innerHTML='<div><span id="workspaceCrumb" class="workspaceBreadcrumb">OWNER / ENDLUME</span><h1 id="workspaceTitle">Главная</h1><p id="workspaceDesc">Состояние системы и действия.</p></div><div class="workspaceStatus"><i></i><span>Control Center online</span></div>';
+  workspace.appendChild(header);
+  sections.forEach(function(s){workspace.appendChild(s)});
+  app.appendChild(sidebar);
+  app.appendChild(workspace);
+
+  const advanced=[...document.querySelectorAll('#page-vyron-channels .card')].find(function(c){
+    return c.querySelector('h2')?.textContent.includes('tenant isolation');
+  });
+  if(advanced)advanced.classList.add('advancedCard');
+
+  const keyTitle=$('page-clients')?.querySelector('aside h2');
+  if(keyTitle)keyTitle.textContent='Выдать лицензию';
+  if($('createBtn'))$('createBtn').textContent='СОЗДАТЬ КЛЮЧ';
+  const vyronKeyTitle=$('page-vyron-clients')?.querySelector('aside h2');
+  if(vyronKeyTitle)vyronKeyTitle.textContent='Выдать лицензию VYRON';
+  if($('vyronCreateBtn'))$('vyronCreateBtn').textContent='СОЗДАТЬ КЛЮЧ';
+
+  document.addEventListener('click',function(e){
+    if(app.classList.contains('mobileNavOpen')&&!e.target.closest('#ownerSidebar')&&!e.target.closest('.mobileNavBtn')){
+      app.classList.remove('mobileNavOpen');
+    }
+  });
+}
+function renderOwnerAttention(){
+  const ehost=$('page-dashboard');
+  if(ehost){
+    let box=$('endlumeAttention');
+    if(!box){box=document.createElement('div');box.id='endlumeAttention';box.className='attentionCenter';ehost.prepend(box)}
+    const s=data.stats||{};
+    const versions=Object.entries(data.versions||{}).sort(function(a,b){return b[1]-a[1]});
+    const latest=versions[0]?.[0]||null;
+    const old=latest?(data.devices||[]).filter(function(d){return d.app_version&&d.app_version!==latest}).length:0;
+    const issues=[];
+    if(Number(s.failedToday||0)>0)issues.push(ownerIssue('Ошибки рендера: '+s.failedToday,'Открой рендеры и проверь упавшие задачи.','danger','endlume','renders'));
+    if(Number(s.expiring7d||0)>0)issues.push(ownerIssue('Истекают лицензии: '+s.expiring7d,'Срок закончится в ближайшие 7 дней.','warn','endlume','clients'));
+    if(old>0)issues.push(ownerIssue('Старая версия: '+old,'Есть устройства не на самой распространённой текущей версии.','warn','endlume','versions'));
+    if(!issues.length)issues.push('<div class="attentionItem ok"><strong>Критичных проблем нет</strong><small>По текущим данным ENDLUME не требует срочного вмешательства.</small></div>');
+    box.innerHTML='<div class="attentionHeader"><b>Что требует внимания</b><span>приоритеты владельца</span></div><div class="attentionGrid">'+issues.join('')+'</div><div class="quickActions"><button class="btn secondary" data-owner-product="endlume" data-owner-page="clients">+ Выдать лицензию</button><button class="btn secondary" data-owner-product="endlume" data-owner-page="renders">Активные рендеры</button><button class="btn secondary" data-owner-product="endlume" data-owner-page="versions">Проверить обновления</button></div>';
+  }
+
+  const vhost=$('page-vyron-overview');
+  if(vhost){
+    let box=$('vyronAttention');
+    if(!box){box=document.createElement('div');box.id='vyronAttention';box.className='attentionCenter';vhost.prepend(box)}
+    const s=vyronData.stats||{};
+    const issues=[];
+    if(vyronLoadError)issues.push(ownerIssue('VYRON API недоступен','Ошибка загрузки: '+vyronLoadError,'danger','vyron','vyron-errors'));
+    if(Number(s.oauthErrors||0)>0)issues.push(ownerIssue('OAuth требует внимания: '+s.oauthErrors,'Есть профили с reconnect_required или error.','danger','vyron','vyron-channels'));
+    if(Number(s.errors24h||0)>0)issues.push(ownerIssue('Ошибки за 24 часа: '+s.errors24h,'Открой журнал инцидентов и проверь повторяющиеся коды.','warn','vyron','vyron-errors'));
+    if(Number(s.blockedDevices||0)>0)issues.push(ownerIssue('Заблокированные устройства: '+s.blockedDevices,'Проверь привязки и активные сессии клиентов.','warn','vyron','vyron-devices'));
+    if(!issues.length)issues.push('<div class="attentionItem ok"><strong>Критичных проблем нет</strong><small>По текущим данным VYRON не требует срочного вмешательства.</small></div>');
+    box.innerHTML='<div class="attentionHeader"><b>Что требует внимания</b><span>OAuth · ошибки · устройства</span></div><div class="attentionGrid">'+issues.join('')+'</div><div class="quickActions"><button class="btn secondary" data-owner-product="vyron" data-owner-page="vyron-clients">+ Выдать лицензию</button><button class="btn secondary" data-owner-product="vyron" data-owner-page="vyron-channels">YouTube / OAuth</button><button class="btn secondary" data-owner-product="vyron" data-owner-page="vyron-errors">Журнал ошибок</button></div>';
+  }
+
+  document.querySelectorAll('[data-owner-product][data-owner-page]').forEach(function(b){
+    b.onclick=function(){ownerGo(b.dataset.ownerProduct,b.dataset.ownerPage)};
+  });
+}
+
+const ownerOriginalShowApp=showApp;
+showApp=function(){
+  ownerOriginalShowApp();
+  installOwnerUx2();
+};
+const ownerOriginalShowPage=showPage;
+showPage=function(name){
+  ownerOriginalShowPage(name);
+  updateOwnerHeader(name);
+};
+const ownerOriginalShowProduct=showProduct;
+showProduct=function(product,page){
+  ownerOriginalShowProduct(product,page);
+  if($('mainApp'))$('mainApp').dataset.product=currentProduct;
+};
+const ownerOriginalRenderAll=renderAll;
+renderAll=function(){
+  ownerOriginalRenderAll();
+  renderOwnerAttention();
+};
+
 
 supabase.auth.onAuthStateChange((event,s)=>{session=s;if(event==='PASSWORD_RECOVERY'){$('login').classList.remove('hidden');$('recoveryBox').classList.remove('hidden')}});
 const init=await supabase.auth.getSession();session=init.data.session;if(location.hash.includes('type=recovery')){$('login').classList.remove('hidden');$('recoveryBox').classList.remove('hidden')}else await bootstrap();
