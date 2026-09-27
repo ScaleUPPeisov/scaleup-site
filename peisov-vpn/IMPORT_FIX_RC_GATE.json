@@ -1,0 +1,15 @@
+{
+  "product": "PEISOV VPN",
+  "candidate": "0.1.2 Owner Preview",
+  "result": "PASS",
+  "ios_native_file_input": "PASS",
+  "conf_accept_filter_removed": "PASS",
+  "file_reader_fallback": "PASS",
+  "cache_busting": "PASS",
+  "service_worker_refresh": "PASS",
+  "meduza_parser": "PASS",
+  "encrypted_vault": "PASS",
+  "mobile_browser_smoke": "PASS",
+  "production_released": false,
+  "checked_at": "2026-09-27T07:29:10Z"
+}
