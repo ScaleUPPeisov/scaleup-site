@@ -68,12 +68,18 @@ jobs:
           grep -q 'apple-mobile-web-app-status-bar-style' /tmp/home.html
           grep -q 'apple-mobile-web-app-title' /tmp/home.html
           grep -q 'apple-touch-icon' /tmp/home.html
-          grep -q 'peisov-vpn-v0.1.1' /tmp/sw.js
+          grep -q 'peisov-vpn-v0.1.2' /tmp/sw.js
           grep -q 'api64.ipify.org' /tmp/app.js
           grep -q 'importMeduzaBtn' /tmp/home.html
           grep -q 'PeisovMeduzaConfig' /tmp/meduza-config.js
           grep -q 'AES-GCM' /tmp/meduza-config.js
           grep -q 'PBKDF2' /tmp/meduza-config.js
+          grep -q 'file-picker' /tmp/home.html
+          grep -q 'id="meduzaConfigFile"' /tmp/home.html
+          grep -q 'new FileReader()' /tmp/app.js
+          grep -q "sw.js?v=0.1.2" /tmp/app.js
+          grep -q "updateViaCache:'none'" /tmp/app.js
+          grep -q 'controllerchange' /tmp/app.js
           grep -q 'expected&&normalizeIp(ip)===normalizeIp(expected)' /tmp/app.js
           grep -q "location.replace('../?mode=owner')" /tmp/owner.html
 
@@ -136,7 +142,7 @@ jobs:
           cat > peisov-vpn/PRODUCTION_GATE.json <<JSON
           {
             "product": "PEISOV VPN",
-            "version": "0.1.1 Owner Preview",
+            "version": "0.1.2 Owner Preview",
             "production_url": "$APP_URL",
             "deployment_root": "$PAGE_URL",
             "production_deployed": true,
@@ -151,6 +157,10 @@ jobs:
             "owner_panel": "PASS",
             "meduza_config_import": "PASS",
             "encrypted_config_vault": "PASS",
+            "ios_native_file_picker": "PASS",
+            "file_reader_fallback": "PASS",
+            "cache_busting": "PASS",
+            "service_worker_refresh": "PASS",
             "mobile_render_390x844": "PASS",
             "mobile_render_393x852": "PASS",
             "mobile_render_430x932": "PASS",

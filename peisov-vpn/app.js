@@ -217,20 +217,38 @@
     };
   }
 
-  async function importMeduzaFile(file){
-    if(!file)return;
-    if(!/\.conf$/i.test(file.name)){toast('Нужен файл .conf');return}
-    try{
-      let raw=await file.text();
-      const parsed=meduzaApi().parseConf(raw);
-      reviewMeduzaImport(file,raw,parsed);
-    }catch(err){toast(err?.message||'Не удалось прочитать Meduza config')}
+  async function readTextFile(file){
+    if(file?.text)return await file.text();
+    return await new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(String(reader.result||''));
+      reader.onerror=()=>reject(reader.error||new Error('File read failed'));
+      reader.readAsText(file);
+    });
   }
 
-  $('#importMeduzaBtn').addEventListener('click',()=>$('#meduzaConfigFile').click());
+  async function importMeduzaFile(file){
+    if(!file)return;
+    if(!/\.conf$/i.test(file.name)){toast('Выберите файл Meduza с расширением .conf');return}
+    try{
+      const api=meduzaApi();
+      if(!api?.parseConf)throw new Error('Модуль импорта не загрузился. Перезапустите PEISOV VPN.');
+      toast('Читаю Meduza .conf…');
+      let raw=await readTextFile(file);
+      if(!raw.trim())throw new Error('Файл .conf пустой');
+      const parsed=api.parseConf(raw);
+      reviewMeduzaImport(file,raw,parsed);
+    }catch(err){
+      console.error('Meduza config import failed',err);
+      toast(err?.message||'Не удалось прочитать Meduza config');
+    }
+  }
+
   $('#meduzaConfigFile').addEventListener('change',async e=>{
-    const file=e.target.files?.[0];e.target.value='';
-    if(file)await importMeduzaFile(file);
+    const input=e.currentTarget;
+    const file=input.files?.[0];
+    try{if(file)await importMeduzaFile(file)}
+    finally{input.value=''}
   });
 
   $('#addServerBtn').addEventListener('click',()=>openServerEditor(null));
@@ -280,7 +298,22 @@
   $('#devicesRow').addEventListener('click',()=>{openSheet(`<h3>My device</h3><div class="sheet-copy">${esc(navigator.userAgent)}<br><br>Preview использует только локальное random identity и не делает агрессивный fingerprinting.</div><button class="secondary" id="closeDevice">Close</button>`);$('#closeDevice').onclick=closeSheet});
 
   function installHint(){const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;const ios=/iPad|iPhone|iPod/.test(navigator.userAgent);const safari=/Safari/.test(navigator.userAgent)&&!/CriOS|FxiOS|EdgiOS/.test(navigator.userAgent);$('#installHelp').classList.toggle('show',ios&&safari&&!standalone)}
-  if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}
+  if('serviceWorker' in navigator){
+    addEventListener('load',async()=>{
+      let reloading=false;
+      navigator.serviceWorker.addEventListener('controllerchange',()=>{
+        if(reloading)return;
+        reloading=true;
+        location.reload();
+      });
+      try{
+        let reg;
+        try{reg=await navigator.serviceWorker.register('./sw.js?v=0.1.2',{updateViaCache:'none'})}
+        catch{reg=await navigator.serviceWorker.register('./sw.js?v=0.1.2')}
+        reg.update?.().catch?.(()=>{});
+      }catch{}
+    });
+  }
   if(new URLSearchParams(location.search).get('mode')==='owner')openOwner();
   renderAll();installHint();checkConnection();timer=setInterval(updateSession,1000);setInterval(()=>checkConnection(false),60000);
 })();
