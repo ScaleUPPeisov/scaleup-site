@@ -56,6 +56,7 @@ jobs:
           get200 "${APP_URL}manifest.webmanifest" /tmp/manifest.json
           get200 "${APP_URL}sw.js" /tmp/sw.js
           get200 "${APP_URL}app.js" /tmp/app.js
+          get200 "${APP_URL}meduza-config.js" /tmp/meduza-config.js
           get200 "${APP_URL}apple-touch-icon.png" /tmp/apple.png
           get200 "${APP_URL}favicon.png" /tmp/favicon.png
           get200 "${APP_URL}assets/icons/icon-192.png" /tmp/icon192.png
@@ -67,8 +68,12 @@ jobs:
           grep -q 'apple-mobile-web-app-status-bar-style' /tmp/home.html
           grep -q 'apple-mobile-web-app-title' /tmp/home.html
           grep -q 'apple-touch-icon' /tmp/home.html
-          grep -q 'peisov-vpn-v0.1.0' /tmp/sw.js
+          grep -q 'peisov-vpn-v0.1.1' /tmp/sw.js
           grep -q 'api64.ipify.org' /tmp/app.js
+          grep -q 'importMeduzaBtn' /tmp/home.html
+          grep -q 'PeisovMeduzaConfig' /tmp/meduza-config.js
+          grep -q 'AES-GCM' /tmp/meduza-config.js
+          grep -q 'PBKDF2' /tmp/meduza-config.js
           grep -q 'expected&&normalizeIp(ip)===normalizeIp(expected)' /tmp/app.js
           grep -q "location.replace('../?mode=owner')" /tmp/owner.html
 
@@ -131,7 +136,7 @@ jobs:
           cat > peisov-vpn/PRODUCTION_GATE.json <<JSON
           {
             "product": "PEISOV VPN",
-            "version": "0.1.0 Owner Preview",
+            "version": "0.1.1 Owner Preview",
             "production_url": "$APP_URL",
             "deployment_root": "$PAGE_URL",
             "production_deployed": true,
@@ -144,6 +149,8 @@ jobs:
             "public_ip_endpoint": "PASS",
             "false_protected_source_gate": "PASS",
             "owner_panel": "PASS",
+            "meduza_config_import": "PASS",
+            "encrypted_config_vault": "PASS",
             "mobile_render_390x844": "PASS",
             "mobile_render_393x852": "PASS",
             "mobile_render_430x932": "PASS",

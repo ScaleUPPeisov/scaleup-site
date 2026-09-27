@@ -1,0 +1,163 @@
+name: PEISOV VPN Meduza Config RC
+
+on:
+  push:
+    branches:
+      - peisov-vpn/meduza-conf-import-rc
+    paths:
+      - 'peisov-vpn/**'
+      - '.github/workflows/peisov-vpn-meduza-conf-rc.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Syntax checks
+        run: |
+          node --check peisov-vpn/meduza-config.js
+          node --check peisov-vpn/app.js
+          grep -q 'id="importMeduzaBtn"' peisov-vpn/index.html
+          grep -q 'id="meduzaConfigFile"' peisov-vpn/index.html
+          grep -q './meduza-config.js' peisov-vpn/index.html
+          grep -q "peisov-vpn-v0.1.1" peisov-vpn/sw.js
+          grep -q "u('meduza-config.js')" peisov-vpn/sw.js
+
+      - name: Parser and encrypted vault tests
+        run: |
+          cat > /tmp/test-meduza.cjs <<'NODE'
+          const fs=require('node:fs');
+          const vm=require('node:vm');
+          const {webcrypto}=require('node:crypto');
+          const {TextEncoder,TextDecoder}=require('node:util');
+
+          global.window=globalThis;
+          global.crypto=webcrypto;
+          global.TextEncoder=TextEncoder;
+          global.TextDecoder=TextDecoder;
+          global.btoa=s=>Buffer.from(s,'binary').toString('base64');
+          global.atob=s=>Buffer.from(s,'base64').toString('binary');
+
+          const store=new Map();
+          global.localStorage={
+            getItem:k=>store.has(k)?store.get(k):null,
+            setItem:(k,v)=>store.set(k,String(v)),
+            removeItem:k=>store.delete(k)
+          };
+
+          vm.runInThisContext(fs.readFileSync('peisov-vpn/meduza-config.js','utf8'),{filename:'meduza-config.js'});
+          const api=global.PeisovMeduzaConfig;
+          if(!api)throw new Error('API missing');
+
+          const conf=`# Meduza; protocol id: meduza
+          [Interface]
+          PrivateKey = PRIVATE_SECRET_SHOULD_NEVER_BE_PLAINTEXT_IN_VAULT
+          Address = 10.14.14.2/32, fd00:1414::2/128
+          DNS = 1.1.1.1, 1.0.0.1
+          MTU = 1280
+          Jc = 5
+          Jmin = 37
+          Jmax = 167
+          S1 = 12
+          S2 = 12
+          S3 = 12
+          S4 = 12
+          H1 = 1
+          H2 = 2
+          H3 = 3
+          H4 = 4
+          RekeyAfterTime = 101-115
+          RekeyTimeout = 4-7
+          RejectAfterTime = 148-171
+          KeepaliveTimeout = 11-14
+          MaxHandshakeAttempts = 6-7
+          RandomTrailers = on
+          DisableCookies = on
+          HeaderProtectionKey = HEADER_SECRET_SHOULD_NEVER_BE_PLAINTEXT_IN_VAULT
+          I1 = <b 0xce><r 15>
+          I2 = <b 0x47><r 8>
+
+          [Peer]
+          PublicKey = PUBLIC_KEY
+          PresharedKey = PSK_SECRET_SHOULD_NEVER_BE_PLAINTEXT_IN_VAULT
+          AllowedIPs = 0.0.0.0/0, ::/0
+          Endpoint = 203.0.113.10:443
+          PersistentKeepalive = 14-17
+          `;
+
+          const parsed=api.parseConf(conf);
+          if(parsed.protocolId!=='meduza')throw new Error('protocol id');
+          if(parsed.endpoint!=='203.0.113.10:443')throw new Error('endpoint');
+          if(parsed.address!=='10.14.14.2/32, fd00:1414::2/128')throw new Error('address');
+          if(parsed.mtu!=='1280')throw new Error('mtu');
+          if(parsed.secureFieldCount!==3)throw new Error('secure field count');
+          if(parsed.tuning.HeaderProtectionKey)throw new Error('secret leaked into tuning');
+
+          (async()=>{
+            await api.storeEncrypted('srv_test',conf,'correct horse battery staple',{fileName:'Meduza.conf',protocolId:'meduza'});
+            const vault=store.get('peisov-vpn-secure-config-vault-v1');
+            for(const secret of ['PRIVATE_SECRET','HEADER_SECRET','PSK_SECRET']){
+              if(vault.includes(secret))throw new Error('plaintext secret leaked: '+secret);
+            }
+            const decrypted=await api.decrypt('srv_test','correct horse battery staple');
+            if(decrypted!==conf)throw new Error('decrypt mismatch');
+            let wrong=false;
+            try{await api.decrypt('srv_test','wrong-password')}catch{wrong=true}
+            if(!wrong)throw new Error('wrong password accepted');
+            if(!api.has('srv_test'))throw new Error('vault has false');
+            api.remove('srv_test');
+            if(api.has('srv_test'))throw new Error('vault remove failed');
+            console.log('MEDUZA_CONFIG_RC_TESTS=PASS');
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node /tmp/test-meduza.cjs
+
+      - name: Static browser smoke
+        run: |
+          python3 -m http.server 8000 --directory . >/tmp/peisov-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          sleep 2
+
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --window-size=390,844 --virtual-time-budget=6000             --dump-dom "http://127.0.0.1:8000/peisov-vpn/?mode=owner" >/tmp/dom.html 2>/tmp/chrome.log
+
+          grep -q 'PEISOV VPN Control' /tmp/dom.html
+          grep -q 'Import .conf' /tmp/dom.html
+          grep -q 'meduzaConfigFile' /tmp/dom.html
+          ! grep -q 'PRIVATE_SECRET' /tmp/dom.html
+          echo "PEISOV_VPN_MEDUZA_RC_BROWSER=PASS"
+
+
+      - name: Record RC gate
+        if: success()
+        run: |
+          NOW="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          cat > peisov-vpn/MEDUZA_CONFIG_RC_GATE.json <<JSON
+          {
+            "product": "PEISOV VPN",
+            "candidate": "PEISOV VPN 0.1.1 Owner Preview",
+            "result": "PASS",
+            "parser": "PASS",
+            "encrypted_vault": "PASS",
+            "plaintext_secret_leak_test": "PASS",
+            "wrong_password_rejection": "PASS",
+            "browser_smoke": "PASS",
+            "production_released": false,
+            "checked_at": "$NOW"
+          }
+          JSON
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add peisov-vpn/MEDUZA_CONFIG_RC_GATE.json
+          git commit -m "test(vpn): record Meduza config RC gate"
+          git push origin HEAD:"${GITHUB_REF_NAME}"

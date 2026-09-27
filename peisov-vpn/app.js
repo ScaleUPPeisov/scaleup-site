@@ -42,7 +42,7 @@
   function renderHome(){
     const c=state.connection,server=selectedServer(),ok=c.protected;
     $('#statusText').textContent=c.error?'Status unavailable':ok?'Protected':'Not protected';$('#statusDot').className=`dot ${ok?'good':''}`;
-    $('#connectBtn').dataset.state=ok?'connected':'disconnected';$('#connectLabel').textContent=ok?'PROTECTED':server?.inviteUrl?'ACTIVATE':'SETUP';
+    $('#connectBtn').dataset.state=ok?'connected':'disconnected';$('#connectLabel').textContent=ok?'PROTECTED':server?.configMeta?.source==='meduza-conf'?'CONFIG':server?.inviteUrl?'ACTIVATE':'SETUP';
     $('#ipValue').textContent=c.ip||'—';$('#qualityValue').textContent=quality();$('#qualityValue').className=`stat-value ${quality()==='Excellent'?'good':''}`;
     $('#homeFlag').textContent=server?.flag||'🌐';$('#homeLocation').textContent=server?.publicName||'Select location';$('#homeProtocol').textContent=server?`${server.city||server.country||'Location'} · ${server.protocol||'ULTRA'}`:'PEISOV VPN';
     updateSession();
@@ -57,7 +57,7 @@
   function renderOwner(){
     $('#mUsers').textContent=state.users.length;$('#mServers').textContent=state.servers.length;$('#mIp').textContent=state.connection.ip||'—';$('#mStatus').textContent=state.connection.protected?'Protected':'Not protected';
     $('#usersTable').innerHTML=state.users.length?state.users.map(u=>`<tr data-user="${u.id}"><td>${esc(u.name)}</td><td>${esc(u.role)}</td><td><span class="status-chip ${u.status==='Active'?'':'off'}">${esc(u.status)}</span></td><td>${esc(u.expiration||'—')}</td><td>${esc(u.deviceLimit||'—')}</td></tr>`).join(''):'<tr><td colspan="5" style="color:var(--muted)">No local users yet.</td></tr>';
-    $('#serversTable').innerHTML=state.servers.length?state.servers.map(s=>`<tr data-server="${s.id}" style="cursor:pointer"><td>${esc(s.publicName)}</td><td>${esc(s.protocol||'ULTRA')}</td><td>${esc(s.expectedIp||'Not set')}</td><td><span class="status-chip ${s.enabled===false?'off':''}">${s.enabled===false?'Disabled':'Enabled'}</span></td></tr>`).join(''):'<tr><td colspan="4" style="color:var(--muted)">No servers configured.</td></tr>';
+    $('#serversTable').innerHTML=state.servers.length?state.servers.map(s=>`<tr data-server="${s.id}" style="cursor:pointer"><td>${esc(s.publicName)}</td><td>${s.configMeta?.source==='meduza-conf'?'<span class="status-chip">🔐 CONF</span> ':''}${esc(s.protocol||'ULTRA')}</td><td>${esc(s.expectedIp||'Not set')}</td><td><span class="status-chip ${s.enabled===false?'off':''}">${s.enabled===false?'Disabled':'Enabled'}</span></td></tr>`).join(''):'<tr><td colspan="4" style="color:var(--muted)">No servers configured.</td></tr>';
     $$('[data-server]').forEach(tr=>tr.addEventListener('click',()=>openServerEditor(state.servers.find(s=>s.id===tr.dataset.server))));
     $('#brandName').value=state.branding.name||'PEISOV VPN';$('#brandAccent').value=state.branding.accent||'#5d7cff';$('#previewName').textContent=state.branding.name||'PEISOV VPN';$('#previewConnect').style.boxShadow=`0 0 48px ${state.branding.accent}22`;document.documentElement.style.setProperty('--accent',state.branding.accent||'#5d7cff');
   }
@@ -71,6 +71,13 @@
   $('#connectBtn').addEventListener('click',()=>{
     const s=selectedServer();if(state.connection.protected){checkConnection(true);return}
     if(!s){openSheet('<h3>Select a server</h3><div class="sheet-copy">Сначала выберите локацию. Статус CONNECTED не будет показан без реального подтверждения IP.</div><button class="primary" id="sheetServers">Open Servers</button>');$('#sheetServers').onclick=()=>{closeSheet();showView('servers')};return}
+    if(s.configMeta?.source==='meduza-conf'){
+      const vaultReady=window.PeisovMeduzaConfig?.has?.(s.id);
+      openSheet(`<h3>${esc(s.publicName)}</h3><div class="sheet-copy">Meduza .conf ${vaultReady?'прикреплён и зашифрован локально':'metadata найден, но encrypted config отсутствует'}. PWA не может поднять системный VPN-туннель iOS. Импортируйте конфиг в реальный VPN-клиент, затем вернитесь и проверьте public IP.</div>${vaultReady?'<button class="primary" id="exportMeduza">Export .conf</button>':''}<button class="secondary" id="checkNow">Check VPN IP</button>`);
+      if(vaultReady)$('#exportMeduza').onclick=()=>openConfigExport(s);
+      $('#checkNow').onclick=()=>{closeSheet();checkConnection(true)};
+      return;
+    }
     if(!s.inviteUrl){openSheet(`<h3>Activation required</h3><div class="sheet-copy">Для ${esc(s.publicName)} ещё не добавлен Meduza invitation. Откройте PEISOV VPN Control → Servers и добавьте реальную ссылку.</div><button class="primary" id="sheetOwner">Open PEISOV VPN Control</button>`);$('#sheetOwner').onclick=()=>{closeSheet();openOwner()};return}
     openSheet(`<h3>Activate ${esc(s.publicName)}</h3><div class="sheet-copy">PEISOV VPN откроет реальное приглашение. После включения ULTRA вернитесь сюда — приложение проверит ваш public IP и только тогда покажет Protected.</div><button class="primary" id="activateReal">ACTIVATE VPN</button><button class="secondary" id="checkNow">I already activated · Check IP</button>`);
     $('#activateReal').onclick=()=>{log('access_activated',`Opened activation for ${s.publicName}`);window.open(s.inviteUrl,'_blank','noopener');};$('#checkNow').onclick=()=>{closeSheet();checkConnection(true)};
@@ -82,8 +89,191 @@
   $$('#ownerMenu button').forEach(b=>b.addEventListener('click',()=>{$$('#ownerMenu button').forEach(x=>x.classList.toggle('active',x===b));$$('.owner-panel').forEach(p=>p.classList.toggle('active',p.dataset.ownerPanel===b.dataset.owner))}));
 
   $('#addUserBtn').addEventListener('click',()=>{openSheet(`<h3>Add user</h3><div class="sheet-copy">Локальная запись Owner Preview. Production auth подключается отдельно.</div><form id="userForm"><div class="field"><label>Name</label><input name="name" required autocomplete="off"></div><div class="grid2"><div class="field"><label>Role</label><select name="role"><option>USER</option><option>ADMIN</option></select></div><div class="field"><label>Device limit</label><input name="deviceLimit" type="number" min="1" value="2"></div></div><div class="field"><label>Expiration</label><input name="expiration" type="date"></div><button class="primary">Add user</button></form>`);$('#userForm').onsubmit=e=>{e.preventDefault();const f=new FormData(e.currentTarget);state.users.push({id:uid('usr'),name:f.get('name'),role:f.get('role'),deviceLimit:f.get('deviceLimit'),expiration:f.get('expiration'),status:'Active'});save();log('user_added',`Added user · ${f.get('name')}`);renderAll();closeSheet()}});
+  const meduzaApi=()=>window.PeisovMeduzaConfig;
+
+  function safeFileName(name){
+    const base=String(name||'Meduza.conf').replace(/[\\/:*?"<>|]+/g,'-').trim();
+    return base.toLowerCase().endsWith('.conf')?base:base+'.conf';
+  }
+
+  function meduzaDefaultName(fileName){
+    let base=String(fileName||'Meduza').replace(/\.conf$/i,'').replace(/^MeduzaVPN[-_\s]*/i,'').replace(/[-_]+/g,' ').trim();
+    if(!base||/^meduza$/i.test(base))base='Meduza';
+    return `PEISOV ${base}`;
+  }
+
+  function configMetaFromParsed(parsed,fileName){
+    return {
+      source:'meduza-conf',
+      fileName:safeFileName(fileName),
+      protocolId:parsed.protocolId,
+      endpoint:parsed.endpoint,
+      endpointHost:parsed.endpointHost,
+      endpointPort:parsed.endpointPort,
+      address:parsed.address,
+      dns:parsed.dns,
+      mtu:parsed.mtu,
+      allowedIPs:parsed.allowedIPs,
+      persistentKeepalive:parsed.persistentKeepalive,
+      tuning:parsed.tuning,
+      secureFields:parsed.sensitiveFields,
+      secureFieldCount:parsed.secureFieldCount,
+      encrypted:true,
+      importedAt:new Date().toISOString()
+    };
+  }
+
+  function configSummaryHtml(meta){
+    if(!meta||meta.source!=='meduza-conf')return '';
+    const tuningCount=Object.keys(meta.tuning||{}).length;
+    return `<div class="owner-section" style="margin:14px 0 0"><div class="owner-section-head"><strong>Encrypted Meduza config</strong><span class="status-chip">🔐 ATTACHED</span></div><div class="owner-form" style="font-size:12px;line-height:1.65;color:var(--muted)">
+      <div><b style="color:var(--text)">File:</b> ${esc(meta.fileName||'Meduza.conf')}</div>
+      <div><b style="color:var(--text)">Protocol id:</b> ${esc(meta.protocolId||'meduza')}</div>
+      <div><b style="color:var(--text)">Endpoint:</b> ${esc(meta.endpoint||'—')}</div>
+      <div><b style="color:var(--text)">Address:</b> ${esc(meta.address||'—')}</div>
+      <div><b style="color:var(--text)">DNS:</b> ${esc(meta.dns||'—')}</div>
+      <div><b style="color:var(--text)">MTU:</b> ${esc(meta.mtu||'—')}</div>
+      <div><b style="color:var(--text)">Allowed IPs:</b> ${esc(meta.allowedIPs||'—')}</div>
+      <div><b style="color:var(--text)">Meduza tuning:</b> ${tuningCount} parameters</div>
+      <div><b style="color:var(--text)">Sensitive fields:</b> ${Number(meta.secureFieldCount||0)} · stored only inside AES-GCM vault</div>
+    </div></div>`;
+  }
+
+  function openConfigExport(server){
+    const meta=server?.configMeta;
+    if(!meta||!meduzaApi()?.has(server.id)){toast('Encrypted config not found');return}
+    openSheet(`<h3>Export Meduza .conf</h3><div class="sheet-copy">Введите пароль локального encrypted vault. Пароль нигде не сохраняется.</div><form id="exportConfigForm"><div class="field"><label>Vault password</label><input name="passphrase" type="password" minlength="8" autocomplete="current-password" required></div><button class="primary">Decrypt & export</button><button type="button" class="secondary" id="cancelExport">Cancel</button></form>`);
+    $('#cancelExport').onclick=closeSheet;
+    $('#exportConfigForm').onsubmit=async e=>{
+      e.preventDefault();
+      const btn=e.currentTarget.querySelector('button.primary');btn.disabled=true;btn.textContent='Decrypting…';
+      try{
+        const passphrase=new FormData(e.currentTarget).get('passphrase');
+        const raw=await meduzaApi().decrypt(server.id,String(passphrase||''));
+        const blob=new Blob([raw],{type:'text/plain;charset=utf-8'});
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a');a.href=url;a.download=safeFileName(meta.fileName);document.body.appendChild(a);a.click();a.remove();
+        setTimeout(()=>URL.revokeObjectURL(url),4000);
+        log('config_exported',`Exported encrypted Meduza config · ${server.publicName}`);
+        closeSheet();toast('Config exported');
+      }catch(err){
+        btn.disabled=false;btn.textContent='Decrypt & export';toast(err?.message||'Не удалось расшифровать config');
+      }
+    };
+  }
+
+  function reviewMeduzaImport(file,raw,parsed){
+    const defaultName=meduzaDefaultName(file.name);
+    openSheet(`<h3>Import Meduza .conf</h3>
+      <div class="sheet-copy">Формат распознан как <b>Meduza</b> · protocol id <b>${esc(parsed.protocolId)}</b>. Endpoint не используется как expected exit IP — его нужно указать отдельно после фактического подключения.</div>
+      <div class="owner-section" style="margin:0 0 14px">
+        <div class="owner-form" style="font-size:12px;line-height:1.65;color:var(--muted)">
+          <div><b style="color:var(--text)">Endpoint:</b> ${esc(parsed.endpoint)}</div>
+          <div><b style="color:var(--text)">Address:</b> ${esc(parsed.address)}</div>
+          <div><b style="color:var(--text)">DNS:</b> ${esc(parsed.dns||'—')}</div>
+          <div><b style="color:var(--text)">MTU:</b> ${esc(parsed.mtu||'—')}</div>
+          <div><b style="color:var(--text)">Allowed IPs:</b> ${esc(parsed.allowedIPs)}</div>
+          <div><b style="color:var(--text)">Protected fields detected:</b> ${parsed.secureFieldCount}</div>
+        </div>
+      </div>
+      <form id="importConfigForm">
+        <div class="field"><label>Public name</label><input name="publicName" value="${esc(defaultName)}" required></div>
+        <div class="grid2"><div class="field"><label>City</label><input name="city" placeholder="Paris"></div><div class="field"><label>Flag</label><input name="flag" value="🌐" maxlength="8"></div></div>
+        <div class="field"><label>Expected exit IP</label><input name="expectedIp" inputmode="decimal" placeholder="После подключения, например 91.x.x.x"></div>
+        <div class="field"><label>Create vault password</label><input name="passphrase" type="password" minlength="8" autocomplete="new-password" required></div>
+        <div class="field"><label>Repeat password</label><input name="passphrase2" type="password" minlength="8" autocomplete="new-password" required></div>
+        <button class="primary">Encrypt & attach config</button>
+      </form>`);
+    $('#importConfigForm').onsubmit=async e=>{
+      e.preventDefault();
+      const form=e.currentTarget,f=new FormData(form);
+      const p1=String(f.get('passphrase')||''),p2=String(f.get('passphrase2')||'');
+      if(p1.length<8){toast('Минимум 8 символов для vault password');return}
+      if(p1!==p2){toast('Пароли не совпадают');return}
+      const btn=form.querySelector('button.primary');btn.disabled=true;btn.textContent='Encrypting…';
+      const s={
+        id:uid('srv'),
+        publicName:String(f.get('publicName')||'').trim()||defaultName,
+        country:'',
+        city:String(f.get('city')||'').trim(),
+        flag:String(f.get('flag')||'🌐').trim()||'🌐',
+        protocol:`Meduza · ${parsed.protocolId}`,
+        expectedIp:String(f.get('expectedIp')||'').trim(),
+        inviteUrl:'',
+        enabled:true,
+        configMeta:configMetaFromParsed(parsed,file.name)
+      };
+      try{
+        await meduzaApi().storeEncrypted(s.id,raw,p1,{fileName:file.name,protocolId:parsed.protocolId});
+        state.servers.push(s);
+        if(!state.selectedServerId)state.selectedServerId=s.id;
+        save();
+        log('config_imported',`Imported encrypted Meduza config · ${s.publicName}`);
+        renderAll();closeSheet();toast('Meduza config attached');
+        raw='';
+      }catch(err){
+        btn.disabled=false;btn.textContent='Encrypt & attach config';toast(err?.message||'Import failed');
+      }
+    };
+  }
+
+  async function importMeduzaFile(file){
+    if(!file)return;
+    if(!/\.conf$/i.test(file.name)){toast('Нужен файл .conf');return}
+    try{
+      let raw=await file.text();
+      const parsed=meduzaApi().parseConf(raw);
+      reviewMeduzaImport(file,raw,parsed);
+    }catch(err){toast(err?.message||'Не удалось прочитать Meduza config')}
+  }
+
+  $('#importMeduzaBtn').addEventListener('click',()=>$('#meduzaConfigFile').click());
+  $('#meduzaConfigFile').addEventListener('change',async e=>{
+    const file=e.target.files?.[0];e.target.value='';
+    if(file)await importMeduzaFile(file);
+  });
+
   $('#addServerBtn').addEventListener('click',()=>openServerEditor(null));
-  function openServerEditor(server){const s=server||{id:uid('srv'),publicName:'',country:'',city:'',flag:'🌐',protocol:'MeduzaVPN ULTRA',expectedIp:'',inviteUrl:'',enabled:true};openSheet(`<h3>${server?'Edit':'Add'} server</h3><div class="sheet-copy">expected exit IP нужен для честной проверки Protected.</div><form id="serverForm"><div class="field"><label>Public name</label><input name="publicName" value="${esc(s.publicName)}" placeholder="PEISOV Paris" required></div><div class="grid2"><div class="field"><label>City</label><input name="city" value="${esc(s.city)}" placeholder="Paris"></div><div class="field"><label>Flag</label><input name="flag" value="${esc(s.flag||'🌐')}" maxlength="8"></div></div><div class="field"><label>Expected exit IP</label><input name="expectedIp" value="${esc(s.expectedIp)}" inputmode="decimal" placeholder="91.xxx.xxx.xxx"></div><div class="field"><label>Meduza invitation URL</label><input name="inviteUrl" value="${esc(s.inviteUrl)}" type="url" placeholder="https://…"></div><div class="field"><label>Protocol</label><input name="protocol" value="${esc(s.protocol||'MeduzaVPN ULTRA')}"></div><button class="primary">Save server</button>${server?'<button type="button" class="danger" id="deleteServer">Delete server</button>':''}</form>`);$('#serverForm').onsubmit=e=>{e.preventDefault();const f=new FormData(e.currentTarget);Object.assign(s,{publicName:f.get('publicName'),city:f.get('city'),flag:f.get('flag')||'🌐',expectedIp:f.get('expectedIp'),inviteUrl:f.get('inviteUrl'),protocol:f.get('protocol')||'MeduzaVPN ULTRA'});if(!server)state.servers.push(s);if(!state.selectedServerId)state.selectedServerId=s.id;save();log(server?'server_changed':'server_added',`${server?'Changed':'Added'} server · ${s.publicName}`);renderAll();closeSheet();checkConnection()};if(server)$('#deleteServer').onclick=()=>{state.servers=state.servers.filter(x=>x.id!==s.id);if(state.selectedServerId===s.id)state.selectedServerId=state.servers[0]?.id||null;save();log('server_deleted',`Deleted server · ${s.publicName}`);renderAll();closeSheet()}}
+  function openServerEditor(server){
+    const s=server||{id:uid('srv'),publicName:'',country:'',city:'',flag:'🌐',protocol:'MeduzaVPN ULTRA',expectedIp:'',inviteUrl:'',enabled:true};
+    openSheet(`<h3>${server?'Edit':'Add'} server</h3><div class="sheet-copy">expected exit IP нужен для честной проверки Protected. Endpoint из .conf автоматически expected IP не считается.</div>
+      <form id="serverForm">
+        <div class="field"><label>Public name</label><input name="publicName" value="${esc(s.publicName)}" placeholder="PEISOV Paris" required></div>
+        <div class="grid2"><div class="field"><label>City</label><input name="city" value="${esc(s.city)}" placeholder="Paris"></div><div class="field"><label>Flag</label><input name="flag" value="${esc(s.flag||'🌐')}" maxlength="8"></div></div>
+        <div class="field"><label>Expected exit IP</label><input name="expectedIp" value="${esc(s.expectedIp)}" inputmode="decimal" placeholder="91.xxx.xxx.xxx"></div>
+        <div class="field"><label>Meduza invitation URL</label><input name="inviteUrl" value="${esc(s.inviteUrl)}" type="url" placeholder="https://…"></div>
+        <div class="field"><label>Protocol</label><input name="protocol" value="${esc(s.protocol||'MeduzaVPN ULTRA')}"></div>
+        ${configSummaryHtml(s.configMeta)}
+        <button class="primary">Save server</button>
+        ${server&&s.configMeta?.source==='meduza-conf'?'<button type="button" class="secondary" id="exportServerConfig">Export encrypted .conf</button><button type="button" class="secondary" id="removeServerConfig">Remove encrypted config</button>':''}
+        ${server?'<button type="button" class="danger" id="deleteServer">Delete server</button>':''}
+      </form>`);
+
+    $('#serverForm').onsubmit=e=>{
+      e.preventDefault();const f=new FormData(e.currentTarget);
+      Object.assign(s,{publicName:f.get('publicName'),city:f.get('city'),flag:f.get('flag')||'🌐',expectedIp:f.get('expectedIp'),inviteUrl:f.get('inviteUrl'),protocol:f.get('protocol')||'MeduzaVPN ULTRA'});
+      if(!server)state.servers.push(s);
+      if(!state.selectedServerId)state.selectedServerId=s.id;
+      save();log(server?'server_changed':'server_added',`${server?'Changed':'Added'} server · ${s.publicName}`);renderAll();closeSheet();checkConnection()
+    };
+
+    if(server&&s.configMeta?.source==='meduza-conf'){
+      $('#exportServerConfig').onclick=()=>openConfigExport(s);
+      $('#removeServerConfig').onclick=()=>{
+        openSheet(`<h3>Remove encrypted config?</h3><div class="sheet-copy">Сервер останется, но зашифрованный .conf будет удалён с этого устройства.</div><button class="danger" id="confirmRemoveConfig">Remove config</button><button class="secondary" id="cancelRemoveConfig">Cancel</button>`);
+        $('#cancelRemoveConfig').onclick=closeSheet;
+        $('#confirmRemoveConfig').onclick=()=>{
+          meduzaApi().remove(s.id);delete s.configMeta;save();log('config_removed',`Removed encrypted Meduza config · ${s.publicName}`);renderAll();closeSheet();toast('Config removed')
+        };
+      };
+    }
+    if(server)$('#deleteServer').onclick=()=>{
+      if(s.configMeta?.source==='meduza-conf')meduzaApi()?.remove?.(s.id);
+      state.servers=state.servers.filter(x=>x.id!==s.id);
+      if(state.selectedServerId===s.id)state.selectedServerId=state.servers[0]?.id||null;
+      save();log('server_deleted',`Deleted server · ${s.publicName}`);renderAll();closeSheet()
+    };
+  }
   $('#saveBranding').addEventListener('click',()=>{state.branding.name=$('#brandName').value.trim()||'PEISOV VPN';state.branding.accent=$('#brandAccent').value;save();log('branding_changed',`Branding updated · ${state.branding.name}`);renderAll();toast('Branding saved')});
   $('#brandName').addEventListener('input',e=>$('#previewName').textContent=e.target.value||'PEISOV VPN');$('#brandAccent').addEventListener('input',e=>{$('#previewConnect').style.boxShadow=`0 0 48px ${e.target.value}33`});
   $('#resetLocal').addEventListener('click',()=>{openSheet('<h3>Reset local data?</h3><div class="sheet-copy">Будут удалены локальные users, servers, audit и настройки Owner Preview на этом устройстве.</div><button class="danger" id="confirmReset">Reset</button>');$('#confirmReset').onclick=()=>{localStorage.removeItem(KEY);location.reload()}});
