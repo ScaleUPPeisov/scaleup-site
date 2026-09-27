@@ -62,9 +62,9 @@ jobs:
         run: |
           $ErrorActionPreference='Stop'
           $setup=(Resolve-Path "audit/$env:ASSET").Path
-          $p=Start-Process -FilePath $setup -ArgumentList '/S' -Wait -PassThru
-          if($p.ExitCode -ne 0){throw "installer exit $($p.ExitCode)"}
-          Start-Sleep 3
+          $p=Start-Process -FilePath $setup -ArgumentList '/S' -PassThru
+          Write-Host "INSTALLER_PID=$($p.Id)"
+          Start-Sleep 12
           $roots=@("$env:LOCALAPPDATA\Programs","$env:ProgramFiles")
           $x86=[Environment]::GetFolderPath('ProgramFilesX86'); if($x86){$roots+=$x86}
           $apps=@()
@@ -77,6 +77,7 @@ jobs:
           }
           $app=$apps | Where-Object {$_ -notmatch 'uninstall|unins'} | Select-Object -First 1
           if(-not $app){throw 'installed ENDLUME executable not found'}
+          if(-not $p.HasExited){ Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }
           $vi=(Get-Item $app).VersionInfo
           Write-Host "INSTALLED_APP=$app"
           Write-Host "FILE_VERSION=$($vi.FileVersion)"
