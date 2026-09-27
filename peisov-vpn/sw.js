@@ -1,4 +1,4 @@
-const CACHE='peisov-vpn-v0.1.1-rc1';
+const CACHE='peisov-vpn-v0.1.1';
 const BASE=new URL('./',self.location.href).pathname;
 const u=(p='')=>`${BASE}${p}`;
 const SHELL=[u(),u('index.html'),u('styles.css'),u('app.js'),u('meduza-config.js'),u('manifest.webmanifest'),u('apple-touch-icon.png'),u('favicon.png'),u('assets/icons/icon-64.png'),u('assets/icons/icon-192.png'),u('assets/icons/icon-512.png')];
