@@ -31,24 +31,40 @@ jobs:
           if($sha -ne '4a4be729cb34d93f6e55d03b9e727f4c80006043f404b84b6cb2a3cb659d695a'){throw 'sha mismatch'}
           Remove-Item -Recurse -Force $dest -ErrorAction SilentlyContinue
           $p=Start-Process $setup -ArgumentList @('/S',"/D=$dest") -PassThru
-          $deadline=(Get-Date).AddSeconds(60); $app=Join-Path $dest 'ENDLUME YT Studio PEISOV.exe'
-          while(-not (Test-Path $app) -and (Get-Date) -lt $deadline){
+          $app=Join-Path $dest 'ENDLUME YT Studio PEISOV.exe'
+          $deadline=(Get-Date).AddSeconds(75)
+          $ready=$false
+          $lastSize=-1L
+          $stable=0
+          do {
             Start-Sleep 1
-          }
+            if(Test-Path $app){
+              try{
+                $item=Get-Item $app
+                $size=[int64]$item.Length
+                $bytes=[IO.File]::ReadAllBytes($app)
+                $mz=$bytes.Length -gt 1024 -and $bytes[0] -eq 0x4d -and $bytes[1] -eq 0x5a
+                $vi=$item.VersionInfo
+                $version=String($vi.ProductVersion)
+                if($size -eq $lastSize -and $size -gt 1000000){$stable++}else{$stable=0}
+                $lastSize=$size
+                if($mz -and $stable -ge 2){
+                  $ready=$true
+                  break
+                }
+              }catch{}
+            }
+          } while((Get-Date) -lt $deadline)
           Write-Host "INSTALLER_EXITED=$($p.HasExited)"
           if($p.HasExited){Write-Host "INSTALLER_EXIT=$($p.ExitCode)"}
-          if(-not (Test-Path $app)){
-            Write-Host "DEST_CONTENTS_START"
-            Get-ChildItem $dest -Recurse -ErrorAction SilentlyContinue | Select-Object -First 100 FullName,Length | Format-Table -AutoSize
-            Write-Host "DEST_CONTENTS_END"
-            throw 'app missing from deterministic NSIS path'
-          }
-          if(-not $p.HasExited){Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue}
+          if(-not $ready){throw 'installed ENDLUME executable never became a stable valid PE'}
           $vi=(Get-Item $app).VersionInfo
           Write-Host "APP=$app"
+          Write-Host "APP_BYTES=$((Get-Item $app).Length)"
           Write-Host "PRODUCT=$($vi.ProductName)"
           Write-Host "VERSION=$($vi.ProductVersion)"
           "ENDLUME_APP=$app" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          "INSTALLER_PID=$($p.Id)" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           Write-Host ENDLUME_WINDOWS_DETERMINISTIC_INSTALL_GREEN
 
       - name: Install CDP helper
@@ -124,4 +140,5 @@ jobs:
         shell: pwsh
         run: |
           if($env:ENDLUME_PID){Stop-Process -Id $env:ENDLUME_PID -Force -ErrorAction SilentlyContinue}
+          if($env:INSTALLER_PID){Stop-Process -Id $env:INSTALLER_PID -Force -ErrorAction SilentlyContinue}
           Get-Process msedgewebview2 -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
