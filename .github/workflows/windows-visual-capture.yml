@@ -1,0 +1,118 @@
+name: ENDLUME Public Windows Visual Capture
+
+on:
+  push:
+    branches:
+      - endlume-windows-public-audit
+    paths:
+      - '.github/workflows/windows-visual-capture.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: endlume-public-windows-visual
+  cancel-in-progress: true
+
+jobs:
+  visual:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - version: 1.0.0-alpha.8.65
+            asset: ENDLUME-YT-Studio-PEISOV-Setup-1.0.0-alpha.8.65-x64.exe
+            size: '98330820'
+            sha: 4a4be729cb34d93f6e55d03b9e727f4c80006043f404b84b6cb2a3cb659d695a
+          - version: 1.0.0-alpha.8.64
+            asset: ENDLUME-YT-Studio-PEISOV-Setup-1.0.0-alpha.8.64-x64.exe
+            size: '98314071'
+            sha: 2d500db9dd42e40947f58874fe039b54ffd36accc85a9038326d8376a186c351
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Install exact public version
+        shell: pwsh
+        env:
+          VERSION: \${{ matrix.version }}
+          ASSET: \${{ matrix.asset }}
+          SIZE: \${{ matrix.size }}
+          SHA: \${{ matrix.sha }}
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory -Force -Path audit | Out-Null
+          $url="https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/$env:ASSET"
+          curl.exe -L --fail --silent --show-error --output "audit/$env:ASSET" $url
+          $f=Get-Item "audit/$env:ASSET"
+          $h=(Get-FileHash $f.FullName -Algorithm SHA256).Hash.ToLower()
+          if($f.Length -ne [int64]$env:SIZE -or $h -ne $env:SHA){throw 'artifact mismatch'}
+          $p=Start-Process $f.FullName -ArgumentList '/S' -PassThru -Wait
+          if($p.ExitCode -ne 0){throw "installer exit $($p.ExitCode)"}
+          Start-Sleep 3
+          $roots=@('HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*','HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*','HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*')
+          $u=Get-ItemProperty $roots -ErrorAction SilentlyContinue|? {$_.DisplayName -match 'ENDLUME'}|select -First 1
+          if(-not $u -or [string]$u.DisplayVersion -ne $env:VERSION){throw 'installed version mismatch'}
+          $parent=$null
+          if($u.UninstallString -and ([string]$u.UninstallString -match '^"([^"]+)"')){$parent=Split-Path $Matches[1] -Parent}
+          $app=$null
+          if($u.DisplayIcon){
+            $v=[string]$u.DisplayIcon
+            if($v.StartsWith('"')){$v=($v -split '"')[1]}else{$v=($v -split ',')[0]}
+            if(Test-Path $v){$app=$v}
+          }
+          if(-not $app -and $parent){
+            $app=(Get-ChildItem $parent -Filter '*.exe' -File|? {$_.Name -notmatch 'uninstall|unins'}|select -First 1).FullName
+          }
+          if(-not $app){throw 'app missing'}
+          "PUBLIC_WIN_APP=$app"|Out-File $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Capture physical Windows desktop progression
+        shell: pwsh
+        env:
+          VERSION: \${{ matrix.version }}
+        run: |
+          $ErrorActionPreference='Stop'
+          Add-Type -AssemblyName System.Windows.Forms
+          Add-Type -AssemblyName System.Drawing
+          function Capture([string]$tag){
+            $b=[Windows.Forms.Screen]::PrimaryScreen.Bounds
+            $bmp=New-Object Drawing.Bitmap $b.Width,$b.Height
+            $g=[Drawing.Graphics]::FromImage($bmp)
+            $g.CopyFromScreen($b.Location,[Drawing.Point]::Empty,$b.Size)
+            $raw="audit/$tag.png"
+            $bmp.Save($raw,[Drawing.Imaging.ImageFormat]::Png)
+            $g.Dispose();$bmp.Dispose()
+            $img=[Drawing.Image]::FromFile((Resolve-Path $raw))
+            $target=New-Object Drawing.Bitmap 768,576
+            $gg=[Drawing.Graphics]::FromImage($target)
+            $gg.DrawImage($img,0,0,768,576)
+            $jpg="audit/$tag.jpg"
+            $target.Save($jpg,[Drawing.Imaging.ImageFormat]::Jpeg)
+            $gg.Dispose();$target.Dispose();$img.Dispose()
+            $bytes=[IO.File]::ReadAllBytes((Resolve-Path $jpg))
+            Write-Host ("{0}_BYTES={1}" -f $tag,$bytes.Length)
+            Write-Host ("{0}_B64_START" -f $tag)
+            Write-Host ([Convert]::ToBase64String($bytes))
+            Write-Host ("{0}_B64_END" -f $tag)
+          }
+
+          $p=Start-Process $env:PUBLIC_WIN_APP -PassThru
+          Start-Sleep -Milliseconds 350
+          Capture "$env:VERSION-t035"
+          Start-Sleep -Milliseconds 700
+          Capture "$env:VERSION-t105"
+          Start-Sleep -Seconds 4
+          if($p.HasExited){throw "app exited early $($p.ExitCode)"}
+          Capture "$env:VERSION-t505"
+          Get-Process -Id $p.Id|select Id,ProcessName,MainWindowHandle,MainWindowTitle,Responding,SessionId|fl
+          Stop-Process $p.Id -Force -ErrorAction SilentlyContinue
+          Write-Host "WINDOWS_VISUAL_CAPTURE_COMPLETE=$env:VERSION"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-visual-\${{ matrix.version }}
+          path: audit/*.png
+          if-no-files-found: warn
+          retention-days: 7
