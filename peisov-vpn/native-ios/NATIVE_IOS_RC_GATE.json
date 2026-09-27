@@ -1,0 +1,14 @@
+{
+  "product": "PEISOV VPN",
+  "version": "0.2.0 Native iOS RC",
+  "result": "PASS",
+  "swiftui_app": "PASS",
+  "network_extension": "PASS",
+  "meduza_conf_parser": "PASS",
+  "shared_keychain": "PASS",
+  "amneziawg_apple_pinned": "9d5ee60edefa95b933a738dd7cda671dd18021fc",
+  "unsigned_device_build": "PASS",
+  "physical_iphone_test": "PENDING",
+  "signed_ipa": "NOT_RELEASED",
+  "checked_at": "2026-09-27T07:57:00Z"
+}
