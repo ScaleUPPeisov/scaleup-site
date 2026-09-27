@@ -1,6 +1,6 @@
 {
   "product": "PEISOV VPN",
-  "version": "0.1.1 Owner Preview",
+  "version": "0.1.2 Owner Preview",
   "production_url": "https://scaleuppeisov.github.io/scaleup-site/peisov-vpn/",
   "deployment_root": "https://scaleuppeisov.github.io/scaleup-site/",
   "production_deployed": true,
@@ -15,8 +15,12 @@
   "owner_panel": "PASS",
   "meduza_config_import": "PASS",
   "encrypted_config_vault": "PASS",
+  "ios_native_file_picker": "PASS",
+  "file_reader_fallback": "PASS",
+  "cache_busting": "PASS",
+  "service_worker_refresh": "PASS",
   "mobile_render_390x844": "PASS",
   "mobile_render_393x852": "PASS",
   "mobile_render_430x932": "PASS",
-  "checked_at": "2026-09-27T07:22:34Z"
+  "checked_at": "2026-09-27T07:31:37Z"
 }
