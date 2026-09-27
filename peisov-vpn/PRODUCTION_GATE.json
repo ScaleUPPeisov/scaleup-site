@@ -1,0 +1,20 @@
+{
+  "product": "PEISOV VPN",
+  "version": "0.1.0 Owner Preview",
+  "production_url": "https://scaleuppeisov.github.io/scaleup-site/peisov-vpn/",
+  "deployment_root": "https://scaleuppeisov.github.io/scaleup-site/",
+  "production_deployed": true,
+  "https": "PASS",
+  "home": "PASS",
+  "manifest": "PASS",
+  "service_worker": "PASS",
+  "apple_touch_icon": "PASS",
+  "favicon": "PASS",
+  "public_ip_endpoint": "PASS",
+  "false_protected_source_gate": "PASS",
+  "owner_panel": "PASS",
+  "mobile_render_390x844": "PASS",
+  "mobile_render_393x852": "PASS",
+  "mobile_render_430x932": "PASS",
+  "checked_at": "2026-09-27T06:54:29Z"
+}
