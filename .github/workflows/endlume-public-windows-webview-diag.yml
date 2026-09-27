@@ -1,0 +1,61 @@
+name: ENDLUME Public Windows WebView2 Diagnostics
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/endlume-public-windows-webview-diag.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diag:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - name: Install exact public 8.65
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\e865.exe";$dest='C:\endlume-installed'
+          Invoke-WebRequest -UseBasicParsing -Uri 'https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/ENDLUME-YT-Studio-PEISOV-Setup-1.0.0-alpha.8.65-x64.exe' -OutFile $setup
+          if((Get-FileHash $setup -Algorithm SHA256).Hash.ToLowerInvariant() -ne '4a4be729cb34d93f6e55d03b9e727f4c80006043f404b84b6cb2a3cb659d695a'){throw 'sha'}
+          Remove-Item -Recurse -Force $dest -ErrorAction SilentlyContinue
+          $p=Start-Process $setup -ArgumentList @('/S',"/D=$dest") -PassThru
+          Wait-Process -Id $p.Id -Timeout 90
+          if($p.ExitCode -ne 0){throw "installer $($p.ExitCode)"}
+          "ENDLUME_APP=$dest\ENDLUME YT Studio PEISOV.exe" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Launch with WebView2 diagnostics flags
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS='--remote-debugging-port=9222 --remote-allow-origins=* --enable-logging=stderr --v=1'
+          $env:WEBVIEW2_USER_DATA_FOLDER="$env:RUNNER_TEMP\endlume-webview2-profile"
+          $p=Start-Process -FilePath $env:ENDLUME_APP -PassThru
+          "PID=$($p.Id)" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          Start-Sleep 8
+          Write-Host "ENDLUME_PROCESS"
+          Get-CimInstance Win32_Process | Where-Object {$_.ProcessId -eq $p.Id} | Select-Object ProcessId,ParentProcessId,ExecutablePath,CommandLine | Format-List
+          Write-Host "WEBVIEW_PROCESSES_START"
+          Get-CimInstance Win32_Process | Where-Object {$_.Name -match 'msedgewebview2'} | Select-Object ProcessId,ParentProcessId,ExecutablePath,CommandLine | Format-List
+          Write-Host "WEBVIEW_PROCESSES_END"
+          Write-Host "PORTS_START"
+          Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Sort-Object LocalPort | Select-Object LocalAddress,LocalPort,OwningProcess | Format-Table -AutoSize
+          Write-Host "PORTS_END"
+          foreach($u in @('http://127.0.0.1:9222/json','http://localhost:9222/json','http://[::1]:9222/json')){
+            try{$x=Invoke-WebRequest -UseBasicParsing -Uri $u -TimeoutSec 2;Write-Host "CDP_URL_OK=$u STATUS=$($x.StatusCode) BODY=$($x.Content.Substring(0,[Math]::Min(500,$x.Content.Length)))"}catch{Write-Host "CDP_URL_FAIL=$u $($_.Exception.Message)"}
+          }
+          Write-Host "WINDOWS_UI_PROCESS_START"
+          Get-Process -Id $p.Id | Select-Object Id,ProcessName,MainWindowTitle,MainWindowHandle,Responding | Format-List
+          Write-Host "WINDOWS_UI_PROCESS_END"
+          Write-Host ENDLUME_WINDOWS_WEBVIEW_DIAGNOSTICS_CAPTURED
+
+      - name: Cleanup
+        if: always()
+        shell: pwsh
+        run: |
+          if($env:PID){Stop-Process -Id $env:PID -Force -ErrorAction SilentlyContinue}
+          Get-Process msedgewebview2 -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
