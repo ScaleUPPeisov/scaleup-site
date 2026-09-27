@@ -1,0 +1,81 @@
+name: ENDLUME Public Windows Shipped E2E Surface Probe
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/endlume-public-windows-e2e-surface.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: endlume-public-windows-e2e-surface
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - name: Download and install public 8.65
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $base='https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable'
+          $asset='ENDLUME-YT-Studio-PEISOV-Setup-1.0.0-alpha.8.65-x64.exe'
+          Invoke-WebRequest -UseBasicParsing -Uri "$base/$asset" -OutFile "$env:RUNNER_TEMP\e865.exe"
+          $p=Start-Process "$env:RUNNER_TEMP\e865.exe" -ArgumentList '/S' -PassThru
+          $deadline=(Get-Date).AddSeconds(60)
+          $app=$null
+          do {
+            Start-Sleep 2
+            $u=Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' -ErrorAction SilentlyContinue |
+              Where-Object {$_.DisplayName -match 'ENDLUME'} | Select-Object -First 1
+            if($u -and $u.DisplayIcon){
+              $candidate=($u.DisplayIcon -replace ',\d+$','').Trim('"')
+              if(Test-Path $candidate){$app=$candidate}
+            }
+            if(-not $app -and $u.InstallLocation){
+              $candidate=Join-Path $u.InstallLocation 'ENDLUME YT Studio PEISOV.exe'
+              if(Test-Path $candidate){$app=$candidate}
+            }
+          } while(-not $app -and (Get-Date) -lt $deadline)
+          if(-not $app){throw 'ENDLUME app not found'}
+          if(-not $p.HasExited){Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue}
+          "ENDLUME_APP=$app" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "ENDLUME_APP=$app"
+
+      - name: Detect shipped E2E hook with bounded execution
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root='C:\endlume-e2e-surface'
+          New-Item -ItemType Directory -Force -Path $root | Out-Null
+          $fixture=@{
+            project=@{id='surface-probe';name='surface-probe';path=$root;media=@('C:\missing\x.png');audio=@('C:\missing\a.mp3');valid=$true;error=$null};
+            settings=@{width=1920;height=1080;fps=60;codec='h265';bitrateMbps=4.0;durationHours=1;durationMode='whole-track';loopMode='loop';crossfadeSec=0.0;normalizeLufs=$false;outputDir=$root;preset='fast';encoderPreference='auto'};
+            effects=@();subscribes=@();ambient=$null
+          }
+          $fixturePath="$root\fixture.json"
+          $resultPath="$root\result.json"
+          $fixture | ConvertTo-Json -Depth 15 | Set-Content $fixturePath -Encoding utf8
+          Remove-Item $resultPath -ErrorAction SilentlyContinue
+          $env:ENDLUME_E2E_RENDER_JOB=$fixturePath
+          $env:ENDLUME_E2E_RESULT=$resultPath
+          $p=Start-Process -FilePath $env:ENDLUME_APP -PassThru
+          $deadline=(Get-Date).AddSeconds(20)
+          while((Get-Date) -lt $deadline -and -not $p.HasExited -and -not (Test-Path $resultPath)){
+            Start-Sleep -Milliseconds 500
+          }
+          $exists=Test-Path $resultPath
+          Write-Host "E2E_RESULT_EXISTS=$exists"
+          Write-Host "APP_EXITED=$($p.HasExited)"
+          if($exists){
+            Get-Content $resultPath -Raw
+            Write-Host ENDLUME_WINDOWS_SHIPPED_E2E_SURFACE_PRESENT
+          } else {
+            Write-Host ENDLUME_WINDOWS_SHIPPED_E2E_SURFACE_ABSENT
+          }
+          if(-not $p.HasExited){Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue}
