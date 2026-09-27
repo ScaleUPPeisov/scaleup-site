@@ -1,0 +1,158 @@
+name: ENDLUME Public Windows Failure Acceptance
+
+on:
+  push:
+    branches:
+      - endlume-windows-public-audit
+    paths:
+      - '.github/workflows/windows-failure-acceptance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: endlume-public-windows-failure
+  cancel-in-progress: true
+
+env:
+  VERSION: 1.0.0-alpha.8.65
+  ASSET: ENDLUME-YT-Studio-PEISOV-Setup-1.0.0-alpha.8.65-x64.exe
+  ASSET_URL: https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/ENDLUME-YT-Studio-PEISOV-Setup-1.0.0-alpha.8.65-x64.exe
+  EXPECTED_SIZE: '98330820'
+  EXPECTED_SHA: 4a4be729cb34d93f6e55d03b9e727f4c80006043f404b84b6cb2a3cb659d695a
+
+jobs:
+  failure:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install exact public 8.65
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory -Force -Path audit | Out-Null
+          curl.exe -L --fail --silent --show-error --output "audit/$env:ASSET" $env:ASSET_URL
+          $f=Get-Item "audit/$env:ASSET"
+          $h=(Get-FileHash $f.FullName -Algorithm SHA256).Hash.ToLower()
+          if($f.Length -ne [int64]$env:EXPECTED_SIZE -or $h -ne $env:EXPECTED_SHA){ throw 'public 8.65 mismatch' }
+          $p=Start-Process -FilePath $f.FullName -ArgumentList '/S' -PassThru -Wait
+          if($p.ExitCode -ne 0){ throw "installer exit $($p.ExitCode)" }
+          Start-Sleep -Seconds 3
+          $roots=@(
+            'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+            'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+            'HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+          )
+          $u=Get-ItemProperty $roots -ErrorAction SilentlyContinue | Where-Object {$_.DisplayName -match 'ENDLUME'} | Select-Object -First 1
+          if(-not $u -or [string]$u.DisplayVersion -ne $env:VERSION){ throw '8.65 registration mismatch' }
+          $apps=@()
+          if($u.DisplayIcon){
+            $icon=[string]$u.DisplayIcon
+            if($icon.StartsWith('"')){ $icon=($icon -split '"')[1] } else { $icon=($icon -split ',')[0] }
+            if(Test-Path $icon){ $apps += $icon }
+          }
+          if($u.InstallLocation -and (Test-Path $u.InstallLocation)){
+            $apps += Get-ChildItem $u.InstallLocation -Filter '*.exe' -File -ErrorAction SilentlyContinue |
+              Where-Object {$_.Name -notmatch 'uninstall|unins'} | Select-Object -ExpandProperty FullName
+          }
+          if($u.UninstallString -and ([string]$u.UninstallString -match '^"([^"]+)"')){
+            $parent=Split-Path $Matches[1] -Parent
+            if(Test-Path $parent){
+              $apps += Get-ChildItem $parent -Filter '*.exe' -File -ErrorAction SilentlyContinue |
+                Where-Object {$_.Name -notmatch 'uninstall|unins'} | Select-Object -ExpandProperty FullName
+            }
+          }
+          $app=$apps | Where-Object {$_ -and (Test-Path $_)} | Select-Object -Unique | Select-Object -First 1
+          if(-not $app){ throw 'ENDLUME exe missing' }
+          "PUBLIC_WIN_APP=$app" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host WINDOWS_FAILURE_GATE_PUBLIC_865_INSTALLED
+
+      - name: Stage FFmpeg and fixtures
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $tag='autobuild-2026-09-14-13-17'
+          $archive='ffmpeg-N-126549-ga51bb69b09-win64-gpl.zip'
+          $url="https://github.com/BtbN/FFmpeg-Builds/releases/download/$tag/$archive"
+          $zip=Join-Path $env:RUNNER_TEMP $archive
+          $dir=Join-Path $env:RUNNER_TEMP 'ffmpeg-failure'
+          curl.exe -L --fail --silent --show-error --output $zip $url
+          Expand-Archive $zip $dir -Force
+          $ffm=(Get-ChildItem $dir -Recurse -Filter ffmpeg.exe | Select-Object -First 1).FullName
+          if(-not $ffm){ throw 'ffmpeg missing' }
+          $root=Join-Path $env:RUNNER_TEMP 'Ошибка тест [Кириллица]'
+          $out=Join-Path $env:RUNNER_TEMP 'Failure output [Кириллица]'
+          New-Item -ItemType Directory -Force -Path $root,$out | Out-Null
+          $img=Join-Path $root 'image [ok].png'
+          $mp3=Join-Path $root 'music [ok].mp3'
+          $bad=Join-Path $root 'music [corrupt].mp3'
+          & $ffm -hide_banner -loglevel error -f lavfi -i 'color=c=0x223344:s=1920x1080:r=1' -frames:v 1 -y $img
+          & $ffm -hide_banner -loglevel error -f lavfi -i 'sine=frequency=440:sample_rate=44100' -t 7 -ac 2 -c:a libmp3lame -b:a 192k -y $mp3
+          [IO.File]::WriteAllText($bad,'not-an-mp3',[Text.Encoding]::UTF8)
+          "FIX_ROOT=$root" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          "FIX_OUT=$out" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          "FIX_IMG=$img" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          "FIX_MP3=$mp3" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          "FIX_BAD=$bad" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Execute controlled failures and successful follow-up
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          function Job($id,$media,$audio,$outDir,$hours){
+            return @{
+              project=@{id=$id;name=$id;path=$env:FIX_ROOT;media=@($media);audio=@($audio);valid=$true;error=$null}
+              settings=@{width=1920;height=1080;fps=60;codec='h265';bitrateMbps=4.0;durationHours=$hours;durationMode='whole-track';loopMode='loop';crossfadeSec=0.0;normalizeLufs=$false;outputDir=$outDir;preset='fast';encoderPreference='auto'}
+              effects=@();subscribes=@();ambient=$null
+            }
+          }
+          function RunCase($tag,$job,$expectFail){
+            $jobs="audit/$tag-jobs.json"
+            $result="audit/$tag-result.json"
+            @{jobs=@($job)} | ConvertTo-Json -Depth 20 -Compress | Set-Content $jobs -Encoding utf8NoBOM
+            $env:ENDLUME_E2E_RENDER_JOB=(Resolve-Path $jobs).Path
+            $env:ENDLUME_E2E_RESULT=(Resolve-Path audit).Path + "\$tag-result.json"
+            $p=Start-Process -FilePath $env:PUBLIC_WIN_APP -PassThru
+            if(-not $p.WaitForExit(300000)){ Stop-Process $p.Id -Force; throw "$tag timeout" }
+            Remove-Item Env:ENDLUME_E2E_RENDER_JOB -ErrorAction SilentlyContinue
+            Remove-Item Env:ENDLUME_E2E_RESULT -ErrorAction SilentlyContinue
+            if(-not (Test-Path $result)){ throw "$tag result missing" }
+            $x=Get-Content $result -Raw | ConvertFrom-Json
+            Write-Host "CASE=$tag EXIT=$($p.ExitCode) STATUS=$($x.status)"
+            Get-Content $result
+            if($expectFail){
+              if($x.status -ne 'failed'){ throw "$tag false success" }
+              $row=@($x.results)[0]
+              if($row.outputPath){ throw "$tag has fake outputPath" }
+              if($row.outputBytes){ throw "$tag has fake outputBytes" }
+            } else {
+              if($x.status -ne 'passed'){ throw "$tag did not recover" }
+              $row=@($x.results)[0]
+              if(-not $row.outputPath -or -not (Test-Path $row.outputPath)){ throw "$tag output missing" }
+              if([int64]$row.outputBytes -ne (Get-Item $row.outputPath).Length){ throw "$tag resultBytes mismatch" }
+            }
+            Start-Sleep -Milliseconds 500
+            if(Get-Process ffmpeg,ffprobe -ErrorAction SilentlyContinue){ throw "$tag orphan media process" }
+          }
+
+          $missing=Join-Path $env:FIX_ROOT 'НЕСУЩЕСТВУЕТ [image].png'
+          RunCase 'missing-image' (Job 'missing-image' $missing $env:FIX_MP3 $env:FIX_OUT 0.03) $true
+          RunCase 'corrupt-audio' (Job 'corrupt-audio' $env:FIX_IMG $env:FIX_BAD $env:FIX_OUT 0.03) $true
+          RunCase 'bad-output' (Job 'bad-output' $env:FIX_IMG $env:FIX_MP3 'Z:\ENDLUME-NoSuchDrive\Нет диска [Public]' 0.03) $true
+          RunCase 'post-failure-success' (Job 'post-failure-success' $env:FIX_IMG $env:FIX_MP3 $env:FIX_OUT 0.03) $false
+          Write-Host WINDOWS_FAILURE_MISSING_IMAGE_GREEN
+          Write-Host WINDOWS_FAILURE_CORRUPT_AUDIO_GREEN
+          Write-Host WINDOWS_FAILURE_OUTPUT_PATH_GREEN
+          Write-Host WINDOWS_POST_FAILURE_RENDER_GREEN
+          Write-Host WINDOWS_FAILURE_HANDLING_GREEN
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: endlume-public-windows-failure-evidence
+          path: audit/*-result.json
+          if-no-files-found: warn
+          retention-days: 7
