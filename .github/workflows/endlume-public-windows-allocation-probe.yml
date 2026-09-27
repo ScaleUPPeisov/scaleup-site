@@ -1,0 +1,72 @@
+name: ENDLUME Public Windows Allocation Probe
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/endlume-public-windows-allocation-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Prove real GitHub-hosted Windows x64 and anonymous ENDLUME download
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+
+          Write-Host "RUNNER_NAME=$env:RUNNER_NAME"
+          Write-Host "RUNNER_OS=$env:RUNNER_OS"
+          Write-Host "RUNNER_ARCH=$env:RUNNER_ARCH"
+
+          $os = Get-CimInstance Win32_OperatingSystem
+          $cpu = Get-CimInstance Win32_Processor | Select-Object -First 1
+          $ram = [math]::Round(($os.TotalVisibleMemorySize * 1KB) / 1GB, 2)
+
+          Write-Host "WINDOWS_CAPTION=$($os.Caption)"
+          Write-Host "WINDOWS_VERSION=$($os.Version)"
+          Write-Host "WINDOWS_BUILD=$($os.BuildNumber)"
+          Write-Host "CPU=$($cpu.Name)"
+          Write-Host "RAM_GB=$ram"
+
+          if($env:RUNNER_OS -ne 'Windows'){ throw "Expected Windows runner" }
+          if($env:RUNNER_ARCH -ne 'X64'){ throw "Expected X64 runner" }
+
+          $base='https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable'
+          $latestUrl="$base/latest.json"
+          $installerName='ENDLUME-YT-Studio-PEISOV-Setup-1.0.0-alpha.8.65-x64.exe'
+          $installerUrl="$base/$installerName"
+          $expectedSize=98330820
+          $expectedSha='4a4be729cb34d93f6e55d03b9e727f4c80006043f404b84b6cb2a3cb659d695a'
+
+          New-Item -ItemType Directory -Force -Path "$env:RUNNER_TEMP\endlume-public-probe" | Out-Null
+          $latestPath="$env:RUNNER_TEMP\endlume-public-probe\latest.json"
+          $installerPath="$env:RUNNER_TEMP\endlume-public-probe\$installerName"
+
+          Invoke-WebRequest -UseBasicParsing -Uri $latestUrl -OutFile $latestPath
+          $manifest=Get-Content $latestPath -Raw | ConvertFrom-Json
+          Write-Host "MANIFEST_VERSION=$($manifest.version)"
+          if($manifest.version -ne '1.0.0-alpha.8.65'){ throw "Unexpected manifest version" }
+
+          $win=$manifest.platforms.'windows-x86_64'
+          if(-not $win){ throw "windows-x86_64 mapping missing" }
+          Write-Host "MANIFEST_WINDOWS_URL=$($win.url)"
+          Write-Host "MANIFEST_WINDOWS_SHA256=$($win.sha256)"
+          if($win.sha256 -ne $expectedSha){ throw "Manifest SHA mismatch" }
+          if([string]::IsNullOrWhiteSpace($win.signature)){ throw "Manifest signature missing" }
+
+          Invoke-WebRequest -UseBasicParsing -Uri $installerUrl -OutFile $installerPath
+          $size=(Get-Item $installerPath).Length
+          $sha=(Get-FileHash $installerPath -Algorithm SHA256).Hash.ToLowerInvariant()
+          Write-Host "INSTALLER_SIZE=$size"
+          Write-Host "INSTALLER_SHA256=$sha"
+          if($size -ne $expectedSize){ throw "Installer size mismatch" }
+          if($sha -ne $expectedSha){ throw "Installer SHA mismatch" }
+
+          Write-Host "ENDLUME_PUBLIC_INSTALLER_ANONYMOUS_DOWNLOAD_GREEN"
+          Write-Host "ENDLUME_PUBLIC_WINDOWS_RUNNER_ALLOCATED"
