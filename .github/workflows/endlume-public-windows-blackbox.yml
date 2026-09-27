@@ -64,20 +64,38 @@ jobs:
           $setup=(Resolve-Path "audit/$env:ASSET").Path
           $p=Start-Process -FilePath $setup -ArgumentList '/S' -PassThru
           Write-Host "INSTALLER_PID=$($p.Id)"
-          Start-Sleep 12
-          $roots=@("$env:LOCALAPPDATA\Programs","$env:ProgramFiles")
-          $x86=[Environment]::GetFolderPath('ProgramFilesX86'); if($x86){$roots+=$x86}
-          $apps=@()
-          foreach($root in $roots){
-            if(Test-Path $root){
-              $apps+=Get-ChildItem $root -Recurse -Filter '*.exe' -ErrorAction SilentlyContinue |
-                Where-Object {$_.Name -match 'ENDLUME' -or $_.DirectoryName -match 'ENDLUME'} |
-                Select-Object -ExpandProperty FullName
+
+          $app=$null
+          $deadline=(Get-Date).AddSeconds(90)
+          do {
+            Start-Sleep 2
+            $u=Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' -ErrorAction SilentlyContinue |
+              Where-Object {$_.DisplayName -match 'ENDLUME'} | Select-Object -First 1
+            if($u){
+              Write-Host "UNINSTALL_DISPLAY_NAME=$($u.DisplayName)"
+              Write-Host "UNINSTALL_DISPLAY_VERSION=$($u.DisplayVersion)"
+              Write-Host "UNINSTALL_INSTALL_LOCATION=$($u.InstallLocation)"
+              if($u.DisplayIcon){
+                $candidate=($u.DisplayIcon -replace ',\d+$','').Trim('"')
+                if(Test-Path $candidate){$app=$candidate}
+              }
+              if(-not $app -and $u.InstallLocation){
+                $candidate=Join-Path $u.InstallLocation 'ENDLUME YT Studio PEISOV.exe'
+                if(Test-Path $candidate){$app=$candidate}
+              }
             }
-          }
-          $app=$apps | Where-Object {$_ -notmatch 'uninstall|unins'} | Select-Object -First 1
-          if(-not $app){throw 'installed ENDLUME executable not found'}
-          if(-not $p.HasExited){ Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }
+            if(-not $app){
+              foreach($candidate in @(
+                "$env:LOCALAPPDATA\ENDLUME YT Studio PEISOV\ENDLUME YT Studio PEISOV.exe",
+                "$env:LOCALAPPDATA\Programs\ENDLUME YT Studio PEISOV\ENDLUME YT Studio PEISOV.exe"
+              )){
+                if(Test-Path $candidate){$app=$candidate;break}
+              }
+            }
+          } while(-not $app -and (Get-Date) -lt $deadline)
+
+          if(-not $app){throw 'installed ENDLUME executable not found after 90s'}
+          if(-not $p.HasExited){Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue}
           $vi=(Get-Item $app).VersionInfo
           Write-Host "INSTALLED_APP=$app"
           Write-Host "FILE_VERSION=$($vi.FileVersion)"
