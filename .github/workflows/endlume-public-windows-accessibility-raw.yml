@@ -1,0 +1,103 @@
+name: ENDLUME Public Windows Accessibility Raw Probe
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/endlume-public-windows-accessibility-raw.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Install public 8.65
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\e865.exe";$dest='C:\endlume-installed'
+          Invoke-WebRequest -UseBasicParsing -Uri 'https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/ENDLUME-YT-Studio-PEISOV-Setup-1.0.0-alpha.8.65-x64.exe' -OutFile $setup
+          if((Get-FileHash $setup -Algorithm SHA256).Hash.ToLowerInvariant() -ne '4a4be729cb34d93f6e55d03b9e727f4c80006043f404b84b6cb2a3cb659d695a'){throw 'sha'}
+          Remove-Item -Recurse -Force $dest -ErrorAction SilentlyContinue
+          $p=Start-Process $setup -ArgumentList @('/S',"/D=$dest") -PassThru
+          Wait-Process -Id $p.Id -Timeout 90
+          if($p.ExitCode -ne 0){throw "installer $($p.ExitCode)"}
+          "ENDLUME_APP=$dest\ENDLUME YT Studio PEISOV.exe" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Install raw UIA helpers
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check pywinauto uiautomation pillow
+
+      - name: Enable Windows accessibility client and inspect raw tree
+        shell: pwsh
+        run: |
+          $narrator=$null
+          try{$narrator=Start-Process "$env:WINDIR\System32\Narrator.exe" -PassThru -ErrorAction Stop}catch{Write-Host "NARRATOR_START_FAILED=$($_.Exception.Message)"}
+          if($narrator){"NARRATOR_PID=$($narrator.Id)" | Out-File $env:GITHUB_ENV -Append -Encoding utf8}
+          Start-Sleep 3
+          $p=Start-Process -FilePath $env:ENDLUME_APP -PassThru
+          "ENDLUME_PID=$($p.Id)" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          Start-Sleep 8
+          @'
+          import json,time,base64,io
+          import uiautomation as auto
+          from pywinauto import Desktop
+          from PIL import ImageGrab,Image
+          title='ENDLUME YT Studio PEISOV'
+          win=Desktop(backend='uia').window(title=title)
+          win.wait('visible ready',timeout=15)
+          print('PYWINAUTO_DESC_START')
+          rows=[]
+          for i,c in enumerate(win.descendants()):
+              if i>=800: break
+              try:
+                  r=c.rectangle()
+                  rows.append({'i':i,'type':c.element_info.control_type,'name':c.window_text(),'class':c.element_info.class_name,'auto_id':c.element_info.automation_id,'rect':[r.left,r.top,r.right,r.bottom]})
+              except Exception as e: rows.append({'i':i,'error':str(e)})
+          print(json.dumps(rows,ensure_ascii=False))
+          print('PYWINAUTO_DESC_END')
+
+          root=auto.GetRootControl()
+          target=None
+          for c in root.GetChildren():
+              try:
+                  if c.Name==title:
+                      target=c;break
+              except: pass
+          raw=[]
+          def walk(c,depth=0):
+              if len(raw)>=1200 or depth>12:return
+              try:
+                  raw.append({'depth':depth,'type':c.ControlTypeName,'name':c.Name,'class':c.ClassName,'aid':c.AutomationId,'rect':[c.BoundingRectangle.left,c.BoundingRectangle.top,c.BoundingRectangle.right,c.BoundingRectangle.bottom]})
+                  for x in c.GetChildren(): walk(x,depth+1)
+              except Exception as e:
+                  raw.append({'depth':depth,'error':str(e)})
+          if target: walk(target)
+          print('RAW_UIA_START')
+          print(json.dumps(raw,ensure_ascii=False))
+          print('RAW_UIA_END')
+          print('RAW_UIA_COUNT='+str(len(raw)))
+
+          img=ImageGrab.grab(all_screens=True).convert('RGB')
+          maxw=520
+          if img.width>maxw:
+              img=img.resize((maxw,round(img.height*maxw/img.width)),Image.LANCZOS)
+          bio=io.BytesIO();img.save(bio,format='JPEG',quality=65,optimize=True)
+          print('SCREEN_B64_START')
+          print(base64.b64encode(bio.getvalue()).decode())
+          print('SCREEN_B64_END')
+          print('ENDLUME_WINDOWS_RAW_ACCESSIBILITY_CAPTURED')
+          '@ | Set-Content raw_uia.py -Encoding utf8
+          python raw_uia.py
+
+      - name: Cleanup
+        if: always()
+        shell: pwsh
+        run: |
+          if($env:ENDLUME_PID){Stop-Process -Id $env:ENDLUME_PID -Force -ErrorAction SilentlyContinue}
+          if($env:NARRATOR_PID){Stop-Process -Id $env:NARRATOR_PID -Force -ErrorAction SilentlyContinue}
+          Get-Process msedgewebview2 -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
