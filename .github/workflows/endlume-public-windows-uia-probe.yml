@@ -1,0 +1,85 @@
+name: ENDLUME Public Windows UIA Surface Probe
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/endlume-public-windows-uia-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Install public 8.65
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\e865.exe";$dest='C:\endlume-installed'
+          Invoke-WebRequest -UseBasicParsing -Uri 'https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/ENDLUME-YT-Studio-PEISOV-Setup-1.0.0-alpha.8.65-x64.exe' -OutFile $setup
+          if((Get-FileHash $setup -Algorithm SHA256).Hash.ToLowerInvariant() -ne '4a4be729cb34d93f6e55d03b9e727f4c80006043f404b84b6cb2a3cb659d695a'){throw 'sha'}
+          Remove-Item -Recurse -Force $dest -ErrorAction SilentlyContinue
+          $p=Start-Process $setup -ArgumentList @('/S',"/D=$dest") -PassThru
+          Wait-Process -Id $p.Id -Timeout 90
+          if($p.ExitCode -ne 0){throw "installer $($p.ExitCode)"}
+          $app=Join-Path $dest 'ENDLUME YT Studio PEISOV.exe'
+          test-path $app | Out-Null
+          "ENDLUME_APP=$app" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Install UI Automation helper
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check pywinauto pillow
+
+      - name: Launch and capture UIA tree
+        shell: pwsh
+        run: |
+          $p=Start-Process -FilePath $env:ENDLUME_APP -PassThru
+          "PID=$($p.Id)" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          Start-Sleep 6
+          @'
+          from pywinauto import Desktop
+          from PIL import ImageGrab
+          import json,time,sys
+          title='ENDLUME YT Studio PEISOV'
+          win=Desktop(backend='uia').window(title=title)
+          win.wait('visible ready',timeout=15)
+          print('WINDOW_FOUND='+str(win.exists()))
+          print('WINDOW_RECT='+str(win.rectangle()))
+          rows=[]
+          for i,c in enumerate(win.descendants()):
+              if i>=500: break
+              try:
+                  r=c.rectangle()
+                  rows.append({
+                    'i':i,
+                    'type':c.element_info.control_type,
+                    'name':c.window_text(),
+                    'auto_id':c.element_info.automation_id,
+                    'class':c.element_info.class_name,
+                    'enabled':c.is_enabled(),
+                    'visible':c.is_visible(),
+                    'rect':[r.left,r.top,r.right,r.bottom],
+                  })
+              except Exception as e:
+                  rows.append({'i':i,'error':str(e)})
+          print('UIA_COUNT='+str(len(rows)))
+          print('UIA_TREE_START')
+          print(json.dumps(rows,ensure_ascii=False))
+          print('UIA_TREE_END')
+          img=ImageGrab.grab(all_screens=True)
+          img.save('uia-desktop.png')
+          print('SCREENSHOT_SIZE='+str(img.size))
+          print('ENDLUME_WINDOWS_UIA_SURFACE_CAPTURED')
+          '@ | Set-Content uia_probe.py -Encoding utf8
+          python uia_probe.py
+
+      - name: Cleanup
+        if: always()
+        shell: pwsh
+        run: |
+          if($env:PID){Stop-Process -Id $env:PID -Force -ErrorAction SilentlyContinue}
+          Get-Process msedgewebview2 -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
