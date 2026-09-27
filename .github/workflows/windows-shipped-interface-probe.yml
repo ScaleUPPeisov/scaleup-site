@@ -1,0 +1,57 @@
+name: ENDLUME Public Windows Shipped Interface Probe
+
+on:
+  push:
+    branches:
+      - endlume-windows-public-audit
+    paths:
+      - '.github/workflows/windows-shipped-interface-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: endlume-public-windows-interface
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Install exact public 8.65 and inspect known interface markers
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $asset='ENDLUME-YT-Studio-PEISOV-Setup-1.0.0-alpha.8.65-x64.exe'
+          $url="https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/$asset"
+          curl.exe -L --fail --silent --show-error --output $asset $url
+          $f=Get-Item $asset
+          $h=(Get-FileHash $f.FullName -Algorithm SHA256).Hash.ToLower()
+          if($f.Length -ne 98330820 -or $h -ne '4a4be729cb34d93f6e55d03b9e727f4c80006043f404b84b6cb2a3cb659d695a'){throw 'artifact mismatch'}
+          $p=Start-Process $f.FullName -ArgumentList '/S' -PassThru -Wait
+          if($p.ExitCode -ne 0){throw "installer exit $($p.ExitCode)"}
+          Start-Sleep 3
+          $roots=@('HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*','HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*','HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*')
+          $u=Get-ItemProperty $roots -ErrorAction SilentlyContinue|? {$_.DisplayName -match 'ENDLUME'}|select -First 1
+          if(-not $u){throw 'registration missing'}
+          $app=$null
+          if($u.DisplayIcon){
+            $v=[string]$u.DisplayIcon
+            if($v.StartsWith('"')){$v=($v -split '"')[1]}else{$v=($v -split ',')[0]}
+            if(Test-Path $v){$app=$v}
+          }
+          if(-not $app -and $u.UninstallString -and ([string]$u.UninstallString -match '^"([^"]+)"')){
+            $parent=Split-Path $Matches[1] -Parent
+            $app=(Get-ChildItem $parent -Filter '*.exe' -File|? {$_.Name -notmatch 'uninstall|unins'}|select -First 1).FullName
+          }
+          if(-not $app){throw 'app missing'}
+          Write-Host "APP=$app"
+          $bytes=[IO.File]::ReadAllBytes($app)
+          $latin=[Text.Encoding]::Latin1.GetString($bytes)
+          foreach($marker in @('ENDLUME_E2E_RENDER_JOB','ENDLUME_E2E_RESULT','local_update_check','local_update_start','cancel_project','consume_vyron_batch_request')){
+            $found=$latin.Contains($marker)
+            Write-Host "SHIPPED_MARKER $marker=$found"
+          }
+          Write-Host WINDOWS_SHIPPED_INTERFACE_PROBE_COMPLETE
