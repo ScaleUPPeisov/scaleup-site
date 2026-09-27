@@ -24,7 +24,7 @@ async function rpc(wsUrl, method, params = {}) {
     const timer = setTimeout(() => {
       try { ws.close(); } catch {}
       reject(new Error(`CDP timeout: ${method}`));
-    }, 30000);
+    }, 180000);
     ws.onerror = () => {
       clearTimeout(timer);
       reject(new Error(`CDP websocket error: ${method}`));
