@@ -1,0 +1,145 @@
+name: ENDLUME Public Windows UI Diagnostics
+
+on:
+  push:
+    branches:
+      - endlume-windows-public-audit
+    paths:
+      - '.github/workflows/windows-ui-diagnostics.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: endlume-public-windows-ui-diagnostics
+  cancel-in-progress: true
+
+env:
+  VERSION: 1.0.0-alpha.8.64
+  ASSET: ENDLUME-YT-Studio-PEISOV-Setup-1.0.0-alpha.8.64-x64.exe
+  URL: https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/ENDLUME-YT-Studio-PEISOV-Setup-1.0.0-alpha.8.64-x64.exe
+  SIZE: '98314071'
+  SHA: 2d500db9dd42e40947f58874fe039b54ffd36accc85a9038326d8376a186c351
+
+jobs:
+  ui:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install exact public 8.64
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory -Force -Path audit | Out-Null
+          curl.exe -L --fail --silent --show-error --output "audit/$env:ASSET" $env:URL
+          $f=Get-Item "audit/$env:ASSET"
+          $h=(Get-FileHash $f.FullName -Algorithm SHA256).Hash.ToLower()
+          if($f.Length -ne [int64]$env:SIZE -or $h -ne $env:SHA){throw 'asset mismatch'}
+          $p=Start-Process $f.FullName -ArgumentList '/S' -PassThru -Wait
+          if($p.ExitCode -ne 0){throw "installer $($p.ExitCode)"}
+          Start-Sleep 3
+          $roots=@('HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*','HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*','HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*')
+          $u=Get-ItemProperty $roots -ErrorAction SilentlyContinue|? {$_.DisplayName -match 'ENDLUME'}|select -First 1
+          if(-not $u){throw 'registration missing'}
+          $parent=$null
+          if($u.UninstallString -and ([string]$u.UninstallString -match '^"([^"]+)"')){$parent=Split-Path $Matches[1] -Parent}
+          $app=$null
+          if($u.DisplayIcon){
+            $v=[string]$u.DisplayIcon
+            if($v.StartsWith('"')){$v=($v -split '"')[1]}else{$v=($v -split ',')[0]}
+            if(Test-Path $v){$app=$v}
+          }
+          if(-not $app -and $parent){
+            $app=(Get-ChildItem $parent -Filter '*.exe' -File|? {$_.Name -notmatch 'uninstall|unins'}|select -First 1).FullName
+          }
+          if(-not $app){throw 'app missing'}
+          "PUBLIC_WIN_APP=$app"|Out-File $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Launch and inspect physical UI/session
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $port=9240
+          $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS="--remote-debugging-port=$port --remote-allow-origins=*"
+          $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS_PROCESS_NAMES="ENDLUME YT Studio PEISOV.exe"
+          $p=Start-Process $env:PUBLIC_WIN_APP -PassThru
+          Start-Sleep 5
+          if($p.HasExited){throw 'app exited early'}
+          Write-Host "APP_PID=$($p.Id)"
+          Get-Process -Id $p.Id | Select-Object Id,ProcessName,MainWindowHandle,MainWindowTitle,Responding,SessionId | Format-List
+
+          Write-Host WEBVIEW_PROCESSES_START
+          Get-CimInstance Win32_Process | ? {$_.Name -match 'msedgewebview2|endlume'} |
+            Select-Object ProcessId,ParentProcessId,Name,ExecutablePath,CommandLine | Format-List
+          Write-Host WEBVIEW_PROCESSES_END
+
+          Write-Host LISTENERS_START
+          Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue |
+            ? {$_.LocalPort -eq $port -or $_.OwningProcess -eq $p.Id} |
+            Select-Object LocalAddress,LocalPort,OwningProcess,State | Format-Table -AutoSize
+          Write-Host LISTENERS_END
+
+          Write-Host CDP_HTTP_START
+          try {
+            $x=Invoke-WebRequest "http://127.0.0.1:$port/json/list" -UseBasicParsing -TimeoutSec 3
+            Write-Host "CDP_HTTP_STATUS=$($x.StatusCode)"
+            Write-Host $x.Content
+          } catch { Write-Host "CDP_HTTP_ERROR=$($_.Exception.Message)" }
+          Write-Host CDP_HTTP_END
+
+          Add-Type -AssemblyName UIAutomationClient
+          Add-Type -AssemblyName UIAutomationTypes
+          $root=[System.Windows.Automation.AutomationElement]::RootElement
+          $cond=New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ProcessIdProperty,$p.Id)
+          $window=$root.FindFirst([System.Windows.Automation.TreeScope]::Descendants,$cond)
+          Write-Host UIA_START
+          if($window){
+            Write-Host "UIA_ROOT_NAME=$($window.Current.Name)"
+            Write-Host "UIA_ROOT_CLASS=$($window.Current.ClassName)"
+            Write-Host "UIA_ROOT_CONTROL=$($window.Current.ControlType.ProgrammaticName)"
+            $all=$window.FindAll([System.Windows.Automation.TreeScope]::Descendants,[System.Windows.Automation.Condition]::TrueCondition)
+            Write-Host "UIA_DESCENDANT_COUNT=$($all.Count)"
+            for($i=0;$i -lt [Math]::Min($all.Count,400);$i++){
+              $e=$all.Item($i)
+              try {
+                $n=$e.Current.Name
+                $ct=$e.Current.ControlType.ProgrammaticName
+                $cls=$e.Current.ClassName
+                $aid=$e.Current.AutomationId
+                if($n -or $ct -match 'Button|Text|Document|Pane'){
+                  Write-Host "UIA[$i] NAME=<$n> TYPE=<$ct> CLASS=<$cls> ID=<$aid>"
+                }
+              } catch {}
+            }
+          } else { Write-Host UIA_APP_WINDOW_NOT_FOUND }
+          Write-Host UIA_END
+
+          Write-Host SCREENSHOT_START
+          try {
+            Add-Type -AssemblyName System.Windows.Forms
+            Add-Type -AssemblyName System.Drawing
+            $b=[System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+            Write-Host "SCREEN_BOUNDS=$($b.Width)x$($b.Height)"
+            $bmp=New-Object Drawing.Bitmap $b.Width,$b.Height
+            $g=[Drawing.Graphics]::FromImage($bmp)
+            $g.CopyFromScreen($b.Location,[Drawing.Point]::Empty,$b.Size)
+            $out=(Resolve-Path audit).Path+'\desktop.png'
+            $bmp.Save($out,[Drawing.Imaging.ImageFormat]::Png)
+            $g.Dispose();$bmp.Dispose()
+            Write-Host "SCREENSHOT_BYTES=$((Get-Item $out).Length)"
+            Write-Host WINDOWS_DESKTOP_SCREENSHOT_CAPTURE_GREEN
+          } catch { Write-Host "SCREENSHOT_ERROR=$($_.Exception.Message)" }
+          Write-Host SCREENSHOT_END
+
+          Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: endlume-public-windows-ui-diagnostic
+          path: audit/desktop.png
+          if-no-files-found: warn
+          retention-days: 7
