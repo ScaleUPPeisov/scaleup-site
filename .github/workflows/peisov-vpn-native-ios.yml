@@ -12,6 +12,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: peisov-vpn-native-ios-rc
+  cancel-in-progress: true
+
 jobs:
   parser-gate:
     if: github.actor != 'github-actions[bot]'
@@ -49,7 +53,7 @@ jobs:
 
       - name: Toolchain
         run: |
-          brew install xcodegen
+          brew install xcodegen go
           xcodebuild -version
           go version
           xcodegen --version
