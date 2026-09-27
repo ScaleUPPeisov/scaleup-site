@@ -1,0 +1,50 @@
+name: ENDLUME Public Windows NSIS Layout Probe
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/endlume-public-windows-nsis-layout.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - name: Install and inventory exact public package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $url='https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/ENDLUME-YT-Studio-PEISOV-Setup-1.0.0-alpha.8.65-x64.exe'
+          $setup="$env:RUNNER_TEMP\e865.exe"
+          $dest='C:\endlume-installed'
+          Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $setup
+          if((Get-FileHash $setup -Algorithm SHA256).Hash.ToLowerInvariant() -ne '4a4be729cb34d93f6e55d03b9e727f4c80006043f404b84b6cb2a3cb659d695a'){throw 'sha'}
+          Remove-Item -Recurse -Force $dest -ErrorAction SilentlyContinue
+          $p=Start-Process $setup -ArgumentList @('/S',"/D=$dest") -PassThru
+          $done=$false
+          try{Wait-Process -Id $p.Id -Timeout 100 -ErrorAction Stop;$done=$true}catch{}
+          Write-Host "INSTALLER_EXITED=$($p.HasExited)"
+          if($p.HasExited){Write-Host "INSTALLER_EXIT=$($p.ExitCode)"}
+          if(-not $done -and -not $p.HasExited){Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue}
+          Write-Host "LAYOUT_START"
+          Get-ChildItem $dest -Recurse -Force -ErrorAction SilentlyContinue |
+            Select-Object FullName,Length,Attributes |
+            Format-Table -AutoSize
+          Write-Host "LAYOUT_END"
+          Write-Host "EXE_PROBE_START"
+          $exes=Get-ChildItem $dest -Recurse -File -Filter '*.exe' -ErrorAction SilentlyContinue
+          foreach($e in $exes){
+            $head=[byte[]](Get-Content -LiteralPath $e.FullName -Encoding Byte -TotalCount 2 -ErrorAction SilentlyContinue)
+            $mz=($head.Count -eq 2 -and $head[0] -eq 0x4d -and $head[1] -eq 0x5a)
+            $vi=$e.VersionInfo
+            Write-Host "EXE=$($e.FullName)"
+            Write-Host "BYTES=$($e.Length) MZ=$mz FILE=$($vi.FileVersion) PRODUCT=$($vi.ProductVersion) NAME=$($vi.ProductName)"
+          }
+          Write-Host "EXE_PROBE_END"
+          if(-not $exes){throw 'no exe after installer exit'}
+          Write-Host ENDLUME_WINDOWS_NSIS_LAYOUT_CAPTURED
