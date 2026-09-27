@@ -10,10 +10,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   test:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -135,3 +136,28 @@ jobs:
           grep -q 'meduzaConfigFile' /tmp/dom.html
           ! grep -q 'PRIVATE_SECRET' /tmp/dom.html
           echo "PEISOV_VPN_MEDUZA_RC_BROWSER=PASS"
+
+
+      - name: Record RC gate
+        if: success()
+        run: |
+          NOW="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          cat > peisov-vpn/MEDUZA_CONFIG_RC_GATE.json <<JSON
+          {
+            "product": "PEISOV VPN",
+            "candidate": "Meduza .conf import RC",
+            "result": "PASS",
+            "parser": "PASS",
+            "encrypted_vault": "PASS",
+            "plaintext_secret_leak_test": "PASS",
+            "wrong_password_rejection": "PASS",
+            "browser_smoke": "PASS",
+            "production_released": false,
+            "checked_at": "$NOW"
+          }
+          JSON
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add peisov-vpn/MEDUZA_CONFIG_RC_GATE.json
+          git commit -m "test(vpn): record Meduza config RC gate"
+          git push origin HEAD:"${GITHUB_REF_NAME}"
