@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+  <meta name="theme-color" content="#050608" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="PEISOV VPN" />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="description" content="PEISOV VPN — premium VPN access experience." />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+  <link rel="icon" type="image/png" href="./favicon.png" />
+  <link rel="stylesheet" href="./styles.css" />
+  <title>PEISOV VPN</title>
+</head>
+<body>
+  <main id="userApp" class="app">
+    <header class="topbar">
+      <div class="brand"><img src="./assets/icons/icon-64.png" alt=""/> PEISOV VPN</div>
+      <button class="icon-button" id="refreshBtn" aria-label="Проверить VPN">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 9A7 7 0 0 1 18.5 6L20 8M4 16l1.5 2A7 7 0 0 0 18 15"/></svg>
+      </button>
+    </header>
+
+    <section class="view active" data-view="home">
+      <div class="hero">
+        <div class="eyebrow">Protection status</div>
+        <div class="status-row"><span id="statusDot" class="dot"></span><span id="statusText">Checking…</span></div>
+        <div class="connect-wrap">
+          <div class="connect-orbit"></div>
+          <button id="connectBtn" class="connect-button" data-state="checking" aria-label="Activate VPN access">
+            <div class="power"></div><div class="connect-label" id="connectLabel">CHECKING</div>
+          </button>
+        </div>
+      </div>
+      <div id="locationCard" class="location-card">
+        <div class="location-main"><div class="flag" id="homeFlag">🌐</div><div><div class="location-name" id="homeLocation">Select location</div><div class="location-meta" id="homeProtocol">PEISOV VPN</div></div></div>
+        <div class="pill">ULTRA</div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="stat-label">IP</div><div id="ipValue" class="stat-value">—</div></div>
+        <div class="stat"><div class="stat-label">Quality</div><div id="qualityValue" class="stat-value">—</div></div>
+        <div class="stat"><div class="stat-label">Session</div><div id="sessionValue" class="stat-value">00:00:00</div></div>
+      </div>
+      <div id="installHelp" class="install"><b>Установить PEISOV VPN на iPhone</b><br>Safari → Поделиться → «На экран Домой» → Добавить.</div>
+    </section>
+
+    <section class="view" data-view="servers">
+      <div class="section-head"><div><h2>Servers</h2><p>Доступные локации PEISOV VPN.</p></div><button class="text-btn" id="checkAllBtn">Проверить</button></div>
+      <div class="card" id="serverList"></div>
+    </section>
+
+    <section class="view" data-view="activity">
+      <div class="section-head"><div><h2>Activity</h2><p>Только технические события. Без истории трафика.</p></div></div>
+      <div class="card" id="activityList"><div class="empty"><strong>Пока тихо</strong>События появятся после реальных действий.</div></div>
+    </section>
+
+    <section class="view" data-view="profile">
+      <div class="section-head"><div><h2>Profile</h2><p>PEISOV VPN 0.1.0 Owner Preview</p></div></div>
+      <div class="card">
+        <div class="row"><div class="row-icon">◉</div><div class="row-main"><div class="row-title">Your access</div><div class="row-sub" id="accessSub">Owner Preview</div></div><span class="status-chip">ACTIVE</span></div>
+        <div class="row" id="devicesRow"><div class="row-icon">⌁</div><div class="row-main"><div class="row-title">My device</div><div class="row-sub" id="deviceName">This device</div></div><div class="chev">›</div></div>
+        <div class="row"><div class="row-icon">◐</div><div class="row-main"><div class="row-title">Appearance</div><div class="row-sub">Deep graphite</div></div></div>
+        <div class="row" id="openOwner"><div class="row-icon">P</div><div class="row-main"><div class="row-title">PEISOV VPN Control</div><div class="row-sub">Owner panel</div></div><div class="chev">›</div></div>
+      </div>
+      <div class="section-head"><div><p>Privacy</p></div></div>
+      <div class="card"><div class="row"><div class="row-main"><div class="row-title">No browsing logs</div><div class="row-sub">PEISOV VPN Preview не хранит URL, DNS history или содержимое трафика.</div></div></div></div>
+    </section>
+
+    <nav class="bottom-nav" aria-label="Навигация">
+      <button class="nav-btn active" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 11 12 4l9 7v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></button>
+      <button class="nav-btn" data-nav="servers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16v5H4zM4 13h16v5H4z"/><path d="M7 8.5h.01M7 15.5h.01"/></svg><span>Servers</span></button>
+      <button class="nav-btn" data-nav="activity"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 18V9m5 9V5m5 13v-7m5 7V8"/></svg><span>Activity</span></button>
+      <button class="nav-btn" data-nav="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Profile</span></button>
+    </nav>
+  </main>
+
+  <main id="ownerApp" class="owner-app">
+    <header class="owner-top"><div class="owner-brand"><img src="./assets/icons/icon-64.png" alt=""><div><div class="owner-title">PEISOV VPN Control</div><div class="owner-sub">0.1.0 OWNER PREVIEW · LOCAL CONTROL PLANE</div></div></div><button id="ownerExit" class="owner-exit">← App</button></header>
+    <div class="owner-grid">
+      <aside class="owner-menu" id="ownerMenu">
+        <button class="active" data-owner="overview">Overview</button><button data-owner="users">Users</button><button data-owner="servers">Servers</button><button data-owner="branding">Branding</button><button data-owner="integrations">Integrations</button><button data-owner="audit">Audit Log</button><button data-owner="settings">Settings</button>
+      </aside>
+      <section>
+        <div class="owner-panel active" data-owner-panel="overview"><h1>Overview</h1><p class="desc">Состояние локального Owner Preview без выдуманных backend-метрик.</p><div class="metric-grid"><div class="metric"><div class="metric-name">Local users</div><div class="metric-num" id="mUsers">0</div></div><div class="metric"><div class="metric-name">Servers</div><div class="metric-num" id="mServers">0</div></div><div class="metric"><div class="metric-name">Current IP</div><div class="metric-num" id="mIp" style="font-size:16px">—</div></div><div class="metric"><div class="metric-name">Status</div><div class="metric-num" id="mStatus" style="font-size:16px">Checking</div></div></div><div class="owner-section"><div class="owner-section-head"><strong>Architecture gate</strong></div><div class="owner-form" style="color:var(--muted);font-size:13px;line-height:1.7">PWA не создаёт системный VPN tunnel. Кнопка не подделывает CONNECTED. Статус считается защищённым только при совпадении текущего public IP с <b style="color:#dfe4ef">expected exit IP</b> выбранного сервера.</div></div></div>
+        <div class="owner-panel" data-owner-panel="users"><h1>Users</h1><p class="desc">Локальные записи Owner Preview. Production-синхронизация подключается через Supabase.</p><div class="owner-section"><div class="owner-section-head"><strong>Users</strong><button class="mini-btn" id="addUserBtn">+ Add user</button></div><div style="overflow:auto"><table class="table"><thead><tr><th>Name</th><th>Role</th><th>Status</th><th>Expires</th><th>Devices</th></tr></thead><tbody id="usersTable"></tbody></table></div></div></div>
+        <div class="owner-panel" data-owner-panel="servers"><h1>Servers</h1><p class="desc">Настройте реальные expected exit IP и Meduza invitation.</p><div class="owner-section"><div class="owner-section-head"><strong>VPN servers</strong><button class="mini-btn" id="addServerBtn">+ Add server</button></div><div style="overflow:auto"><table class="table"><thead><tr><th>Public name</th><th>Protocol</th><th>Expected IP</th><th>Status</th></tr></thead><tbody id="serversTable"></tbody></table></div></div></div>
+        <div class="owner-panel" data-owner-panel="branding"><h1>Branding</h1><p class="desc">Утверждённая иконка PEISOV VPN используется без перерисовки.</p><div class="owner-section"><div class="owner-form" style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap"><div style="flex:1;min-width:250px"><div class="field"><label>App name</label><input id="brandName" value="PEISOV VPN" /></div><div class="field"><label>Accent</label><input id="brandAccent" type="color" value="#5d7cff" /></div><button class="primary" id="saveBranding">Save branding</button></div><div class="preview-phone"><div class="preview-phone-inner"><img src="./assets/icons/icon-64.png" alt=""><div style="font-weight:750;margin-top:10px" id="previewName">PEISOV VPN</div><div style="font-size:11px;color:var(--muted);margin-top:7px">Protected experience</div><div class="mini-connect" id="previewConnect"></div></div></div></div></div></div>
+        <div class="owner-panel" data-owner-panel="integrations"><h1>Integrations</h1><p class="desc">Только подтверждённые возможности. Никаких fake API.</p><div class="owner-section"><div class="row"><div class="row-icon">M</div><div class="row-main"><div class="row-title">MeduzaVPN</div><div class="row-sub">Manual invitation adapter · ULTRA selected as target mode</div></div><span class="status-chip warn">MANUAL</span></div><div class="owner-form"><p style="font-size:13px;color:var(--muted);line-height:1.65;margin:0">В этой версии PEISOV VPN хранит invitation URL, открывает официальный клиент/страницу доступа и затем независимо проверяет public IP. API, deep links и revoke не считаются доступными, пока не подтверждены официально.</p></div></div></div>
+        <div class="owner-panel" data-owner-panel="audit"><h1>Audit Log</h1><p class="desc">События создаются только реальными действиями в этом Owner Preview.</p><div class="owner-section"><div id="auditTable"></div></div></div>
+        <div class="owner-panel" data-owner-panel="settings"><h1>Settings</h1><p class="desc">Локальные параметры Preview.</p><div class="owner-section"><div class="owner-form"><button class="danger" id="resetLocal">Reset local preview data</button></div></div></div>
+      </section>
+    </div>
+  </main>
+
+  <div id="sheetBackdrop" class="sheet-backdrop"></div><aside id="sheet" class="sheet"><div class="grabber"></div><div id="sheetContent"></div></aside><div id="toast" class="toast"></div>
+  <script src="./app.js" defer></script>
+</body></html>
