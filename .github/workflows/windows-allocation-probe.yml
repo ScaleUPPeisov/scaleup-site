@@ -1,0 +1,38 @@
+name: ENDLUME Public Windows Allocation Probe
+
+on:
+  push:
+    branches:
+      - endlume-windows-public-audit
+    paths:
+      - '.github/workflows/windows-allocation-probe.yml'
+      - 'README.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  allocation:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: Real Windows hosted runner evidence
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Write-Host "RUNNER_OS=$env:RUNNER_OS"
+          Write-Host "RUNNER_ARCH=$env:RUNNER_ARCH"
+          Write-Host "RUNNER_NAME=$env:RUNNER_NAME"
+          Get-CimInstance Win32_OperatingSystem |
+            Select-Object Caption,Version,BuildNumber,OSArchitecture |
+            Format-List
+          Get-CimInstance Win32_Processor |
+            Select-Object Name,NumberOfCores,NumberOfLogicalProcessors |
+            Format-List
+          Get-CimInstance Win32_ComputerSystem |
+            Select-Object TotalPhysicalMemory |
+            Format-List
+          if($env:RUNNER_OS -ne 'Windows'){ throw "Expected Windows runner" }
+          if($env:RUNNER_ARCH -ne 'X64'){ throw "Expected X64 runner" }
+          Write-Host ENDLUME_PUBLIC_WINDOWS_RUNNER_ALLOCATED
