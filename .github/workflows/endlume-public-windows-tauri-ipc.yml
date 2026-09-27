@@ -1,0 +1,124 @@
+name: ENDLUME Public Windows Tauri IPC Probe
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/endlume-public-windows-tauri-ipc.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: endlume-public-windows-tauri-ipc
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Install public 8.65
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $url='https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/ENDLUME-YT-Studio-PEISOV-Setup-1.0.0-alpha.8.65-x64.exe'
+          $setup="$env:RUNNER_TEMP\e865.exe"
+          Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $setup
+          $sha=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+          if($sha -ne '4a4be729cb34d93f6e55d03b9e727f4c80006043f404b84b6cb2a3cb659d695a'){throw 'sha mismatch'}
+          $p=Start-Process $setup -ArgumentList '/S' -PassThru
+          $deadline=(Get-Date).AddSeconds(60); $app=$null
+          do {
+            Start-Sleep 2
+            $u=Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' -ErrorAction SilentlyContinue |
+              Where-Object {$_.DisplayName -match 'ENDLUME'} | Select-Object -First 1
+            if($u?.DisplayIcon){
+              $c=($u.DisplayIcon -replace ',\d+$','').Trim('"')
+              if(Test-Path $c){$app=$c}
+            }
+            if(-not $app -and $u?.InstallLocation){
+              $c=Join-Path $u.InstallLocation 'ENDLUME YT Studio PEISOV.exe'
+              if(Test-Path $c){$app=$c}
+            }
+          } while(-not $app -and (Get-Date) -lt $deadline)
+          if(-not $app){throw 'app missing'}
+          if(-not $p.HasExited){Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue}
+          "ENDLUME_APP=$app" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "APP=$app"
+
+      - name: Install CDP helper
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check websocket-client
+
+      - name: Launch shipped app with WebView2 remote debugging
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS='--remote-debugging-port=9222 --remote-allow-origins=*'
+          $p=Start-Process -FilePath $env:ENDLUME_APP -PassThru
+          "ENDLUME_PID=$($p.Id)" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          $deadline=(Get-Date).AddSeconds(30)
+          do {
+            try {
+              $j=Invoke-RestMethod -Uri 'http://127.0.0.1:9222/json' -TimeoutSec 2
+              if($j){break}
+            } catch {}
+            Start-Sleep -Milliseconds 500
+          } while((Get-Date) -lt $deadline)
+          if(-not $j){throw 'WebView2 CDP endpoint unavailable'}
+          $j | ConvertTo-Json -Depth 8 | Set-Content audit-cdp-targets.json
+          Write-Host "CDP_TARGET_COUNT=$($j.Count)"
+          Write-Host ENDLUME_WINDOWS_WEBVIEW2_CDP_GREEN
+
+      - name: Invoke shipped Tauri production commands through WebView2
+        shell: pwsh
+        run: |
+          @'
+          import json,urllib.request,websocket,time,sys
+          targets=json.load(urllib.request.urlopen('http://127.0.0.1:9222/json'))
+          target=next((x for x in targets if x.get('webSocketDebuggerUrl') and x.get('type') in ('page','webview')),None)
+          if target is None:
+              target=next((x for x in targets if x.get('webSocketDebuggerUrl')),None)
+          if target is None:
+              raise SystemExit('no debuggable WebView target')
+          ws=websocket.create_connection(target['webSocketDebuggerUrl'],origin='http://localhost',timeout=10)
+          seq=0
+          def evaluate(expr):
+              global seq
+              seq+=1
+              ws.send(json.dumps({'id':seq,'method':'Runtime.evaluate','params':{
+                  'expression':expr,'awaitPromise':True,'returnByValue':True
+              }}))
+              while True:
+                  msg=json.loads(ws.recv())
+                  if msg.get('id')==seq:
+                      if 'error' in msg: raise RuntimeError(msg['error'])
+                      r=msg.get('result',{}).get('result',{})
+                      if r.get('subtype')=='error': raise RuntimeError(r)
+                      return r.get('value')
+          title=evaluate('document.title')
+          typ=evaluate('typeof window.__TAURI_INTERNALS__')
+          print('DOCUMENT_TITLE='+str(title))
+          print('TAURI_INTERNALS_TYPE='+str(typ))
+          if typ!='object':
+              raise SystemExit('Tauri internals unavailable')
+          version=evaluate("(async()=>await window.__TAURI_INTERNALS__.invoke('local_update_check'))()")
+          print('UPDATE_CHECK='+json.dumps(version,ensure_ascii=False))
+          lic=evaluate("(async()=>await window.__TAURI_INTERNALS__.invoke('license_status'))()")
+          safe={k:v for k,v in (lic or {}).items() if k not in ('sessionToken','token','key')}
+          print('LICENSE_STATUS='+json.dumps(safe,ensure_ascii=False))
+          power=evaluate("(async()=>await window.__TAURI_INTERNALS__.invoke('power_status'))()")
+          print('POWER_STATUS='+json.dumps(power,ensure_ascii=False))
+          ws.close()
+          print('ENDLUME_WINDOWS_TAURI_IPC_GREEN')
+          '@ | Set-Content cdp_probe.py -Encoding utf8
+          python cdp_probe.py
+
+      - name: Cleanup
+        if: always()
+        shell: pwsh
+        run: |
+          if($env:ENDLUME_PID){Stop-Process -Id $env:ENDLUME_PID -Force -ErrorAction SilentlyContinue}
+          Get-Process msedgewebview2 -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
