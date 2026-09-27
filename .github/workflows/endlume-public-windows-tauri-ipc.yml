@@ -19,34 +19,37 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 15
     steps:
-      - name: Install public 8.65
+      - name: Install public 8.65 to deterministic NSIS path
         shell: pwsh
         run: |
           $ErrorActionPreference='Stop'
           $url='https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/ENDLUME-YT-Studio-PEISOV-Setup-1.0.0-alpha.8.65-x64.exe'
           $setup="$env:RUNNER_TEMP\e865.exe"
+          $dest='C:\endlume-installed'
           Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $setup
           $sha=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLowerInvariant()
           if($sha -ne '4a4be729cb34d93f6e55d03b9e727f4c80006043f404b84b6cb2a3cb659d695a'){throw 'sha mismatch'}
-          $p=Start-Process $setup -ArgumentList '/S' -PassThru
-          $deadline=(Get-Date).AddSeconds(60); $app=$null
-          do {
-            Start-Sleep 2
-            $u=Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' -ErrorAction SilentlyContinue |
-              Where-Object {$_.DisplayName -match 'ENDLUME'} | Select-Object -First 1
-            if($u?.DisplayIcon){
-              $c=($u.DisplayIcon -replace ',\d+$','').Trim('"')
-              if(Test-Path $c){$app=$c}
-            }
-            if(-not $app -and $u?.InstallLocation){
-              $c=Join-Path $u.InstallLocation 'ENDLUME YT Studio PEISOV.exe'
-              if(Test-Path $c){$app=$c}
-            }
-          } while(-not $app -and (Get-Date) -lt $deadline)
-          if(-not $app){throw 'app missing'}
+          Remove-Item -Recurse -Force $dest -ErrorAction SilentlyContinue
+          $p=Start-Process $setup -ArgumentList @('/S',"/D=$dest") -PassThru
+          $deadline=(Get-Date).AddSeconds(60); $app=Join-Path $dest 'ENDLUME YT Studio PEISOV.exe'
+          while(-not (Test-Path $app) -and (Get-Date) -lt $deadline){
+            Start-Sleep 1
+          }
+          Write-Host "INSTALLER_EXITED=$($p.HasExited)"
+          if($p.HasExited){Write-Host "INSTALLER_EXIT=$($p.ExitCode)"}
+          if(-not (Test-Path $app)){
+            Write-Host "DEST_CONTENTS_START"
+            Get-ChildItem $dest -Recurse -ErrorAction SilentlyContinue | Select-Object -First 100 FullName,Length | Format-Table -AutoSize
+            Write-Host "DEST_CONTENTS_END"
+            throw 'app missing from deterministic NSIS path'
+          }
           if(-not $p.HasExited){Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue}
-          "ENDLUME_APP=$app" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          $vi=(Get-Item $app).VersionInfo
           Write-Host "APP=$app"
+          Write-Host "PRODUCT=$($vi.ProductName)"
+          Write-Host "VERSION=$($vi.ProductVersion)"
+          "ENDLUME_APP=$app" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host ENDLUME_WINDOWS_DETERMINISTIC_INSTALL_GREEN
 
       - name: Install CDP helper
         shell: pwsh
