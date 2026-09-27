@@ -1,0 +1,69 @@
+name: PEISOVVPN
+options:
+  minimumXcodeGenVersion: 2.38.0
+  deploymentTarget:
+    iOS: "15.0"
+  xcodeVersion: "16.0"
+  createIntermediateGroups: true
+
+packages:
+  WireGuardKit:
+    url: https://github.com/amnezia-vpn/amneziawg-apple.git
+    revision: 9d5ee60edefa95b933a738dd7cda671dd18021fc
+
+settings:
+  base:
+    SWIFT_VERSION: 5.9
+    ENABLE_BITCODE: NO
+    IPHONEOS_DEPLOYMENT_TARGET: 15.0
+
+targets:
+  PEISOVVPN:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: Sources/App
+      - path: Sources/Shared
+        excludes:
+          - MeduzaTunnelBuilder.swift
+    resources:
+      - path: Resources/peisov-logo.png
+    dependencies:
+      - target: PEISOVPacketTunnel
+        embed: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.peisov.vpn
+        PRODUCT_NAME: PEISOV VPN
+        MARKETING_VERSION: 0.2.0
+        CURRENT_PROJECT_VERSION: 1
+        CODE_SIGN_ENTITLEMENTS: Config/PEISOVVPN.entitlements
+        INFOPLIST_FILE: Resources/App-Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: "1"
+        SUPPORTS_MACCATALYST: NO
+
+  PEISOVPacketTunnel:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: Sources/Tunnel
+      - path: Sources/Shared
+    dependencies:
+      - package: WireGuardKit
+        product: WireGuardKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.peisov.vpn.PacketTunnel
+        PRODUCT_NAME: PEISOV Packet Tunnel
+        MARKETING_VERSION: 0.2.0
+        CURRENT_PROJECT_VERSION: 1
+        CODE_SIGN_ENTITLEMENTS: Config/PacketTunnel.entitlements
+        INFOPLIST_FILE: Resources/Tunnel-Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
+        TARGETED_DEVICE_FAMILY: "1"

@@ -1,0 +1,86 @@
+name: PEISOV VPN Native iOS RC
+
+on:
+  push:
+    branches:
+      - peisov-vpn/native-ios-0.2.0-rc
+    paths:
+      - 'peisov-vpn/native-ios/**'
+      - '.github/workflows/peisov-vpn-native-ios.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  parser-gate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify no committed real Meduza endpoint or secrets
+        run: |
+          set -euo pipefail
+          ! grep -R --line-number --fixed-string '91.149.218.89' peisov-vpn/native-ios
+          ! grep -R --line-number --fixed-string 'WHiqSgYBv2sqXU8HX+iEXb1m6icRb78wWU9B5fMZJEc=' peisov-vpn/native-ios
+          ! grep -R --line-number --fixed-string 'e930TGfH7dVjUJ1LdFG4Z046I8zx0yCOlq6z204zXUg=' peisov-vpn/native-ios
+
+      - name: Parser smoke
+        run: |
+          cd peisov-vpn/native-ios
+          xcrun swiftc Sources/Shared/MeduzaConfig.swift Tests/ParserSmoke.swift -o /tmp/peisov-parser
+          /tmp/peisov-parser
+
+      - name: Plist validation
+        run: |
+          plutil -lint peisov-vpn/native-ios/Resources/App-Info.plist
+          plutil -lint peisov-vpn/native-ios/Resources/Tunnel-Info.plist
+          plutil -lint peisov-vpn/native-ios/Config/PEISOVVPN.entitlements
+          plutil -lint peisov-vpn/native-ios/Config/PacketTunnel.entitlements
+
+  native-build:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          brew install xcodegen
+          xcodebuild -version
+          go version
+          xcodegen --version
+
+      - name: Build unsigned native iOS RC
+        run: |
+          chmod +x peisov-vpn/native-ios/scripts/build-rc.sh
+          peisov-vpn/native-ios/scripts/build-rc.sh
+
+      - name: Record native RC gate
+        if: success()
+        run: |
+          NOW="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          cat > peisov-vpn/native-ios/NATIVE_IOS_RC_GATE.json <<JSON
+          {
+            "product": "PEISOV VPN",
+            "version": "0.2.0 Native iOS RC",
+            "result": "PASS",
+            "swiftui_app": "PASS",
+            "network_extension": "PASS",
+            "meduza_conf_parser": "PASS",
+            "shared_keychain": "PASS",
+            "amneziawg_apple_pinned": "9d5ee60edefa95b933a738dd7cda671dd18021fc",
+            "unsigned_device_build": "PASS",
+            "physical_iphone_test": "PENDING",
+            "signed_ipa": "NOT_RELEASED",
+            "checked_at": "$NOW"
+          }
+          JSON
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add peisov-vpn/native-ios/NATIVE_IOS_RC_GATE.json
+          git commit -m "test(vpn): record native iOS 0.2.0 RC gate"
+          git push origin HEAD:"${GITHUB_REF_NAME}"
