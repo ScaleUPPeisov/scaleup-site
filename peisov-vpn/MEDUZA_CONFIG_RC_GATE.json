@@ -1,6 +1,6 @@
 {
   "product": "PEISOV VPN",
-  "candidate": "Meduza .conf import RC",
+  "candidate": "PEISOV VPN 0.1.1 Owner Preview",
   "result": "PASS",
   "parser": "PASS",
   "encrypted_vault": "PASS",
@@ -8,5 +8,5 @@
   "wrong_password_rejection": "PASS",
   "browser_smoke": "PASS",
   "production_released": false,
-  "checked_at": "2026-09-27T07:12:07Z"
+  "checked_at": "2026-09-27T07:13:40Z"
 }
