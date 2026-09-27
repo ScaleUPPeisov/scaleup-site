@@ -1,0 +1,259 @@
+name: ENDLUME Public Windows Core Acceptance
+
+on:
+  push:
+    branches:
+      - endlume-windows-public-audit
+    paths:
+      - '.github/workflows/windows-core-acceptance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  VERSION: 1.0.0-alpha.8.65
+  ASSET: ENDLUME-YT-Studio-PEISOV-Setup-1.0.0-alpha.8.65-x64.exe
+  ASSET_URL: https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/ENDLUME-YT-Studio-PEISOV-Setup-1.0.0-alpha.8.65-x64.exe
+  LATEST_URL: https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/latest.json
+  EXPECTED_SIZE: '98330820'
+  EXPECTED_SHA: 4a4be729cb34d93f6e55d03b9e727f4c80006043f404b84b6cb2a3cb659d695a
+
+jobs:
+  core:
+    runs-on: windows-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Record real Windows host
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Write-Host "RUNNER_NAME=$env:RUNNER_NAME"
+          Write-Host "RUNNER_OS=$env:RUNNER_OS"
+          Write-Host "RUNNER_ARCH=$env:RUNNER_ARCH"
+          Get-CimInstance Win32_OperatingSystem | Select-Object Caption,Version,BuildNumber,OSArchitecture | Format-List
+          Get-CimInstance Win32_Processor | Select-Object Name,NumberOfCores,NumberOfLogicalProcessors | Format-List
+          Get-CimInstance Win32_ComputerSystem | Select-Object TotalPhysicalMemory | Format-List
+          if($env:RUNNER_OS -ne 'Windows' -or $env:RUNNER_ARCH -ne 'X64'){ throw 'real Windows x64 required' }
+          Write-Host WINDOWS_REAL_OS_EXECUTION_GREEN
+
+      - name: Anonymous download and exact public 8.65 verification
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory -Force -Path audit | Out-Null
+          curl.exe -L --fail --silent --show-error --output audit/latest.json $env:LATEST_URL
+          if($LASTEXITCODE -ne 0){ throw 'latest.json anonymous download failed' }
+          curl.exe -L --fail --silent --show-error --output "audit/$env:ASSET" $env:ASSET_URL
+          if($LASTEXITCODE -ne 0){ throw 'installer anonymous download failed' }
+          $exe=Get-Item "audit/$env:ASSET"
+          $sha=(Get-FileHash $exe.FullName -Algorithm SHA256).Hash.ToLower()
+          Write-Host "PUBLIC_INSTALLER_SIZE=$($exe.Length)"
+          Write-Host "PUBLIC_INSTALLER_SHA256=$sha"
+          if($exe.Length -ne [int64]$env:EXPECTED_SIZE){ throw 'installer size mismatch' }
+          if($sha -ne $env:EXPECTED_SHA){ throw 'installer SHA mismatch' }
+          $m=Get-Content audit/latest.json -Raw | ConvertFrom-Json
+          if($m.version -ne $env:VERSION){ throw 'latest version mismatch' }
+          $w=$m.platforms.'windows-x86_64'
+          if($w.url -ne $env:ASSET_URL){ throw 'latest Windows URL mismatch' }
+          if($w.sha256 -ne $env:EXPECTED_SHA){ throw 'latest Windows SHA mismatch' }
+          if([string]::IsNullOrWhiteSpace([string]$w.signature)){ throw 'latest Windows signature missing' }
+          Write-Host WINDOWS_PUBLIC_865_ARTIFACT_EXACT_GREEN
+
+      - name: Install public 8.65 and locate shipped app
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup=(Resolve-Path "audit/$env:ASSET").Path
+          $p=Start-Process -FilePath $setup -ArgumentList '/S' -PassThru -Wait
+          if($p.ExitCode -ne 0){ throw "installer exit $($p.ExitCode)" }
+          Start-Sleep -Seconds 3
+          $roots=@(
+            'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+            'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+            'HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+          )
+          $u=Get-ItemProperty $roots -ErrorAction SilentlyContinue | Where-Object {$_.DisplayName -match 'ENDLUME'} | Select-Object -First 1
+          if(-not $u){ throw 'ENDLUME uninstall registration missing' }
+          Write-Host "DISPLAY_NAME=$($u.DisplayName)"
+          Write-Host "DISPLAY_VERSION=$($u.DisplayVersion)"
+          if([string]$u.DisplayVersion -ne $env:VERSION){ throw 'installed version mismatch' }
+          $apps=@()
+          if($u.DisplayIcon){
+            $icon=[string]$u.DisplayIcon
+            if($icon.StartsWith('"')){ $icon=($icon -split '"')[1] } else { $icon=($icon -split ',')[0] }
+            if(Test-Path $icon){ $apps += $icon }
+          }
+          if($u.InstallLocation -and (Test-Path $u.InstallLocation)){
+            $apps += Get-ChildItem $u.InstallLocation -Filter '*.exe' -File -ErrorAction SilentlyContinue |
+              Where-Object {$_.Name -notmatch 'uninstall|unins'} | Select-Object -ExpandProperty FullName
+          }
+          foreach($root in @("$env:LOCALAPPDATA\Programs","$env:LOCALAPPDATA","$env:ProgramFiles")){
+            if(Test-Path $root){
+              $apps += Get-ChildItem $root -Recurse -Depth 4 -Filter '*.exe' -File -ErrorAction SilentlyContinue |
+                Where-Object {$_.Name -match 'ENDLUME|endlume' -and $_.Name -notmatch 'uninstall|unins'} |
+                Select-Object -ExpandProperty FullName
+            }
+          }
+          $app=$apps | Where-Object {$_ -and (Test-Path $_)} | Select-Object -Unique | Select-Object -First 1
+          if(-not $app){ throw 'installed ENDLUME executable not found' }
+          "PUBLIC_WIN_APP=$app" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "PUBLIC_WIN_APP=$app"
+          $vi=[Diagnostics.FileVersionInfo]::GetVersionInfo($app)
+          Write-Host "PRODUCT_NAME=$($vi.ProductName)"
+          Write-Host "PRODUCT_VERSION=$($vi.ProductVersion)"
+          Write-Host WINDOWS_PUBLIC_865_INSTALL_GREEN
+
+      - name: Physical launch and relaunch
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $p=Start-Process -FilePath $env:PUBLIC_WIN_APP -PassThru
+          Start-Sleep -Seconds 4
+          if($p.HasExited){ throw "initial launch exited code=$($p.ExitCode)" }
+          Stop-Process -Id $p.Id -Force
+          Start-Sleep -Seconds 1
+          $p2=Start-Process -FilePath $env:PUBLIC_WIN_APP -PassThru
+          Start-Sleep -Seconds 4
+          if($p2.HasExited){ throw "relaunch exited code=$($p2.ExitCode)" }
+          Stop-Process -Id $p2.Id -Force
+          Start-Sleep -Seconds 1
+          Write-Host WINDOWS_PUBLIC_865_LAUNCH_RELAUNCH_GREEN
+
+      - name: Stage pinned FFmpeg validation tools
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $tag='autobuild-2026-09-14-13-17'
+          $archive='ffmpeg-N-126549-ga51bb69b09-win64-gpl.zip'
+          $url="https://github.com/BtbN/FFmpeg-Builds/releases/download/$tag/$archive"
+          $zip=Join-Path $env:RUNNER_TEMP $archive
+          $dir=Join-Path $env:RUNNER_TEMP 'e865-public-ffmpeg'
+          curl.exe -L --fail --silent --show-error --output $zip $url
+          if($LASTEXITCODE -ne 0){ throw 'ffmpeg download failed' }
+          Expand-Archive -Path $zip -DestinationPath $dir -Force
+          $ffm=(Get-ChildItem $dir -Recurse -Filter ffmpeg.exe | Select-Object -First 1).FullName
+          $ffp=(Get-ChildItem $dir -Recurse -Filter ffprobe.exe | Select-Object -First 1).FullName
+          if(-not $ffm -or -not $ffp){ throw 'ffmpeg tools missing' }
+          "AUDIT_FFMPEG=$ffm" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "AUDIT_FFPROBE=$ffp" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          & $ffm -version | Select-Object -First 1
+
+      - name: Generate synthetic Unicode fixtures and production jobs
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=Join-Path $env:RUNNER_TEMP 'Музыка для YouTube [Public]'
+          $out=Join-Path $env:RUNNER_TEMP 'Готовые видео [Public]'
+          New-Item -ItemType Directory -Force -Path $root,$out | Out-Null
+          $img=Join-Path $root 'Картинка 01 [Final].png'
+          & $env:AUDIT_FFMPEG -hide_banner -loglevel error -f lavfi -i 'color=c=0x162238:s=1920x1080:r=1' -frames:v 1 -y $img
+          $audio=@()
+          foreach($i in 1..15){
+            $freq=if($i -eq 1){440}elseif($i -eq 2){660}else{300+$i*31}
+            $dur=if($i -eq 1){7}elseif($i -eq 2){9}else{6+($i%4)}
+            $f=Join-Path $root ("Песня {0:d2} [Final].mp3" -f $i)
+            $source='sine=frequency=' + $freq + ':sample_rate=44100'
+            & $env:AUDIT_FFMPEG -hide_banner -loglevel error -f lavfi -i $source -t $dur -ac 2 -c:a libmp3lame -b:a 192k -y $f
+            $audio += $f
+          }
+          function Job($id,$name,$hours,$count){
+            return @{
+              project=@{id=$id;name=$name;path=$root;media=@($img);audio=@($audio | Select-Object -First $count);valid=$true;error=$null}
+              settings=@{width=1920;height=1080;fps=60;codec='h265';bitrateMbps=4.0;durationHours=$hours;durationMode='whole-track';loopMode='loop';crossfadeSec=0.0;normalizeLufs=$false;outputDir=$out;preset='fast';encoderPreference='auto'}
+              effects=@();subscribes=@();ambient=$null
+            }
+          }
+          $jobs=@(
+            (Job 'win-cold' 'Windows Cold [2h]' 2 2),
+            (Job 'win-warm1' 'Windows Warm 1 [2h]' 2 2),
+            (Job 'win-warm2' 'Windows Warm 2 [2h]' 2 2),
+            (Job 'win-warm3' 'Windows Warm 3 [2h]' 2 2),
+            (Job 'win-15tracks' 'Музыка Кириллица [15 tracks]' 2 15)
+          )
+          @{jobs=$jobs} | ConvertTo-Json -Depth 20 -Compress | Set-Content audit/jobs.json -Encoding utf8NoBOM
+          "FIXTURE_ROOT=$root" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "OUTPUT_ROOT=$out" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host WINDOWS_UNICODE_SYNTHETIC_FIXTURES_GREEN
+
+      - name: Execute shipped production render path
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $env:ENDLUME_E2E_RENDER_JOB=(Resolve-Path audit/jobs.json).Path
+          $env:ENDLUME_E2E_RESULT=(Resolve-Path audit).Path + '\e2e-result.json'
+          $sw=[Diagnostics.Stopwatch]::StartNew()
+          $p=Start-Process -FilePath $env:PUBLIC_WIN_APP -PassThru
+          if(-not $p.WaitForExit(1200000)){ Stop-Process $p.Id -Force; throw 'ENDLUME render E2E timeout' }
+          $sw.Stop()
+          Remove-Item Env:ENDLUME_E2E_RENDER_JOB -ErrorAction SilentlyContinue
+          Remove-Item Env:ENDLUME_E2E_RESULT -ErrorAction SilentlyContinue
+          Write-Host "APP_E2E_EXIT=$($p.ExitCode)"
+          Write-Host "APP_E2E_WALL=$($sw.Elapsed.TotalSeconds)"
+          if($p.ExitCode -ne 0){ throw "ENDLUME E2E exit $($p.ExitCode)" }
+          $x=Get-Content audit/e2e-result.json -Raw | ConvertFrom-Json
+          if($x.status -ne 'passed' -or @($x.results).Count -ne 5){ throw (Get-Content audit/e2e-result.json -Raw) }
+          Get-Content audit/e2e-result.json
+          Write-Host WINDOWS_SHIPPED_PRODUCTION_RENDER_PATH_GREEN
+
+      - name: Verify outputs resultPath resultBytes HEVC 1080p 60fps MP3
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $x=Get-Content audit/e2e-result.json -Raw | ConvertFrom-Json
+          $paths=@()
+          foreach($r in @($x.results)){
+            if([string]::IsNullOrWhiteSpace([string]$r.outputPath)){ throw "resultPath missing $($r.id)" }
+            if(-not (Test-Path $r.outputPath)){ throw "output missing $($r.id)" }
+            $bytes=(Get-Item $r.outputPath).Length
+            if([int64]$r.outputBytes -ne $bytes){ throw "outputBytes mismatch $($r.id)" }
+            if([string]$r.terminal.resultPath -ne [string]$r.outputPath){ throw "terminal resultPath mismatch $($r.id)" }
+            if([int64]$r.terminal.resultBytes -ne $bytes){ throw "terminal resultBytes mismatch $($r.id)" }
+            $probe=& $env:AUDIT_FFPROBE -v error -show_streams -show_format -of json $r.outputPath | ConvertFrom-Json
+            $v=$probe.streams | Where-Object {$_.codec_type -eq 'video'} | Select-Object -First 1
+            $a=$probe.streams | Where-Object {$_.codec_type -eq 'audio'} | Select-Object -First 1
+            if($v.codec_name -ne 'hevc'){ throw "codec mismatch $($r.id)" }
+            if([int]$v.width -ne 1920 -or [int]$v.height -ne 1080){ throw "resolution mismatch $($r.id)" }
+            if($v.avg_frame_rate -ne '60/1' -and $v.r_frame_rate -ne '60/1'){ throw "fps mismatch $($r.id)" }
+            if($a.codec_name -ne 'mp3'){ throw "audio codec mismatch $($r.id)" }
+            $dur=[double]$probe.format.duration
+            if([Math]::Abs($dur-7200.0) -gt 60.0){ throw "duration mismatch $($r.id): $dur" }
+            Write-Host "OUTPUT_GREEN id=$($r.id) bytes=$bytes duration=$dur encoder=$($r.encoder) fastPath=$($r.fastPath) audioMode=$($r.audioMode)"
+            $paths += [string]$r.outputPath
+          }
+          if(($paths | Select-Object -Unique).Count -ne $paths.Count){ throw 'stale/reused resultPath detected' }
+          $warm=@($x.results | Where-Object {$_.id -like 'win-warm*'} | ForEach-Object {[double]$_.wallSeconds}) | Sort-Object
+          $cold=[double]($x.results | Where-Object {$_.id -eq 'win-cold'} | Select-Object -ExpandProperty wallSeconds)
+          Write-Host "PERF_COLD=$cold"
+          Write-Host "PERF_WARM1=$($warm[0])"
+          Write-Host "PERF_WARM2=$($warm[1])"
+          Write-Host "PERF_WARM3=$($warm[2])"
+          Write-Host "PERF_MIN=$($warm[0])"
+          Write-Host "PERF_MEDIAN=$($warm[1])"
+          Write-Host "PERF_MAX=$($warm[2])"
+          Write-Host WINDOWS_RESULTPATH_RESULTBYTES_GREEN
+          Write-Host WINDOWS_HEVC_1080P_60FPS_MP3_GREEN
+          Write-Host WINDOWS_REPEATED_RENDER_PATHS_GREEN
+
+      - name: Process cleanup
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Start-Sleep -Seconds 1
+          $bad=Get-Process ffmpeg,ffprobe -ErrorAction SilentlyContinue
+          if($bad){ $bad | Format-Table; throw 'orphan ffmpeg/ffprobe' }
+          Get-Process endlume -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          Write-Host WINDOWS_PROCESS_CLEANUP_GREEN
+          Write-Host ENDLUME_865_WINDOWS_PRODUCT_CORE_GREEN
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: endlume-public-windows-core-evidence
+          path: |
+            audit/latest.json
+            audit/e2e-result.json
+          if-no-files-found: warn
+          retention-days: 7
