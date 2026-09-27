@@ -35,10 +35,10 @@ jobs:
       - name: Install exact public version
         shell: pwsh
         env:
-          VERSION: \${{ matrix.version }}
-          ASSET: \${{ matrix.asset }}
-          SIZE: \${{ matrix.size }}
-          SHA: \${{ matrix.sha }}
+          VERSION: ${{ matrix.version }}
+          ASSET: ${{ matrix.asset }}
+          SIZE: ${{ matrix.size }}
+          SHA: ${{ matrix.sha }}
         run: |
           $ErrorActionPreference='Stop'
           New-Item -ItemType Directory -Force -Path audit | Out-Null
@@ -70,7 +70,7 @@ jobs:
       - name: Capture physical Windows desktop progression
         shell: pwsh
         env:
-          VERSION: \${{ matrix.version }}
+          VERSION: ${{ matrix.version }}
         run: |
           $ErrorActionPreference='Stop'
           Add-Type -AssemblyName System.Windows.Forms
@@ -112,7 +112,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: windows-visual-\${{ matrix.version }}
+          name: windows-visual-${{ matrix.version }}
           path: audit/*.png
           if-no-files-found: warn
           retention-days: 7
