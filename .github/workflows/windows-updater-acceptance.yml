@@ -1,0 +1,198 @@
+name: ENDLUME Public Windows Updater Acceptance
+
+on:
+  push:
+    branches:
+      - endlume-windows-public-audit
+    paths:
+      - '.github/workflows/windows-updater-acceptance.yml'
+      - 'scripts/cdp.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: endlume-public-windows-updater
+  cancel-in-progress: true
+
+env:
+  V864: 1.0.0-alpha.8.64
+  V865: 1.0.0-alpha.8.65
+  A864: ENDLUME-YT-Studio-PEISOV-Setup-1.0.0-alpha.8.64-x64.exe
+  A865: ENDLUME-YT-Studio-PEISOV-Setup-1.0.0-alpha.8.65-x64.exe
+  U864: https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/ENDLUME-YT-Studio-PEISOV-Setup-1.0.0-alpha.8.64-x64.exe
+  U865: https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/ENDLUME-YT-Studio-PEISOV-Setup-1.0.0-alpha.8.65-x64.exe
+  S864: '98314071'
+  H864: 2d500db9dd42e40947f58874fe039b54ffd36accc85a9038326d8376a186c351
+  S865: '98330820'
+  H865: 4a4be729cb34d93f6e55d03b9e727f4c80006043f404b84b6cb2a3cb659d695a
+
+jobs:
+  updater:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download exact public 8.64 and 8.65
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory -Force -Path audit | Out-Null
+          foreach($v in @(
+            @{u=$env:U864;n=$env:A864;s=[int64]$env:S864;h=$env:H864},
+            @{u=$env:U865;n=$env:A865;s=[int64]$env:S865;h=$env:H865}
+          )){
+            curl.exe -L --fail --silent --show-error --output "audit/$($v.n)" $v.u
+            if($LASTEXITCODE -ne 0){ throw "download failed $($v.n)" }
+            $f=Get-Item "audit/$($v.n)"
+            $h=(Get-FileHash $f.FullName -Algorithm SHA256).Hash.ToLower()
+            Write-Host "ASSET=$($v.n) SIZE=$($f.Length) SHA=$h"
+            if($f.Length -ne $v.s -or $h -ne $v.h){ throw "artifact mismatch $($v.n)" }
+          }
+          Write-Host WINDOWS_PUBLIC_864_865_ARTIFACTS_GREEN
+
+      - name: Install public 8.64
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $p=Start-Process -FilePath (Resolve-Path "audit/$env:A864") -ArgumentList '/S' -PassThru -Wait
+          if($p.ExitCode -ne 0){ throw "8.64 installer exit $($p.ExitCode)" }
+          Start-Sleep -Seconds 3
+          $roots=@(
+            'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+            'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+            'HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+          )
+          $u=Get-ItemProperty $roots -ErrorAction SilentlyContinue | Where-Object {$_.DisplayName -match 'ENDLUME'} | Select-Object -First 1
+          if(-not $u){ throw 'registration missing' }
+          Write-Host "DISPLAY_VERSION=$($u.DisplayVersion)"
+          if([string]$u.DisplayVersion -ne $env:V864){ throw 'not 8.64 after install' }
+          $apps=@()
+          if($u.DisplayIcon){
+            $icon=[string]$u.DisplayIcon
+            if($icon.StartsWith('"')){ $icon=($icon -split '"')[1] } else { $icon=($icon -split ',')[0] }
+            if(Test-Path $icon){ $apps += $icon }
+          }
+          if($u.InstallLocation -and (Test-Path $u.InstallLocation)){
+            $apps += Get-ChildItem $u.InstallLocation -Filter '*.exe' -File -ErrorAction SilentlyContinue |
+              Where-Object {$_.Name -notmatch 'uninstall|unins'} | Select-Object -ExpandProperty FullName
+          }
+          if($u.UninstallString -and ([string]$u.UninstallString -match '^"([^"]+)"')){
+            $parent=Split-Path $Matches[1] -Parent
+            if(Test-Path $parent){
+              $apps += Get-ChildItem $parent -Filter '*.exe' -File -ErrorAction SilentlyContinue |
+                Where-Object {$_.Name -notmatch 'uninstall|unins'} | Select-Object -ExpandProperty FullName
+            }
+          }
+          $app=$apps | Where-Object {$_ -and (Test-Path $_)} | Select-Object -Unique | Select-Object -First 1
+          if(-not $app){ throw '8.64 app exe not found' }
+          "PUBLIC_WIN_APP=$app" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "PUBLIC_WIN_APP=$app"
+          Write-Host WINDOWS_PUBLIC_864_INSTALL_GREEN
+
+      - name: Production updater 8.64 to 8.65 via shipped IPC
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $port=9240
+          $sentinelDir=Join-Path $env:APPDATA 'studio.endlume.desktop'
+          New-Item -ItemType Directory -Force -Path $sentinelDir | Out-Null
+          $sentinel=Join-Path $sentinelDir 'public-updater-sentinel.txt'
+          "sentinel-$env:GITHUB_RUN_ID" | Set-Content $sentinel -Encoding utf8NoBOM
+          $before=(Get-FileHash $sentinel -Algorithm SHA256).Hash
+
+          $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS="--remote-debugging-port=$port"
+          $env:ENDLUME_CDP_PORT=[string]$port
+          $p=Start-Process -FilePath $env:PUBLIC_WIN_APP -PassThru
+          Remove-Item Env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS -ErrorAction SilentlyContinue
+          Start-Sleep -Seconds 2
+          if($p.HasExited){ throw '8.64 launch exited early' }
+
+          $expr="(async()=>await window.__TAURI_INTERNALS__.invoke('local_update_check'))()"
+          $b64=[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($expr))
+          $raw=& node scripts/cdp.mjs eval $b64
+          if($LASTEXITCODE -ne 0){ throw 'update check IPC failed' }
+          $check=$raw | ConvertFrom-Json
+          $check | ConvertTo-Json -Depth 10 | Set-Content audit/check-864.json -Encoding utf8NoBOM
+          Write-Host "CHECK_864=$($check | ConvertTo-Json -Compress -Depth 10)"
+          if(-not $check.available -or [string]$check.current -ne $env:V864 -or [string]$check.version -ne $env:V865){ throw '8.64 did not detect 8.65' }
+
+          $expr2="(async()=>await window.__TAURI_INTERNALS__.invoke('local_update_start'))()"
+          $b642=[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($expr2))
+          try {
+            $raw2=& node scripts/cdp.mjs eval $b642
+            if($LASTEXITCODE -eq 0){
+              $start=$raw2 | ConvertFrom-Json
+              $start | ConvertTo-Json -Depth 10 | Set-Content audit/update-start.json -Encoding utf8NoBOM
+              Write-Host "UPDATE_START=$($start | ConvertTo-Json -Compress -Depth 10)"
+            } else {
+              Write-Host 'CDP connection ended while installer applied update'
+            }
+          } catch {
+            Write-Host "CDP_INSTALL_CONNECTION_END=$($_.Exception.Message)"
+          }
+
+          Get-Process endlume -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          Start-Sleep -Seconds 2
+
+          $roots=@(
+            'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+            'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+            'HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+          )
+          $ok=$false
+          for($i=0;$i -lt 120;$i++){
+            $u=Get-ItemProperty $roots -ErrorAction SilentlyContinue | Where-Object {$_.DisplayName -match 'ENDLUME'} | Select-Object -First 1
+            if($u -and [string]$u.DisplayVersion -eq $env:V865){ $ok=$true; break }
+            Start-Sleep -Seconds 1
+          }
+          if(-not $ok){ throw 'physical updater apply did not produce 8.65' }
+          Write-Host "VERSION_AFTER_UPDATE=$($u.DisplayVersion)"
+          if(-not (Test-Path $sentinel)){ throw 'state sentinel lost' }
+          $after=(Get-FileHash $sentinel -Algorithm SHA256).Hash
+          if($before -ne $after){ throw 'state sentinel changed' }
+
+          $state=Get-ChildItem @($env:LOCALAPPDATA,$env:APPDATA) -Filter state.json -Recurse -ErrorAction SilentlyContinue |
+            Where-Object {$_.FullName -match 'studio\.endlume\.desktop' -and $_.FullName -match 'update-center'} |
+            Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+          if(-not $state){ throw 'updater state.json not found' }
+          Copy-Item $state.FullName audit/updater-state.json -Force
+          $sv=Get-Content $state.FullName -Raw | ConvertFrom-Json
+          Write-Host "UPDATER_STATE=$($sv | ConvertTo-Json -Compress -Depth 10)"
+          if($sv.state -ne 'RESTART_REQUIRED'){ throw 'updater state not RESTART_REQUIRED' }
+          if([int64]$sv.downloadedBytes -ne [int64]$env:S865){ throw 'updater downloadedBytes mismatch' }
+          Write-Host WINDOWS_UPDATER_APPLY_STATE_GREEN
+
+      - name: Relaunch 8.65 and prove no update loop
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $port=9241
+          $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS="--remote-debugging-port=$port"
+          $env:ENDLUME_CDP_PORT=[string]$port
+          $p=Start-Process -FilePath $env:PUBLIC_WIN_APP -PassThru
+          Remove-Item Env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS -ErrorAction SilentlyContinue
+          Start-Sleep -Seconds 3
+          if($p.HasExited){ throw 'updated 8.65 relaunch exited early' }
+          $expr="(async()=>await window.__TAURI_INTERNALS__.invoke('local_update_check'))()"
+          $b64=[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($expr))
+          $raw=& node scripts/cdp.mjs eval $b64
+          if($LASTEXITCODE -ne 0){ throw '8.65 update check IPC failed' }
+          $check=$raw | ConvertFrom-Json
+          $check | ConvertTo-Json -Depth 10 | Set-Content audit/check-865.json -Encoding utf8NoBOM
+          Write-Host "CHECK_865=$($check | ConvertTo-Json -Compress -Depth 10)"
+          if($check.available){ throw '8.65 offered itself again' }
+          Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+          Write-Host WINDOWS_UPDATER_864_TO_865_GREEN
+          Write-Host WINDOWS_UPDATER_STATE_PRESERVED_GREEN
+          Write-Host WINDOWS_UPDATER_NO_LOOP_GREEN
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: endlume-public-windows-updater-evidence
+          path: audit/*.json
+          if-no-files-found: warn
+          retention-days: 7
