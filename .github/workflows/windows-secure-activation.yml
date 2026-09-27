@@ -1,0 +1,172 @@
+name: ENDLUME Public Windows Secure Activation Probe
+
+on:
+  push:
+    branches:
+      - endlume-windows-public-audit
+    paths:
+      - '.github/workflows/windows-secure-activation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: endlume-public-windows-secure-activation
+  cancel-in-progress: true
+
+jobs:
+  activate:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Install exact public 8.65
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          New-Item -ItemType Directory -Force -Path audit | Out-Null
+          $asset='ENDLUME-YT-Studio-PEISOV-Setup-1.0.0-alpha.8.65-x64.exe'
+          $url="https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/$asset"
+          curl.exe -L --fail --silent --show-error --output "audit/$asset" $url
+          $f=Get-Item "audit/$asset"
+          $h=(Get-FileHash $f.FullName -Algorithm SHA256).Hash.ToLower()
+          if($f.Length -ne 98330820 -or $h -ne '4a4be729cb34d93f6e55d03b9e727f4c80006043f404b84b6cb2a3cb659d695a'){throw 'artifact mismatch'}
+          $p=Start-Process $f.FullName -ArgumentList '/S' -PassThru -Wait
+          if($p.ExitCode -ne 0){throw "installer exit $($p.ExitCode)"}
+          Start-Sleep 3
+          $roots=@('HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*','HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*','HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*')
+          $u=Get-ItemProperty $roots -ErrorAction SilentlyContinue|? {$_.DisplayName -match 'ENDLUME'}|select -First 1
+          if(-not $u -or [string]$u.DisplayVersion -ne '1.0.0-alpha.8.65'){throw 'installed version mismatch'}
+          $app=$null
+          if($u.DisplayIcon){
+            $v=[string]$u.DisplayIcon
+            if($v.StartsWith('"')){$v=($v -split '"')[1]}else{$v=($v -split ',')[0]}
+            if(Test-Path $v){$app=$v}
+          }
+          if(-not $app -and $u.UninstallString -and ([string]$u.UninstallString -match '^"([^"]+)"')){
+            $parent=Split-Path $Matches[1] -Parent
+            $app=(Get-ChildItem $parent -Filter '*.exe' -File|? {$_.Name -notmatch 'uninstall|unins'}|select -First 1).FullName
+          }
+          if(-not $app){throw 'app missing'}
+          "PUBLIC_WIN_APP=$app"|Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host WINDOWS_SECURE_ACTIVATION_PUBLIC_865_INSTALLED
+
+      - name: Generate ephemeral RSA key and wait for encrypted audit license
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $rsa=[Security.Cryptography.RSA]::Create(2048)
+          $pub=[Convert]::ToBase64String($rsa.ExportSubjectPublicKeyInfo())
+          Write-Host RSA_PUBLIC_KEY_B64_START
+          Write-Host $pub
+          Write-Host RSA_PUBLIC_KEY_B64_END
+          $payloadName="audit-license-$env:GITHUB_RUN_ID.b64"
+          Write-Host "AUDIT_LICENSE_PAYLOAD=$payloadName"
+
+          $raw="https://raw.githubusercontent.com/ScaleUPPeisov/scaleup-site/endlume-windows-public-audit/audit-payloads/$payloadName"
+          $payload='audit/license.enc.b64'
+          $got=$false
+          for($i=0;$i -lt 180;$i++){
+            curl.exe -L --fail --silent --show-error --output $payload "$raw?poll=$i" 2>$null
+            if($LASTEXITCODE -eq 0 -and (Test-Path $payload) -and (Get-Item $payload).Length -gt 100){$got=$true;break}
+            Remove-Item $payload -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 2
+          }
+          if(-not $got){throw 'encrypted audit license payload timeout'}
+          $cipher=[Convert]::FromBase64String((Get-Content $payload -Raw).Trim())
+          $plain=$rsa.Decrypt($cipher,[Security.Cryptography.RSAEncryptionPadding]::OaepSHA256)
+          $key=[Text.Encoding]::UTF8.GetString($plain)
+          if($key -notmatch '^ENDLUME-(?:[A-Z0-9]{4}-){7}[A-Z0-9]{4}$'){throw 'decrypted audit license format invalid'}
+          Remove-Item $payload -Force
+          Write-Host AUDIT_LICENSE_DECRYPTED_IN_MEMORY_ONLY
+
+          Add-Type -AssemblyName System.Windows.Forms
+          Add-Type -AssemblyName System.Drawing
+          Add-Type @'
+          using System;
+          using System.Runtime.InteropServices;
+          public static class Win32Audit {
+            [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left,Top,Right,Bottom; }
+            [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
+            [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd,out RECT rect);
+            [DllImport("user32.dll")] public static extern bool SetCursorPos(int X,int Y);
+            [DllImport("user32.dll")] public static extern void mouse_event(uint flags,uint dx,uint dy,uint data,UIntPtr extra);
+          }
+          '@
+          function ClickAt([int]$x,[int]$y){
+            [Win32Audit]::SetCursorPos($x,$y)|Out-Null
+            [Win32Audit]::mouse_event(0x0002,0,0,0,[UIntPtr]::Zero)
+            [Win32Audit]::mouse_event(0x0004,0,0,0,[UIntPtr]::Zero)
+            Start-Sleep -Milliseconds 150
+          }
+          function Capture([string]$path){
+            $b=[Windows.Forms.Screen]::PrimaryScreen.Bounds
+            $bmp=New-Object Drawing.Bitmap $b.Width,$b.Height
+            $g=[Drawing.Graphics]::FromImage($bmp)
+            $g.CopyFromScreen($b.Location,[Drawing.Point]::Empty,$b.Size)
+            $bmp.Save($path,[Drawing.Imaging.ImageFormat]::Png)
+            $g.Dispose();$bmp.Dispose()
+          }
+
+          $p=Start-Process $env:PUBLIC_WIN_APP -PassThru
+          Start-Sleep -Seconds 5
+          if($p.HasExited){throw 'app exited before activation'}
+          $p.Refresh()
+          $h=$p.MainWindowHandle
+          if($h -eq 0){throw 'ENDLUME HWND missing'}
+          Capture 'audit/activation-before.png'
+          [Win32Audit]::SetForegroundWindow($h)|Out-Null
+          Start-Sleep -Milliseconds 300
+          $rect=New-Object Win32Audit+RECT
+          [Win32Audit]::GetWindowRect($h,[ref]$rect)|Out-Null
+          $w=$rect.Right-$rect.Left;$hh=$rect.Bottom-$rect.Top
+          Write-Host "WINDOW_RECT=$($rect.Left),$($rect.Top),$w,$hh"
+          $ix=$rect.Left+[int]($w*0.50)
+          $iy=$rect.Top+[int]($hh*0.59)
+          ClickAt $ix $iy
+          [Windows.Forms.SendKeys]::SendWait('^a')
+          [Windows.Forms.SendKeys]::SendWait($key)
+          [Windows.Forms.SendKeys]::SendWait('{ENTER}')
+
+          $licFile=$null
+          for($i=0;$i -lt 40;$i++){
+            foreach($candidate in @("$env:APPDATA\studio.endlume.desktop\license.json","$env:LOCALAPPDATA\studio.endlume.desktop\license.json")){
+              if(Test-Path $candidate){
+                try{
+                  $v=Get-Content $candidate -Raw|ConvertFrom-Json
+                  if($v.valid -eq $true){$licFile=$candidate;break}
+                }catch{}
+              }
+            }
+            if($licFile){break}
+            if($i -eq 8){
+              [Win32Audit]::SetForegroundWindow($h)|Out-Null
+              ClickAt ($rect.Left+[int]($w*0.50)) ($rect.Top+[int]($hh*0.66))
+            }
+            Start-Sleep -Milliseconds 500
+          }
+          if(-not $licFile){throw 'activation did not create valid license state'}
+          Write-Host "LICENSE_STATE_FILE=$licFile"
+          $lv=Get-Content $licFile -Raw|ConvertFrom-Json
+          Write-Host "LICENSE_VALID=$($lv.valid)"
+          Write-Host "LICENSE_TYPE=$($lv.type)"
+          Write-Host "LICENSE_STATUS=$($lv.licenseStatus)"
+          Write-Host "LICENSE_MASKED=$($lv.maskedKey)"
+          Start-Sleep -Seconds 4
+          Capture 'audit/activation-after.png'
+          $p.Refresh()
+          Write-Host "POST_ACTIVATION_TITLE=$($p.MainWindowTitle)"
+          Write-Host WINDOWS_SECURE_EPHEMERAL_LICENSE_ACTIVATION_GREEN
+
+          Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+          $key=$null
+          [Array]::Clear($plain,0,$plain.Length)
+          $rsa.Dispose()
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: endlume-windows-secure-activation-evidence
+          path: audit/*.png
+          if-no-files-found: warn
+          retention-days: 7
