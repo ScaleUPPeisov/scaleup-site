@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -23,14 +23,136 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
         with:
           enablement: true
+
       - name: Upload static site
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: PEISOV VPN production gate
+        shell: bash
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          APP_URL="${PAGE_URL%/}/peisov-vpn/"
+          echo "APP_URL=$APP_URL" >> "$GITHUB_ENV"
+
+          get200() {
+            code="$(curl -L --retry 12 --retry-all-errors --retry-delay 2 --connect-timeout 10 --max-time 30 -sS -o "$2" -w '%{http_code}' "$1")"
+            test "$code" = "200"
+          }
+
+          get200 "$APP_URL" /tmp/home.html
+          get200 "${APP_URL}manifest.webmanifest" /tmp/manifest.json
+          get200 "${APP_URL}sw.js" /tmp/sw.js
+          get200 "${APP_URL}app.js" /tmp/app.js
+          get200 "${APP_URL}apple-touch-icon.png" /tmp/apple.png
+          get200 "${APP_URL}favicon.png" /tmp/favicon.png
+          get200 "${APP_URL}assets/icons/icon-192.png" /tmp/icon192.png
+          get200 "${APP_URL}assets/icons/icon-512.png" /tmp/icon512.png
+          get200 "${APP_URL}owner/" /tmp/owner.html
+
+          grep -q '<title>PEISOV VPN</title>' /tmp/home.html
+          grep -q 'apple-mobile-web-app-capable' /tmp/home.html
+          grep -q 'apple-mobile-web-app-status-bar-style' /tmp/home.html
+          grep -q 'apple-mobile-web-app-title' /tmp/home.html
+          grep -q 'apple-touch-icon' /tmp/home.html
+          grep -q 'peisov-vpn-v0.1.0' /tmp/sw.js
+          grep -q 'api64.ipify.org' /tmp/app.js
+          grep -q 'expected&&normalizeIp(ip)===normalizeIp(expected)' /tmp/app.js
+          grep -q "location.replace('../?mode=owner')" /tmp/owner.html
+
+          jq -e '.name=="PEISOV VPN" and .short_name=="PEISOV VPN" and .display=="standalone" and .orientation=="portrait-primary"' /tmp/manifest.json >/dev/null
+          jq -e '[.icons[].sizes] | index("192x192") != null and index("512x512") != null' /tmp/manifest.json >/dev/null
+
+          python3 - <<'PY'
+          import struct
+          for path, expected in {
+            '/tmp/apple.png': (192,192),
+            '/tmp/icon192.png': (192,192),
+            '/tmp/icon512.png': (512,512),
+          }.items():
+            with open(path,'rb') as f:
+              h=f.read(24)
+            assert h[:8] == b'\x89PNG\r\n\x1a\n'
+            assert struct.unpack('>II',h[16:24]) == expected
+          PY
+
+          IP="$(curl -L --retry 5 --retry-all-errors --connect-timeout 10 --max-time 20 -sS 'https://api64.ipify.org?format=json' | jq -r '.ip')"
+          test -n "$IP"
+          test "$IP" != "null"
+
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME"
+
+          for size in 390,844 393,852 430,932; do
+            "$CHROME" --headless=new --no-sandbox --disable-gpu --window-size="$size" --virtual-time-budget=12000 --dump-dom "${APP_URL}?gate=$size" > "/tmp/dom-${size/,/x}.html" 2>/tmp/chrome.log
+            grep -q 'PEISOV VPN' "/tmp/dom-${size/,/x}.html"
+            grep -q 'Not protected' "/tmp/dom-${size/,/x}.html"
+            python3 - "/tmp/dom-${size/,/x}.html" <<'PY'
+          import re,sys
+          s=open(sys.argv[1],encoding='utf-8').read()
+          m=re.search(r'id="ipValue"[^>]*>([^<]+)<',s)
+          assert m and m.group(1).strip() not in ('','—'), m.group(1) if m else 'missing ipValue'
+          PY
+          done
+
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --window-size=390,844 --virtual-time-budget=8000 --dump-dom "${APP_URL}owner/" > /tmp/owner-dom.html 2>/tmp/chrome-owner.log
+          grep -q 'PEISOV VPN Control' /tmp/owner-dom.html
+          grep -q 'Overview' /tmp/owner-dom.html
+          grep -q 'Users' /tmp/owner-dom.html
+          grep -q 'Servers' /tmp/owner-dom.html
+          grep -q 'Branding' /tmp/owner-dom.html
+          grep -q 'Integrations' /tmp/owner-dom.html
+          grep -q 'Audit Log' /tmp/owner-dom.html
+          grep -q 'Settings' /tmp/owner-dom.html
+
+          echo "PEISOV_VPN_PRODUCTION_GATE=PASS"
+
+      - name: Record PEISOV VPN production result
+        if: success()
+        shell: bash
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+          APP_URL: ${{ env.APP_URL }}
+        run: |
+          set -euo pipefail
+          NOW="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          cat > peisov-vpn/PRODUCTION_GATE.json <<JSON
+          {
+            "product": "PEISOV VPN",
+            "version": "0.1.0 Owner Preview",
+            "production_url": "$APP_URL",
+            "deployment_root": "$PAGE_URL",
+            "production_deployed": true,
+            "https": "PASS",
+            "home": "PASS",
+            "manifest": "PASS",
+            "service_worker": "PASS",
+            "apple_touch_icon": "PASS",
+            "favicon": "PASS",
+            "public_ip_endpoint": "PASS",
+            "false_protected_source_gate": "PASS",
+            "owner_panel": "PASS",
+            "mobile_render_390x844": "PASS",
+            "mobile_render_393x852": "PASS",
+            "mobile_render_430x932": "PASS",
+            "checked_at": "$NOW"
+          }
+          JSON
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add peisov-vpn/PRODUCTION_GATE.json
+          git commit -m "chore: record PEISOV VPN production gate" || exit 0
+          git push origin HEAD:main
