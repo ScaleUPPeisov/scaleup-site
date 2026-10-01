@@ -38,6 +38,22 @@ jobs:
             https://api.github.com/repos/ScaleUPPeisov/endlume-desktop \
             | python3 -c "import json,sys;d=json.load(sys.stdin);assert d['full_name']=='ScaleUPPeisov/endlume-desktop';print('ENDLUME_PRIVATE_SOURCE_ACCESS_GREEN')"
 
+  github-token-cross-repo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Test repository GITHUB_TOKEN against private source
+        shell: bash
+        env:
+          SOURCE_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          CODE="$(curl -sS -o "$RUNNER_TEMP/private-source.json" -w '%{http_code}' -H "Authorization: Bearer $SOURCE_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/ScaleUPPeisov/endlume-desktop)"
+          echo "PRIVATE_SOURCE_HTTP=$CODE"
+          test "$CODE" = "200"
+          python3 -c "import json;d=json.load(open('$RUNNER_TEMP/private-source.json'));assert d['full_name']=='ScaleUPPeisov/endlume-desktop'"
+          echo ENDLUME_GITHUB_TOKEN_PRIVATE_SOURCE_GREEN
+
   windows:
     runs-on: windows-latest
     timeout-minutes: 5
