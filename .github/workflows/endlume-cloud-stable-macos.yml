@@ -119,7 +119,8 @@ jobs:
           d["bundle"]["createUpdaterArtifacts"]=False
           p.write_text(json.dumps(d,ensure_ascii=False,indent=2)+"\n")
           PY
-          npm run tauri build -- --target aarch64-apple-darwin --bundles app
+          ENDLUME_TAURI_TARGET=aarch64-apple-darwin node scripts/prepare-macos-ffmpeg-runtime.mjs
+          npx tauri build --target aarch64-apple-darwin --bundles app
 
       - name: Package updater-compatible application
         shell: bash
