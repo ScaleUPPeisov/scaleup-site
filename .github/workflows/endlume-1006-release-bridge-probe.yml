@@ -54,6 +54,21 @@ jobs:
           python3 -c "import json;d=json.load(open('$RUNNER_TEMP/private-source.json'));assert d['full_name']=='ScaleUPPeisov/endlume-desktop'"
           echo ENDLUME_GITHUB_TOKEN_PRIVATE_SOURCE_GREEN
 
+  private-action-bridge:
+    runs-on: macos-15
+    timeout-minutes: 5
+    steps:
+      - name: Load exact private ENDLUME source as private action
+        uses: ScaleUPPeisov/endlume-desktop/.github/actions/endlume-1006-private-source-bridge@e1551ba707d662cea54f0f8597036a84a024e741
+
+      - name: Verify private source root remains local to runner
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -n "${ENDLUME_PRIVATE_SOURCE_ROOT:-}"
+          test -f "$ENDLUME_PRIVATE_SOURCE_ROOT/package.json"
+          echo ENDLUME_1006_PRIVATE_ACTION_BRIDGE_GREEN
+
   windows:
     runs-on: windows-latest
     timeout-minutes: 5
