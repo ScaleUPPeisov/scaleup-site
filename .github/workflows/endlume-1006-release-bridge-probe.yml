@@ -1,0 +1,51 @@
+name: ENDLUME 10.0.6 Release Bridge Probe
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/endlume-1006-release-bridge-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    runs-on: macos-15
+    timeout-minutes: 5
+    steps:
+      - name: Public macOS runner
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(uname -s)" = Darwin
+          echo "RUNNER_NAME=$RUNNER_NAME"
+          echo "RUNNER_ARCH=$RUNNER_ARCH"
+          echo ENDLUME_1006_PUBLIC_MACOS_RUNNER_GREEN
+
+      - name: Private source token availability
+        shell: bash
+        env:
+          SOURCE_TOKEN: ${{ secrets.ENDLUME_RELEASE_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          if test -z "${SOURCE_TOKEN:-}"; then
+            echo "ENDLUME_RELEASE_TOKEN_MISSING"
+            exit 42
+          fi
+          curl -fsSL -H "Authorization: Bearer $SOURCE_TOKEN" -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/ScaleUPPeisov/endlume-desktop \
+            | python3 -c "import json,sys;d=json.load(sys.stdin);assert d['full_name']=='ScaleUPPeisov/endlume-desktop';print('ENDLUME_PRIVATE_SOURCE_ACCESS_GREEN')"
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - name: Public Windows runner
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if($env:RUNNER_OS -ne 'Windows' -or $env:RUNNER_ARCH -ne 'X64'){throw 'wrong runner'}
+          Write-Host "RUNNER_NAME=$env:RUNNER_NAME"
+          Write-Host ENDLUME_1006_PUBLIC_WINDOWS_RUNNER_GREEN
