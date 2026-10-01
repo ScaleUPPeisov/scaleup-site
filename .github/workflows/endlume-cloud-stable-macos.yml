@@ -1,4 +1,4 @@
-name: ENDLUME Cloud Stable macOS Release
+name: ENDLUME 10.0.6 Cloud macOS Legacy Updater Release
 
 on:
   push:
@@ -6,132 +6,103 @@ on:
     paths:
       - ".github/workflows/endlume-cloud-stable-macos.yml"
   workflow_dispatch:
-    inputs:
-      source_sha:
-        description: Exact ENDLUME source SHA
-        required: true
-        default: bd81d86152cb2f20fe02e33849aec255ea013634
-      version:
-        description: ENDLUME version
-        required: true
-        default: 10.0.6
 
 permissions:
   contents: write
 
 concurrency:
-  group: endlume-cloud-stable-macos
+  group: endlume-1006-cloud-macos-legacy-updater
   cancel-in-progress: false
 
 env:
-  SOURCE_REPO: ScaleUPPeisov/endlume-desktop
-  STABLE_TAG: endlume-stable
-  PRODUCT_NAME: ENDLUME YT Studio PEISOV
+  PRIVATE_REPO: ScaleUPPeisov/endlume-desktop
+  SOURCE_SHA: bd81d86152cb2f20fe02e33849aec255ea013634
+  HOTFIX_SHA: 03df61a58641d5ce0b4e1c432c99af935acbf4d1
+  VERSION: 10.0.6
+  PRIVATE_TAG: endlume-v10.0.6
+  PUBLIC_TAG: endlume-stable
+  ZIP_NAME: ENDLUME-YT-Studio-PEISOV-10.0.6-macOS-ARM64.zip
+  SHA_NAME: ENDLUME-YT-Studio-PEISOV-10.0.6-macOS-ARM64.zip.sha256
 
 jobs:
-  build-sign-publish:
+  release:
     runs-on: macos-15
     timeout-minutes: 120
 
     steps:
-      - name: Checkout stable host repo
-        uses: actions/checkout@v4
-
       - name: Clone exact private ENDLUME source
         env:
-          GH_TOKEN: ${{ secrets.ENDLUME_SOURCE_TOKEN }}
-          SOURCE_SHA: ${{ inputs.source_sha }}
+          SOURCE_TOKEN: ${{ secrets.ENDLUME_SOURCE_TOKEN }}
         shell: bash
         run: |
           set -Eeuo pipefail
-          test -n "${GH_TOKEN:-}" || { echo "ENDLUME_SOURCE_TOKEN missing"; exit 10; }
-          gh auth status -h github.com
-          git clone "https://x-access-token:${GH_TOKEN}@github.com/${SOURCE_REPO}.git" endlume-src
+          test -n "${SOURCE_TOKEN:-}" || { echo "ENDLUME_SOURCE_TOKEN missing"; exit 10; }
+          git clone "https://x-access-token:${SOURCE_TOKEN}@github.com/${PRIVATE_REPO}.git" endlume-src
           cd endlume-src
-          git checkout "${SOURCE_SHA}"
-          test "$(git rev-parse HEAD)" = "${SOURCE_SHA}"
+          git checkout "$SOURCE_SHA"
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          git merge-base --is-ancestor "$HOTFIX_SHA" "$SOURCE_SHA"
+          echo "SOURCE_HOTFIX_INCLUDED_GREEN"
 
-      - name: Verify exact release identity
-        env:
-          VERSION: ${{ inputs.version }}
+      - name: Verify version source of truth
         shell: bash
         run: |
           set -Eeuo pipefail
           cd endlume-src
           python3 - <<'PY'
-          import json,os,re
+          import json,re
           from pathlib import Path
-          v=os.environ['VERSION']
-          assert json.loads(Path('package.json').read_text())['version']==v
-          assert json.loads(Path('package-lock.json').read_text())['version']==v
-          cfg=json.loads(Path('src-tauri/tauri.conf.json').read_text())
-          assert cfg['version']==v
-          assert cfg['identifier']=='studio.endlume.desktop'
-          assert cfg['app']['windows'] and any(w.get('label')=='main' for w in cfg['app']['windows'])
-          cargo=Path('src-tauri/Cargo.toml').read_text()
-          assert re.search(r'^version\s*=\s*"'+re.escape(v)+r'"$',cargo,re.M)
-          print('ENDLUME_EXACT_SOURCE_GREEN')
+          v="10.0.6"
+          assert json.loads(Path("package.json").read_text())["version"]==v
+          assert json.loads(Path("package-lock.json").read_text())["version"]==v
+          cfg=json.loads(Path("src-tauri/tauri.conf.json").read_text())
+          assert cfg["version"]==v
+          cargo=Path("src-tauri/Cargo.toml").read_text()
+          assert re.search(r'^version\s*=\s*"10\.0\.6"$',cargo,re.M)
+          settings=Path("src/pages/SettingsPage.tsx").read_text()
+          assert "appVersion" in settings and "api.appVersion()" in settings
+          print("VERSION_10_0_6_GREEN")
           PY
 
-      - name: Install Node and Rust
+      - name: Setup Node and Rust
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
       - name: Install Rust target
         shell: bash
-        run: |
-          set -Eeuo pipefail
-          rustup target add aarch64-apple-darwin
+        run: rustup target add aarch64-apple-darwin
 
-      - name: Stage static Apple Silicon FFmpeg
+      - name: Stage portable Apple Silicon FFmpeg
         shell: bash
         run: |
           set -Eeuo pipefail
           cd endlume-src
           TMP="$(mktemp -d)"
-          curl -fL --retry 4 --connect-timeout 20 --max-time 300             "https://ffmpeg.martin-riedl.de/redirect/latest/macos/arm64/release/ffmpeg.zip"             -o "$TMP/ffmpeg.zip"
-          curl -fL --retry 4 --connect-timeout 20 --max-time 300             "https://ffmpeg.martin-riedl.de/redirect/latest/macos/arm64/release/ffprobe.zip"             -o "$TMP/ffprobe.zip"
+          curl -fL --retry 4 --connect-timeout 20 --max-time 300             "https://ffmpeg.martin-riedl.de/redirect/latest/macos/arm64/release/ffmpeg.zip" -o "$TMP/ffmpeg.zip"
+          curl -fL --retry 4 --connect-timeout 20 --max-time 300             "https://ffmpeg.martin-riedl.de/redirect/latest/macos/arm64/release/ffprobe.zip" -o "$TMP/ffprobe.zip"
           mkdir -p "$TMP/fm" "$TMP/fp" src-tauri/binaries
           ditto -x -k "$TMP/ffmpeg.zip" "$TMP/fm"
           ditto -x -k "$TMP/ffprobe.zip" "$TMP/fp"
-          FFMPEG="$(find "$TMP/fm" -type f -name ffmpeg -perm +111 -print -quit)"
-          FFPROBE="$(find "$TMP/fp" -type f -name ffprobe -perm +111 -print -quit)"
-          test -x "$FFMPEG"; test -x "$FFPROBE"
-          "$FFMPEG" -hide_banner -filters 2>/dev/null | grep acrossfade >/dev/null
+          FFMPEG="$(find "$TMP/fm" -type f -name ffmpeg -print -quit)"
+          FFPROBE="$(find "$TMP/fp" -type f -name ffprobe -print -quit)"
+          chmod 755 "$FFMPEG" "$FFPROBE"
+          file "$FFMPEG" | grep -E 'arm64|Mach-O'
+          file "$FFPROBE" | grep -E 'arm64|Mach-O'
+          FILTERS="$("$FFMPEG" -hide_banner -filters 2>&1)"
+          printf '%s\n' "$FILTERS" | grep acrossfade
           for BIN in "$FFMPEG" "$FFPROBE"; do
             BAD="$(otool -L "$BIN" | tail -n +2 | awk '{print $1}' | grep -Ev '^(/usr/lib/|/System/Library/)' || true)"
-            test -z "$BAD" || { echo "$BAD"; exit 20; }
+            test -z "$BAD" || { echo "$BAD"; exit 24; }
           done
           cp "$FFMPEG" src-tauri/binaries/ffmpeg-aarch64-apple-darwin
           cp "$FFPROBE" src-tauri/binaries/ffprobe-aarch64-apple-darwin
           chmod 755 src-tauri/binaries/ffmpeg-aarch64-apple-darwin src-tauri/binaries/ffprobe-aarch64-apple-darwin
+          echo "PORTABLE_FFMPEG_GREEN"
 
-      - name: Import Developer ID certificate
+      - name: Build exact ENDLUME 10.0.6 app
         env:
-          CERT_B64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
-          CERT_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          test -n "${CERT_B64:-}" || { echo "APPLE_CERTIFICATE_P12_BASE64 missing"; exit 30; }
-          test -n "${CERT_PASSWORD:-}" || { echo "APPLE_CERTIFICATE_PASSWORD missing"; exit 31; }
-          KEYCHAIN="$RUNNER_TEMP/endlume-signing.keychain-db"
-          CERT="$RUNNER_TEMP/endlume-cert.p12"
-          printf '%s' "$CERT_B64" | base64 --decode > "$CERT"
-          security create-keychain -p actions "$KEYCHAIN"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN"
-          security unlock-keychain -p actions "$KEYCHAIN"
-          security import "$CERT" -k "$KEYCHAIN" -P "$CERT_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
-          security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k actions "$KEYCHAIN"
-          IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN" | grep 'Developer ID Application:' | head -1 | sed -E 's/.*"([^"]+)".*/\1/')"
-          test -n "$IDENTITY"
-          echo "APPLE_SIGNING_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
-
-      - name: Build and sign exact macOS app
-        env:
-          VERSION: ${{ inputs.version }}
+          MACOSX_DEPLOYMENT_TARGET: "12.0"
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -143,106 +114,139 @@ jobs:
           python3 - <<'PY'
           import json
           from pathlib import Path
-          p=Path('src-tauri/tauri.conf.json')
+          p=Path("src-tauri/tauri.conf.json")
           d=json.loads(p.read_text())
-          d['bundle']['createUpdaterArtifacts']=False
-          p.write_text(json.dumps(d,ensure_ascii=False,indent=2)+'\n')
+          d["bundle"]["createUpdaterArtifacts"]=False
+          p.write_text(json.dumps(d,ensure_ascii=False,indent=2)+"\n")
           PY
           npm run tauri build -- --target aarch64-apple-darwin --bundles app
+
+      - name: Package updater-compatible application
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd endlume-src
           APP="$(find src-tauri/target -type d -path '*/aarch64-apple-darwin/release/bundle/macos/*.app' -print -quit)"
+          test -n "$APP" && test -d "$APP"
+          test "$(plutil -extract CFBundleIdentifier raw -o - "$APP/Contents/Info.plist")" = "studio.endlume.desktop"
+          test "$(plutil -extract CFBundleShortVersionString raw -o - "$APP/Contents/Info.plist")" = "$VERSION"
+          file "$APP/Contents/MacOS/"* | grep arm64
+          find "$APP/Contents" -type f -name 'ffmpeg*' -perm +111 | grep .
+          find "$APP/Contents" -type f -name 'ffprobe*' -perm +111 | grep .
+
+          codesign --force --deep --sign - --timestamp=none "$APP"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+
+          OUT="$RUNNER_TEMP/release"
+          STAGE="$RUNNER_TEMP/stage"
+          mkdir -p "$OUT" "$STAGE"
+          ditto "$APP" "$STAGE/ENDLUME Studio.app"
+          codesign --verify --deep --strict "$STAGE/ENDLUME Studio.app"
+          ditto -c -k --sequesterRsrc --keepParent "$STAGE/ENDLUME Studio.app" "$OUT/$ZIP_NAME"
+          SUM="$(shasum -a 256 "$OUT/$ZIP_NAME" | awk '{print $1}')"
+          printf '%s  %s\n' "$SUM" "$ZIP_NAME" > "$OUT/$SHA_NAME"
+          echo "LOCAL_SHA=$SUM" >> "$GITHUB_ENV"
+          echo "OUT=$OUT" >> "$GITHUB_ENV"
+          echo "MAC_BUILD_GREEN"
+
+      - name: Publish private release assets
+        env:
+          GH_TOKEN: ${{ secrets.ENDLUME_SOURCE_TOKEN }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          gh auth status -h github.com
+          if ! gh release view "$PRIVATE_TAG" --repo "$PRIVATE_REPO" >/dev/null 2>&1; then
+            gh release create "$PRIVATE_TAG" --repo "$PRIVATE_REPO" --target "$SOURCE_SHA"               --title "ENDLUME 10.0.6"               --notes "ENDLUME 10.0.6 production macOS in-app update. Hotfix $HOTFIX_SHA."
+          fi
+          gh release upload "$PRIVATE_TAG" "$OUT/$ZIP_NAME" "$OUT/$SHA_NAME" --clobber --repo "$PRIVATE_REPO"
+
+      - name: Re-download private artifacts and verify
+        env:
+          GH_TOKEN: ${{ secrets.ENDLUME_SOURCE_TOKEN }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          VERIFY="$RUNNER_TEMP/verify"
+          mkdir -p "$VERIFY"
+          gh release download "$PRIVATE_TAG" --repo "$PRIVATE_REPO"             --pattern "$ZIP_NAME" --pattern "$SHA_NAME" --dir "$VERIFY" --clobber
+          (cd "$VERIFY" && shasum -a 256 -c "$SHA_NAME")
+          REMOTE_SHA="$(shasum -a 256 "$VERIFY/$ZIP_NAME" | awk '{print $1}')"
+          test "$REMOTE_SHA" = "$LOCAL_SHA"
+          mkdir -p "$RUNNER_TEMP/unpack"
+          ditto -x -k "$VERIFY/$ZIP_NAME" "$RUNNER_TEMP/unpack"
+          APP="$RUNNER_TEMP/unpack/ENDLUME Studio.app"
           test -d "$APP"
           test "$(plutil -extract CFBundleShortVersionString raw -o - "$APP/Contents/Info.plist")" = "$VERSION"
-          codesign --force --deep --options runtime --timestamp --sign "$APPLE_SIGNING_IDENTITY" "$APP"
-          codesign --verify --deep --strict --verbose=2 "$APP"
-          echo "ENDLUME_APP=$APP" >> "$GITHUB_ENV"
+          codesign --verify --deep --strict "$APP"
+          echo "PUBLIC_REDOWNLOAD_GREEN"
 
-      - name: Notarize and staple
+      - name: Mirror direct download to public stable release
         env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -Eeuo pipefail
-          test -n "${APPLE_ID:-}" && test -n "${APPLE_PASSWORD:-}" && test -n "${APPLE_TEAM_ID:-}"
-          ZIP="$RUNNER_TEMP/endlume-notary.zip"
-          ditto -c -k --sequesterRsrc --keepParent "$ENDLUME_APP" "$ZIP"
-          xcrun notarytool submit "$ZIP" --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" --wait
-          xcrun stapler staple "$ENDLUME_APP"
-          xcrun stapler validate "$ENDLUME_APP"
-          spctl -a -vv "$ENDLUME_APP"
+          HOST="$GITHUB_REPOSITORY"
+          gh release view "$PUBLIC_TAG" --repo "$HOST" >/dev/null 2>&1 ||             gh release create "$PUBLIC_TAG" --repo "$HOST" --title "ENDLUME Stable Updates" --notes "ENDLUME stable update channel."
+          gh release upload "$PUBLIC_TAG" "$OUT/$ZIP_NAME" "$OUT/$SHA_NAME" --clobber --repo "$HOST"
 
-      - name: Package and Tauri-sign updater
+          curl -fL --retry 5             "https://github.com/$HOST/releases/download/$PUBLIC_TAG/$ZIP_NAME?run=$GITHUB_RUN_ID"             -o "$RUNNER_TEMP/public.zip"
+          test "$(shasum -a 256 "$RUNNER_TEMP/public.zip" | awk '{print $1}')" = "$LOCAL_SHA"
+          echo "PUBLIC_DIRECT_DOWNLOAD_GREEN"
+
+      - name: Publish old-ENDLUME in-app updater manifest LAST
         env:
-          VERSION: ${{ inputs.version }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.ENDLUME_UPDATER_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.ENDLUME_UPDATER_PRIVATE_KEY_PASSWORD }}
+          GH_TOKEN: ${{ secrets.ENDLUME_SOURCE_TOKEN }}
         shell: bash
         run: |
           set -Eeuo pipefail
-          test -n "${TAURI_SIGNING_PRIVATE_KEY:-}" || { echo "ENDLUME_UPDATER_PRIVATE_KEY missing"; exit 40; }
-          cd endlume-src
-          OUT="$RUNNER_TEMP/endlume-release"
-          mkdir -p "$OUT"
-          UPDATER="$OUT/ENDLUME-macos-aarch64.app.tar.gz"
-          CLEAN="$OUT/ENDLUME-YT-Studio-PEISOV-${VERSION}-macOS-ARM64.zip"
-          tar -czf "$UPDATER" -C "$(dirname "$ENDLUME_APP")" "$(basename "$ENDLUME_APP")"
-          ditto -c -k --sequesterRsrc --keepParent "$ENDLUME_APP" "$CLEAN"
-          npx --yes @tauri-apps/cli@2.10.1 signer sign "$UPDATER"
-          test -s "$UPDATER.sig"
-          MAC_SHA="$(shasum -a 256 "$UPDATER" | awk '{print $1}')"
-          MAC_SIG="$(tr -d '\r\n' < "$UPDATER.sig")"
-          python3 - "$OUT/latest.json" "$VERSION" "$MAC_SIG" "$MAC_SHA" <<'PY'
-          import datetime,json,sys
-          out,version,sig,sha=sys.argv[1:]
-          base='https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/'
+          MANIFEST="$RUNNER_TEMP/latest.json"
+          python3 - "$MANIFEST" <<'PY'
+          import json,sys
           d={
-            'version':version,
-            'notes':'ENDLUME '+version+' production update.',
-            'pub_date':datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00','Z'),
-            'platforms':{
-              'darwin-aarch64':{
-                'url':base+'ENDLUME-macos-aarch64.app.tar.gz',
-                'signature':sig,
-                'sha256':sha
-              }
-            }
+            "version":"10.0.6",
+            "date":"01.10.2026",
+            "channel":"remote-binary",
+            "candidateRevision":6,
+            "builder":"public-hosted-macos-legacy-updater",
+            "ciBuilder":"public-hosted-macos-legacy-updater",
+            "releaseTag":"endlume-v10.0.6",
+            "asset":"ENDLUME-YT-Studio-PEISOV-10.0.6-macOS-ARM64.zip",
+            "checksumAsset":"ENDLUME-YT-Studio-PEISOV-10.0.6-macOS-ARM64.zip.sha256",
+            "notes":"ENDLUME 10.0.6 production: FFmpeg Operation not permitted fix, finite concat audio, Crossfade, AAC 320 kbps / 48 kHz / stereo, duration-aware validation, Effects/Subscribe Preview, Delete Effect and correct failed queue state."
           }
-          json.dump(d,open(out,'w'),ensure_ascii=False,indent=2)
+          json.dump(d,open(sys.argv[1],"w"),ensure_ascii=False,indent=2)
           PY
-          echo "RELEASE_OUT=$OUT" >> "$GITHUB_ENV"
-          echo "MAC_SHA256=$MAC_SHA" >> "$GITHUB_ENV"
 
-      - name: Publish binaries first
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          gh release view "$STABLE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 ||             gh release create "$STABLE_TAG" --repo "$GITHUB_REPOSITORY" --title "ENDLUME Stable Updates" --notes "Signed ENDLUME update channel."
-          gh release upload "$STABLE_TAG"             "$RELEASE_OUT/ENDLUME-macos-aarch64.app.tar.gz"             "$RELEASE_OUT/ENDLUME-macos-aarch64.app.tar.gz.sig"             "$RELEASE_OUT/ENDLUME-YT-Studio-PEISOV-${{ inputs.version }}-macOS-ARM64.zip"             --clobber --repo "$GITHUB_REPOSITORY"
-
-      - name: Public re-download verification
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          URL="https://github.com/$GITHUB_REPOSITORY/releases/download/$STABLE_TAG/ENDLUME-macos-aarch64.app.tar.gz"
-          curl -fL --retry 5 "$URL?run=$GITHUB_RUN_ID" -o "$RUNNER_TEMP/public-updater.tar.gz"
-          test "$(shasum -a 256 "$RUNNER_TEMP/public-updater.tar.gz" | awk '{print $1}')" = "$MAC_SHA256"
-
-      - name: Publish latest.json LAST
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          gh release upload "$STABLE_TAG" "$RELEASE_OUT/latest.json" --clobber --repo "$GITHUB_REPOSITORY"
-          curl -fL --retry 5             "https://github.com/$GITHUB_REPOSITORY/releases/download/$STABLE_TAG/latest.json?run=$GITHUB_RUN_ID"             -o "$RUNNER_TEMP/latest.json"
-          python3 - "$RUNNER_TEMP/latest.json" "${{ inputs.version }}" <<'PY'
+          CONTENT_PATH="updates/latest.json"
+          OLD_SHA="$(gh api "/repos/$PRIVATE_REPO/contents/$CONTENT_PATH?ref=release" --jq .sha)"
+          PAYLOAD="$RUNNER_TEMP/payload.json"
+          python3 - "$MANIFEST" "$PAYLOAD" "$OLD_SHA" <<'PY'
+          import base64,json,pathlib,sys
+          src,out,sha=sys.argv[1:]
+          json.dump({
+            "message":"release: publish ENDLUME 10.0.6 in-app updater manifest",
+            "branch":"release",
+            "sha":sha,
+            "content":base64.b64encode(pathlib.Path(src).read_bytes()).decode()
+          },open(out,"w"))
+          PY
+          gh api --method PUT "/repos/$PRIVATE_REPO/contents/$CONTENT_PATH" --input "$PAYLOAD" >/dev/null
+          RAW="$(gh api -H 'Accept: application/vnd.github.raw+json' "/repos/$PRIVATE_REPO/contents/$CONTENT_PATH?ref=release")"
+          printf '%s' "$RAW" > "$RUNNER_TEMP/published-latest.json"
+          python3 - "$RUNNER_TEMP/published-latest.json" <<'PY'
           import json,sys
           d=json.load(open(sys.argv[1]))
-          assert d['version']==sys.argv[2]
-          p=d['platforms']['darwin-aarch64']
-          assert p['url'] and p['signature'] and len(p['sha256'])==64
-          print('ENDLUME_CLOUD_STABLE_GREEN')
+          assert d["version"]=="10.0.6"
+          assert d["releaseTag"]=="endlume-v10.0.6"
+          print("OLD_ENDLUME_DETECTS_10_0_6_MANIFEST_GREEN")
           PY
+
+      - name: Final
+        run: |
+          echo "VERSION=10.0.6"
+          echo "HOTFIX=$HOTFIX_SHA"
+          echo "SOURCE=$SOURCE_SHA"
+          echo "MAC=GREEN"
+          echo "IN_APP_MANIFEST=10.0.6"
