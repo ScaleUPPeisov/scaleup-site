@@ -1,6 +1,10 @@
 name: ENDLUME Cloud Stable macOS Release
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/endlume-cloud-stable-macos.yml"
   workflow_dispatch:
     inputs:
       source_sha:
