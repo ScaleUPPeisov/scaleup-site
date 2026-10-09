@@ -16,21 +16,19 @@ jobs:
       TAG: endlume-test12
       VERSION: 10.0.12
       TAR_SHA256: 760f1da52011cbe9745894eeb04ef3dfef3b5c0e7d85ceb3841f63d67c8ae6e9
-      SOURCE_TAR: https://endlume-test012.vercel.app/releases/ENDLUME-Studio-10.0.12-aarch64.app.tar.gz
-      SOURCE_SIG: https://endlume-test012.vercel.app/releases/ENDLUME-Studio-10.0.12-aarch64.app.tar.gz.sig
+      SOURCE_TAR: https://github.com/ScaleUPPeisov/endlume-desktop/releases/download/endlume-10.0.12-bridge-artifact/ENDLUME-macos-aarch64-10.0.12.app.tar.gz
+      SOURCE_SIG: https://github.com/ScaleUPPeisov/endlume-desktop/releases/download/endlume-10.0.12-bridge-artifact/ENDLUME-macos-aarch64-10.0.12.app.tar.gz.sig
     steps:
       - name: Inspect currently live stable manifest without modifying it
         shell: bash
         run: |
           set -euo pipefail
           curl -fsSL 'https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/latest.json' -o current-stable.json
-          echo '--- CURRENT STABLE MANIFEST ---'
-          cat current-stable.json
-          echo
           python3 - <<'PY'
           import json
           d=json.load(open('current-stable.json'))
-          print('CURRENT_VERSION='+str(d.get('version')))
+          assert d['version']=='10.0.11',d
+          print('CURRENT_STABLE_VERSION='+d['version'])
           print('CURRENT_PLATFORM_KEYS='+','.join(sorted((d.get('platforms') or {}).keys())))
           PY
 
@@ -60,12 +58,12 @@ jobs:
             'platforms':{
               'darwin-aarch64':{
                 'signature':sig,
-                'url':'https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-test12/ENDLUME-macos-aarch64.app.tar.gz'
+                'url':'https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-test12/ENDLUME-macos-aarch64.app.tar.gz',
+                'sha256':'760f1da52011cbe9745894eeb04ef3dfef3b5c0e7d85ceb3841f63d67c8ae6e9'
               }
             }
           }
           open('latest.json','w').write(json.dumps(out,ensure_ascii=False,indent=2)+'\n')
-          print(open('latest.json').read())
           PY
 
       - name: Publish isolated staging release
@@ -81,7 +79,7 @@ jobs:
             ENDLUME-macos-aarch64.app.tar.gz.sig \
             latest.json --clobber
 
-      - name: Verify staging endpoint and artifact
+      - name: Verify staging endpoint and exact artifact bytes
         shell: bash
         run: |
           set -euo pipefail
@@ -96,11 +94,12 @@ jobs:
           assert d['version']=='10.0.12',d
           p=d['platforms']['darwin-aarch64']
           assert p['signature'],d
+          assert p['sha256']=='760f1da52011cbe9745894eeb04ef3dfef3b5c0e7d85ceb3841f63d67c8ae6e9',d
           assert p['url'].endswith('/endlume-test12/ENDLUME-macos-aarch64.app.tar.gz'),d
           print('STAGING_MANIFEST=PASS')
           PY
           curl -fsSL "$BASE/ENDLUME-macos-aarch64.app.tar.gz" -o verify.tar.gz
           GOT=$(sha256sum verify.tar.gz | awk '{print $1}')
+          echo "STAGING_TAR_SHA256=$GOT"
           test "$GOT" = "$TAR_SHA256"
           echo STAGING_DOWNLOAD=PASS
-          echo STAGING_TAR_SHA256=$GOT
