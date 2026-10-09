@@ -1,0 +1,106 @@
+name: ENDLUME macOS 10.0.12 bridge staging
+
+on:
+  push:
+    branches: ['release-test/endlume-10.0.12-bridge']
+    paths: ['.github/workflows/endlume-1012-stage-bridge.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TAG: endlume-test12
+      VERSION: 10.0.12
+      TAR_SHA256: 760f1da52011cbe9745894eeb04ef3dfef3b5c0e7d85ceb3841f63d67c8ae6e9
+      SOURCE_TAR: https://endlume-test012.vercel.app/releases/ENDLUME-Studio-10.0.12-aarch64.app.tar.gz
+      SOURCE_SIG: https://endlume-test012.vercel.app/releases/ENDLUME-Studio-10.0.12-aarch64.app.tar.gz.sig
+    steps:
+      - name: Inspect currently live stable manifest without modifying it
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL 'https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/latest.json' -o current-stable.json
+          echo '--- CURRENT STABLE MANIFEST ---'
+          cat current-stable.json
+          echo
+          python3 - <<'PY'
+          import json
+          d=json.load(open('current-stable.json'))
+          print('CURRENT_VERSION='+str(d.get('version')))
+          print('CURRENT_PLATFORM_KEYS='+','.join(sorted((d.get('platforms') or {}).keys())))
+          PY
+
+      - name: Download exact accepted signed macOS updater
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL "$SOURCE_TAR" -o ENDLUME-macos-aarch64.app.tar.gz
+          curl -fsSL "$SOURCE_SIG" -o ENDLUME-macos-aarch64.app.tar.gz.sig
+          GOT=$(sha256sum ENDLUME-macos-aarch64.app.tar.gz | awk '{print $1}')
+          echo "DOWNLOADED_TAR_SHA256=$GOT"
+          test "$GOT" = "$TAR_SHA256"
+          test -s ENDLUME-macos-aarch64.app.tar.gz.sig
+          echo SIGNED_ARTIFACT_BYTES=PASS
+
+      - name: Build static Tauri staging manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          sig=open('ENDLUME-macos-aarch64.app.tar.gz.sig').read().strip()
+          out={
+            'version':'10.0.12',
+            'notes':'ENDLUME macOS 10.0.12 emergency version bridge. Accepted production engine unchanged.',
+            'pub_date':'2026-10-09T14:49:01.471245Z',
+            'platforms':{
+              'darwin-aarch64':{
+                'signature':sig,
+                'url':'https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-test12/ENDLUME-macos-aarch64.app.tar.gz'
+              }
+            }
+          }
+          open('latest.json','w').write(json.dumps(out,ensure_ascii=False,indent=2)+'\n')
+          print(open('latest.json').read())
+          PY
+
+      - name: Publish isolated staging release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release delete "$TAG" --repo ScaleUPPeisov/scaleup-site --yes --cleanup-tag >/dev/null 2>&1 || true
+          gh release create "$TAG" --repo ScaleUPPeisov/scaleup-site --target main --title 'ENDLUME 10.0.12 Bridge Staging' --notes 'Isolated updater staging only. Not production.'
+          gh release upload "$TAG" --repo ScaleUPPeisov/scaleup-site \
+            ENDLUME-macos-aarch64.app.tar.gz \
+            ENDLUME-macos-aarch64.app.tar.gz.sig \
+            latest.json --clobber
+
+      - name: Verify staging endpoint and artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-test12'
+          for i in $(seq 1 20); do
+            if curl -fsSL "$BASE/latest.json" -o verify.json; then break; fi
+            sleep 2
+          done
+          python3 - <<'PY'
+          import json
+          d=json.load(open('verify.json'))
+          assert d['version']=='10.0.12',d
+          p=d['platforms']['darwin-aarch64']
+          assert p['signature'],d
+          assert p['url'].endswith('/endlume-test12/ENDLUME-macos-aarch64.app.tar.gz'),d
+          print('STAGING_MANIFEST=PASS')
+          PY
+          curl -fsSL "$BASE/ENDLUME-macos-aarch64.app.tar.gz" -o verify.tar.gz
+          GOT=$(sha256sum verify.tar.gz | awk '{print $1}')
+          test "$GOT" = "$TAR_SHA256"
+          echo STAGING_DOWNLOAD=PASS
+          echo STAGING_TAR_SHA256=$GOT
