@@ -1,0 +1,107 @@
+name: ENDLUME macOS 10.0.12 production bridge publisher
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish-production-bridge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TAG: endlume-stable
+      VERSION: 10.0.12
+      TAR_SHA256: 760f1da52011cbe9745894eeb04ef3dfef3b5c0e7d85ceb3841f63d67c8ae6e9
+      SOURCE_TAR: https://github.com/ScaleUPPeisov/endlume-desktop/releases/download/endlume-10.0.12-bridge-artifact/ENDLUME-macos-aarch64-10.0.12.app.tar.gz
+      SOURCE_SIG: https://github.com/ScaleUPPeisov/endlume-desktop/releases/download/endlume-10.0.12-bridge-artifact/ENDLUME-macos-aarch64-10.0.12.app.tar.gz.sig
+      PROD_ASSET: ENDLUME-YT-Studio-PEISOV-10.0.12-macOS-ARM64.app.tar.gz
+    steps:
+      - name: Require current production is exactly 10.0.11 before bridge
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL 'https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/latest.json' -o old-latest.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('old-latest.json'))
+          assert d['version']=='10.0.11',d
+          assert 'darwin-aarch64' in d.get('platforms',{}),d
+          print('OLD_PRODUCTION_10_0_11=PASS')
+          PY
+
+      - name: Fetch and verify exact signed 10.0.12 updater
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL "$SOURCE_TAR" -o "$PROD_ASSET"
+          curl -fsSL "$SOURCE_SIG" -o "$PROD_ASSET.sig"
+          GOT=$(sha256sum "$PROD_ASSET" | awk '{print $1}')
+          echo "UPDATER_SHA256=$GOT"
+          test "$GOT" = "$TAR_SHA256"
+          test -s "$PROD_ASSET.sig"
+          echo EXACT_SIGNED_ARTIFACT=PASS
+
+      - name: Build monotonic macOS production manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os
+          sig=open(os.environ['PROD_ASSET']+'.sig').read().strip()
+          d={
+            'version':'10.0.12',
+            'notes':'ENDLUME macOS 10.0.12 emergency version bridge. Accepted production engine unchanged.',
+            'pub_date':'2026-10-09T14:49:01.471245Z',
+            'platforms':{
+              'darwin-aarch64':{
+                'url':'https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/'+os.environ['PROD_ASSET'],
+                'signature':sig,
+                'sha256':os.environ['TAR_SHA256']
+              }
+            }
+          }
+          open('latest.json','w').write(json.dumps(d,ensure_ascii=False,indent=2)+'\n')
+          print(json.dumps(d,ensure_ascii=False,indent=2))
+          PY
+          echo WINDOWS_FALSE_10_0_12_METADATA=NONE
+
+      - name: Publish only after explicit workflow dispatch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release upload "$TAG" --repo ScaleUPPeisov/scaleup-site \
+            "$PROD_ASSET" "$PROD_ASSET.sig" latest.json --clobber
+
+      - name: Verify live legacy updater channel
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable'
+          for i in $(seq 1 20); do
+            if curl -fsSL "$BASE/latest.json" -o verify.json; then
+              if python3 - <<'PY'
+          import json
+          d=json.load(open('verify.json'))
+          assert d['version']=='10.0.12'
+          p=d['platforms']['darwin-aarch64']
+          assert p['sha256']=='760f1da52011cbe9745894eeb04ef3dfef3b5c0e7d85ceb3841f63d67c8ae6e9'
+          assert p['signature']
+          assert 'windows-x86_64' not in d['platforms']
+          PY
+              then break; fi
+            fi
+            sleep 2
+          done
+          URL=$(python3 - <<'PY'
+          import json
+          print(json.load(open('verify.json'))['platforms']['darwin-aarch64']['url'])
+          PY
+          )
+          curl -fsSL "$URL" -o verify.tar.gz
+          test "$(sha256sum verify.tar.gz | awk '{print $1}')" = "$TAR_SHA256"
+          echo LEGACY_STABLE_VERSION_10_0_12=PASS
+          echo LEGACY_STABLE_DOWNLOAD=PASS
