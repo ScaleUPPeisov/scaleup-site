@@ -1,0 +1,134 @@
+name: ENDLUME macOS 10.0.12 production bridge
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/endlume-1012-production-bridge.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      STABLE_TAG: endlume-stable
+      VERSION: 10.0.12
+      MAC_SHA256: 760f1da52011cbe9745894eeb04ef3dfef3b5c0e7d85ceb3841f63d67c8ae6e9
+      MAC_SOURCE: https://github.com/ScaleUPPeisov/endlume-desktop/releases/download/endlume-10.0.12-bridge-artifact/ENDLUME-macos-aarch64-10.0.12.app.tar.gz
+      MAC_SIG_SOURCE: https://github.com/ScaleUPPeisov/endlume-desktop/releases/download/endlume-10.0.12-bridge-artifact/ENDLUME-macos-aarch64-10.0.12.app.tar.gz.sig
+      WIN_1012: https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/ENDLUME-YT-Studio-PEISOV-Setup-10.0.12-x64.exe
+      WIN_1012_SIG: https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/ENDLUME-YT-Studio-PEISOV-Setup-10.0.12-x64.exe.sig
+    steps:
+      - name: Snapshot current stable manifest and protect Windows
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL 'https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/latest.json' -o previous-latest.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('previous-latest.json'))
+          assert d['version']=='10.0.11', d
+          assert 'darwin-aarch64' in d['platforms'], d
+          assert 'windows-x86_64' in d['platforms'], d
+          print('PREVIOUS_VERSION='+d['version'])
+          print('PREVIOUS_WINDOWS_URL='+d['platforms']['windows-x86_64']['url'])
+          PY
+          curl -fsSL "$WIN_1012_SIG" -o windows-10.0.12.sig
+          test -s windows-10.0.12.sig
+          curl -fsSI "$WIN_1012" >/dev/null
+          echo WINDOWS_10_0_12_ASSET_PRESENT=PASS
+
+      - name: Download exact signed macOS 10.0.12 artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL "$MAC_SOURCE" -o ENDLUME-macos-aarch64.app.tar.gz
+          curl -fsSL "$MAC_SIG_SOURCE" -o ENDLUME-macos-aarch64.app.tar.gz.sig
+          GOT=$(sha256sum ENDLUME-macos-aarch64.app.tar.gz | awk '{print $1}')
+          echo "MAC_TAR_SHA256=$GOT"
+          test "$GOT" = "$MAC_SHA256"
+          test -s ENDLUME-macos-aarch64.app.tar.gz.sig
+          echo EXACT_SIGNED_MAC_ARTIFACT=PASS
+
+      - name: Build monotonic 10.0.12 stable manifest preserving Windows safely
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,datetime
+          d=json.load(open('previous-latest.json'))
+          mac_sig=open('ENDLUME-macos-aarch64.app.tar.gz.sig').read().strip()
+          win=d['platforms']['windows-x86_64']
+          # A single Tauri static manifest has one top-level version. Therefore its Windows
+          # platform must also point to an actual 10.0.12 artifact when version becomes 10.0.12.
+          if '10.0.12' not in str(win.get('url','')):
+              win={
+                'signature':open('windows-10.0.12.sig').read().strip(),
+                'url':'https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/ENDLUME-YT-Studio-PEISOV-Setup-10.0.12-x64.exe'
+              }
+          d['version']='10.0.12'
+          d['notes']='ENDLUME macOS 10.0.12 emergency version bridge. Accepted production engine unchanged.'
+          d['pub_date']=datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00','Z')
+          d['platforms']['darwin-aarch64']={
+            'signature':mac_sig,
+            'url':'https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/ENDLUME-macos-aarch64.app.tar.gz',
+            'sha256':'760f1da52011cbe9745894eeb04ef3dfef3b5c0e7d85ceb3841f63d67c8ae6e9'
+          }
+          d['platforms']['windows-x86_64']=win
+          open('latest.json','w').write(json.dumps(d,ensure_ascii=False,indent=2)+'\n')
+          print('NEW_VERSION='+d['version'])
+          print('WINDOWS_URL='+d['platforms']['windows-x86_64']['url'])
+          print('MAC_URL='+d['platforms']['darwin-aarch64']['url'])
+          PY
+          grep -q '10.0.12' latest.json
+
+      - name: Publish to existing stable release without deleting any Windows assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release view "$STABLE_TAG" --repo ScaleUPPeisov/scaleup-site >/dev/null
+          gh release upload "$STABLE_TAG" --repo ScaleUPPeisov/scaleup-site \
+            ENDLUME-macos-aarch64.app.tar.gz \
+            ENDLUME-macos-aarch64.app.tar.gz.sig \
+            latest.json --clobber
+          echo STABLE_UPLOAD=PASS
+
+      - name: Verify live stable bytes and manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable'
+          ok=0
+          for i in $(seq 1 30); do
+            if curl -fsSL "$BASE/latest.json?bridge=1012-$i" -o live.json; then
+              if python3 - <<'PY'
+          import json
+          d=json.load(open('live.json'))
+          raise SystemExit(0 if d.get('version')=='10.0.12' else 1)
+          PY
+              then ok=1; break; fi
+            fi
+            sleep 2
+          done
+          test "$ok" -eq 1
+          python3 - <<'PY'
+          import json
+          d=json.load(open('live.json'))
+          assert d['version']=='10.0.12',d
+          assert set(['darwin-aarch64','windows-x86_64']).issubset(d['platforms']),d
+          mac=d['platforms']['darwin-aarch64']; win=d['platforms']['windows-x86_64']
+          assert mac['signature'] and mac['url'].endswith('/endlume-stable/ENDLUME-macos-aarch64.app.tar.gz'),d
+          assert mac.get('sha256')=='760f1da52011cbe9745894eeb04ef3dfef3b5c0e7d85ceb3841f63d67c8ae6e9',d
+          assert win['signature'] and '10.0.12' in win['url'],d
+          print('LIVE_MANIFEST=PASS')
+          print('LIVE_WINDOWS_10_0_12_PRESERVED=PASS')
+          PY
+          curl -fsSL "$BASE/ENDLUME-macos-aarch64.app.tar.gz?bridge=1012" -o live-mac.tar.gz
+          GOT=$(sha256sum live-mac.tar.gz | awk '{print $1}')
+          echo "LIVE_MAC_SHA256=$GOT"
+          test "$GOT" = "$MAC_SHA256"
+          echo LIVE_MAC_BYTES=PASS
