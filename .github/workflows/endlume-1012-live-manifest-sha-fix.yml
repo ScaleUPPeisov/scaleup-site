@@ -1,0 +1,143 @@
+name: ENDLUME 10.0.12 live manifest SHA-256 fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/endlume-1012-live-manifest-sha-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  manifest-only-fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      STABLE_TAG: endlume-stable
+      MAC_URL: https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable/ENDLUME-macos-aarch64.app.tar.gz
+      MAC_SHA256: 62da0292f2bb3f2cd5e10860d1a196ec50c90b4332dd3529ed9cef169928b209
+      MAC_SIG_SHA256: e0244ab656f7a664a75d0053a0f206e4ff91d5d5003c8f2c0a07f40d4eff107f
+    steps:
+      - name: Snapshot live manifest and release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable'
+          curl -fsSL "$BASE/latest.json?sha-fix-before=${GITHUB_RUN_ID}" -o before.json
+          gh api repos/ScaleUPPeisov/scaleup-site/releases/tags/endlume-stable > release-before.json
+          python3 - <<'PY'
+          import json,os
+          d=json.load(open('before.json'))
+          assert d['version']=='10.0.12', d.get('version')
+          assert 'darwin-aarch64' in d['platforms']
+          assert 'windows-x86_64' in d['platforms']
+          mac=d['platforms']['darwin-aarch64']
+          assert mac['url']==os.environ['MAC_URL'], mac.get('url')
+          assert isinstance(mac.get('signature'),str) and mac['signature'].strip()
+          open('before-windows.json','w').write(json.dumps(d['platforms']['windows-x86_64'],sort_keys=True,separators=(',',':')))
+          open('before-mac-signature.txt','w').write(mac['signature'])
+          rel=json.load(open('release-before.json'))
+          assets={a['name']:a for a in rel['assets']}
+          tar=assets['ENDLUME-macos-aarch64.app.tar.gz']
+          sig=assets['ENDLUME-macos-aarch64.app.tar.gz.sig']
+          assert tar.get('digest')=='sha256:'+os.environ['MAC_SHA256'], tar.get('digest')
+          assert sig.get('digest')=='sha256:'+os.environ['MAC_SIG_SHA256'], sig.get('digest')
+          open('protected-assets.json','w').write(json.dumps({
+            'tar':{'id':tar['id'],'digest':tar['digest'],'size':tar['size']},
+            'sig':{'id':sig['id'],'digest':sig['digest'],'size':sig['size']}
+          },sort_keys=True))
+          print('BEFORE_VERSION=10.0.12')
+          print('BEFORE_MAC_URL=PASS')
+          print('BEFORE_MAC_SIGNATURE_PRESENT=PASS')
+          print('BEFORE_PACKAGE_DIGEST='+tar['digest'])
+          print('BEFORE_SIGNATURE_DIGEST='+sig['digest'])
+          PY
+
+      - name: Build manifest-only correction
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import copy,json,os
+          before=json.load(open('before.json'))
+          after=copy.deepcopy(before)
+          after['platforms']['darwin-aarch64']['sha256']=os.environ['MAC_SHA256']
+          expected=copy.deepcopy(before)
+          expected['platforms']['darwin-aarch64']['sha256']=os.environ['MAC_SHA256']
+          assert after==expected
+          assert after['version']=='10.0.12'
+          assert after['platforms']['darwin-aarch64']['url']==before['platforms']['darwin-aarch64']['url']
+          assert after['platforms']['darwin-aarch64']['signature']==before['platforms']['darwin-aarch64']['signature']
+          assert after['platforms']['windows-x86_64']==before['platforms']['windows-x86_64']
+          assert after['platforms']['darwin-aarch64']['sha256']==os.environ['MAC_SHA256']
+          open('latest.json','w').write(json.dumps(after,ensure_ascii=False,indent=2)+'\n')
+          print('LIVE_MANIFEST_SHA256_FIELD=platforms.darwin-aarch64.sha256')
+          print('MANIFEST_ONLY_DIFF=PASS')
+          print('WINDOWS_ENTRY_PRESERVED=PASS')
+          PY
+
+      - name: Publish ONLY latest.json
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release upload "$STABLE_TAG" --repo ScaleUPPeisov/scaleup-site latest.json --clobber
+          echo 'ONLY_LATEST_JSON_UPLOADED=PASS'
+
+      - name: Verify actually published live manifest and protected assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://github.com/ScaleUPPeisov/scaleup-site/releases/download/endlume-stable'
+          ok=0
+          for i in $(seq 1 30); do
+            if curl -fsSL "$BASE/latest.json?sha-fix=${GITHUB_RUN_ID}-$i" -o live.json; then
+              if python3 - <<'PY'
+          import json,os
+          d=json.load(open('live.json'))
+          mac=d.get('platforms',{}).get('darwin-aarch64',{})
+          raise SystemExit(0 if d.get('version')=='10.0.12' and mac.get('sha256')==os.environ['MAC_SHA256'] else 1)
+          PY
+              then ok=1; break; fi
+            fi
+            sleep 2
+          done
+          test "$ok" -eq 1
+          gh api repos/ScaleUPPeisov/scaleup-site/releases/tags/endlume-stable > release-after.json
+          python3 - <<'PY'
+          import json,os
+          before=json.load(open('before.json'))
+          live=json.load(open('live.json'))
+          assert live['version']=='10.0.12'
+          mac=live['platforms']['darwin-aarch64']
+          assert mac['url']==os.environ['MAC_URL']
+          assert mac['signature']==before['platforms']['darwin-aarch64']['signature']
+          assert mac['sha256']==os.environ['MAC_SHA256']
+          assert live['platforms']['windows-x86_64']==before['platforms']['windows-x86_64']
+          protected=json.load(open('protected-assets.json'))
+          rel=json.load(open('release-after.json'))
+          assets={a['name']:a for a in rel['assets']}
+          tar=assets['ENDLUME-macos-aarch64.app.tar.gz']
+          sig=assets['ENDLUME-macos-aarch64.app.tar.gz.sig']
+          assert {'id':tar['id'],'digest':tar['digest'],'size':tar['size']}==protected['tar']
+          assert {'id':sig['id'],'digest':sig['digest'],'size':sig['size']}==protected['sig']
+          print('LIVE_VERSION=10.0.12')
+          print('LIVE_MANIFEST_SHA256_FIELD=platforms.darwin-aarch64.sha256')
+          print('LIVE_MANIFEST_SHA256='+mac['sha256'])
+          print('LIVE_URL_PRESERVED=PASS')
+          print('LIVE_SIGNATURE_PRESERVED=PASS')
+          print('WINDOWS_ENTRY_UNCHANGED=PASS')
+          print('PACKAGE_ASSET_UNCHANGED=PASS')
+          print('SIGNATURE_ASSET_UNCHANGED=PASS')
+          PY
+          curl -fsSL "$MAC_URL?sha-fix=${GITHUB_RUN_ID}" -o live-mac.tar.gz
+          GOT=$(sha256sum live-mac.tar.gz | awk '{print $1}')
+          echo "LIVE_PACKAGE_SHA256=$GOT"
+          test "$GOT" = "$MAC_SHA256"
+          echo 'LIVE_PACKAGE_BYTES=PASS'
