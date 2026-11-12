@@ -100,3 +100,27 @@ begin
 end;$$;
 revoke execute on function public.studio_v2_worker_update(uuid,text,text,jsonb,text) from public,anon;
 grant execute on function public.studio_v2_worker_update(uuid,text,text,jsonb,text) to authenticated;
+
+-- Device presence: the site shows only heartbeats written by its owner.
+create table if not exists public.studio_v2_mac_devices(
+  id text primary key check (char_length(id) between 8 and 120),
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  device_name text not null default 'Mac',
+  agent_version text not null default 'unknown',
+  endlume_status text not null default 'not_detected',
+  vyron_channels integer not null default 0,
+  last_seen timestamptz not null default now()
+);
+create index if not exists studio_v2_devices_owner_seen_idx
+ on public.studio_v2_mac_devices(owner_id,last_seen desc);
+alter table public.studio_v2_mac_devices enable row level security;
+revoke all on public.studio_v2_mac_devices from anon;
+grant select,insert,update,delete on public.studio_v2_mac_devices to authenticated;
+drop policy if exists studio_v2_devices_select on public.studio_v2_mac_devices;
+drop policy if exists studio_v2_devices_insert on public.studio_v2_mac_devices;
+drop policy if exists studio_v2_devices_update on public.studio_v2_mac_devices;
+drop policy if exists studio_v2_devices_delete on public.studio_v2_mac_devices;
+create policy studio_v2_devices_select on public.studio_v2_mac_devices for select to authenticated using ((select auth.uid())=owner_id);
+create policy studio_v2_devices_insert on public.studio_v2_mac_devices for insert to authenticated with check ((select auth.uid())=owner_id);
+create policy studio_v2_devices_update on public.studio_v2_mac_devices for update to authenticated using ((select auth.uid())=owner_id) with check ((select auth.uid())=owner_id);
+create policy studio_v2_devices_delete on public.studio_v2_mac_devices for delete to authenticated using ((select auth.uid())=owner_id);
