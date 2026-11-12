@@ -132,6 +132,12 @@ const db=createClient(BASE,PUB,{auth:{persistSession:true,autoRefreshToken:true,
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 let user=null,projects=[],channels=[],active=null,health=null,selected='Корабли',mode='graphics',count=1,busy=false,connected=false;
+const auth=document.createElement('div');auth.id='authCover';auth.innerHTML='<div id="authCard"><h2>VYRON AI STUDIO</h2><p>Личный вход в облачные проекты</p><form id="studioLoginForm"><input type="email" required id="loginEmail" placeholder="Email Supabase" autocomplete="username"><input type="password" required id="loginPassword" placeholder="Пароль Supabase" autocomplete="current-password"><button id="loginSubmit">Войти</button></form><p id="loginError" style="color:#ff8e88"></p><small>Защита сайта Vercel + дополнительная проверка Supabase. Не передавай пароль сюда, вводи только на странице.</small></div>';
+document.body.append(auth);authShow(true);
+const editorEl=document.createElement('div');editorEl.id='studioEditor';editorEl.innerHTML='<div id="editorBox"><h2 id="editorTitle">Редактор</h2><textarea id="editorTextarea" placeholder="Сценарий..."></textarea><input id="editorDate" type="datetime-local" style="display:none"><div class="editorBtns"><button class="lime" id="editorSave">Сохранить в облаке</button><button id="editorClose">Закрыть</button></div></div>';document.body.append(editorEl);
+const toast=document.createElement('div');toast.id='studioToast';document.body.append(toast);
+const logout=makeBtn('Выйти из аккаунта',async()=>{await db.auth.signOut();user=null;authShow(true)});logout.id='logoutBtn';
+const authLabel=h('div',{id:'studioAuthState'},'');$('settings').querySelector('.card').append(authLabel,logout);
 const now=()=>new Date().toISOString();
 const stages=['Сценарий и план','Озвучка Lumean','Визуальные сцены','Рендер ENDLUME'];
 function notify(message,bad=false){const t=$('studioToast');t.textContent=message;t.className=bad?'bad':'';t.style.display='block';clearTimeout(window.__toastTimer);window.__toastTimer=setTimeout(()=>t.style.display='none',6000)}
@@ -356,12 +362,7 @@ document.querySelector('#expenses .card .section-title').textContent='Реаль
 const mark=document.createElement('div');mark.id='studioStatusLine';mark.textContent='Подключаем базу...';$('scenarios').insertBefore(mark,$('scenarios').children[1]);
 const actionBar=document.createElement('div');actionBar.id='studioStageActions';$('stages').after(actionBar);
 const activeLine=document.createElement('div');activeLine.id='studioActiveLine';$('runState').after(activeLine);
-const auth=document.createElement('div');auth.id='authCover';auth.innerHTML='<div id="authCard"><h2>VYRON AI STUDIO</h2><p>Личный вход в облачные проекты</p><form id="studioLoginForm"><input type="email" required id="loginEmail" placeholder="Email Supabase" autocomplete="username"><input type="password" required id="loginPassword" placeholder="Пароль Supabase" autocomplete="current-password"><button id="loginSubmit">Войти</button></form><p id="loginError" style="color:#ff8e88"></p><small>Защита сайта Vercel + дополнительная проверка Supabase. Не передавай пароль сюда, вводи только на странице.</small></div>';
-document.body.append(auth);authShow(true);
-const editorEl=document.createElement('div');editorEl.id='studioEditor';editorEl.innerHTML='<div id="editorBox"><h2 id="editorTitle">Редактор</h2><textarea id="editorTextarea" placeholder="Сценарий..."></textarea><input id="editorDate" type="datetime-local" style="display:none"><div class="editorBtns"><button class="lime" id="editorSave">Сохранить в облаке</button><button id="editorClose">Закрыть</button></div></div>';document.body.append(editorEl);
-const toast=document.createElement('div');toast.id='studioToast';document.body.append(toast);
-const logout=makeBtn('Выйти из аккаунта',async()=>{await db.auth.signOut();user=null;authShow(true)});logout.id='logoutBtn';
-const authLabel=h('div',{id:'studioAuthState'},'');$('settings').querySelector('.card').append(authLabel,logout);
+
 $('scriptCount').textContent=String(count);renderRows();
 window.studioReload=load;
 renderEverything();await boot();
