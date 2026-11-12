@@ -5,6 +5,7 @@ const db=createClient(BASE,PUB,{auth:{persistSession:true,autoRefreshToken:true,
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 let user=null,projects=[],channels=[],active=null,health=null,selected='Корабли',mode='graphics',count=1,busy=false,connected=false;
+let macDevices=[],macJobs=[],macSchemaAvailable=false;
 const LOCAL_KEY='vyron-ai-studio-local-v2';
 const localGet=()=>{try{return JSON.parse(localStorage.getItem(LOCAL_KEY)||'{"projects":[],"channels":[]}')}catch{return {projects:[],channels:[]}}};
 const localSave=()=>{if(!connected)localStorage.setItem(LOCAL_KEY,JSON.stringify({projects,channels}))};
@@ -52,6 +53,7 @@ async function load(){
  if(p.error||c.error){connected=false;const local=localGet();projects=local.projects||[];channels=local.channels||[];const msg='ЛОКАЛЬНЫЙ РЕЖИМ: проекты работают только в этом браузере, между устройствами не синхронизируются. Для облачной синхронизации нужна миграция studio/sql/001_owner_tables.sql в Supabase.';$('studioStatusLine').textContent=msg;notify('Облачные таблицы не настроены: включён локальный режим',true);renderEverything();return}
  connected=true;$('studioStatusLine').textContent='Облачная база подключена · Supabase · изменения видны с любого устройства';
  projects=p.data||[];channels=c.data||[];
+ await refreshMac(false);
  if(active)active=projects.find(p=>p.id===active.id)||null;
  renderEverything();
 }
@@ -69,6 +71,49 @@ async function api(url,body,method='POST'){
  if(!r.ok||d.ok===false)throw Error(d.error||('HTTP '+r.status));
  return d;
 }
+
+async function refreshMac(render=true){
+ if(!user||!connected){macDevices=[];macJobs=[];macSchemaAvailable=false;return;}
+ const [d,j]=await Promise.all([
+   db.from('studio_v2_mac_devices').select('id,device_name,agent_version,endlume_status,vyron_channels,last_seen').order('last_seen',{ascending:false}).limit(8),
+   db.from('studio_v2_mac_jobs').select('id,project_id,status,action,result,error_message,created_at,updated_at').order('created_at',{ascending:false}).limit(60)
+ ]);
+ if(d.error||j.error){macSchemaAvailable=false;macDevices=[];macJobs=[];}
+ else {macSchemaAvailable=true;macDevices=d.data||[];macJobs=j.data||[];}
+ if(render)renderEverything();
+}
+function macOnline(){
+ const n=Date.now();
+ return macDevices.find(x=>x.endlume_status==='running' &&
+  n-new Date(x.last_seen).getTime()>=0 &&
+  n-new Date(x.last_seen).getTime()<70000);
+}
+function jobFor(p){return p?macJobs.find(x=>x.project_id===p.id):null;}
+function renderStatus(p){
+ const j=jobFor(p);
+ if(!j)return 'Нет заданий';
+ const names={queued:'Ожидает Mac',claimed:'Захвачено агентом',running:'ENDLUME рендерит',completed:'Готовый MP4',error:'Ошибка ENDLUME',cancelled:'Отменено'};
+ return names[j.status]||j.status;
+}
+async function enqueueMacRender(){
+ if(!active)throw Error('Создай проект');
+ if(!connected)throw Error('Для удалённого Mac-рендера требуется Supabase. В локальном режиме доступен только экспорт JSON');
+ if(!macSchemaAvailable)throw Error('Нужна SQL-миграция studio/sql/002_mac_queue.sql в Supabase');
+ if(!macOnline())throw Error('Агент Mac или ENDLUME сейчас офлайн. Запусти обе программы на Mac');
+ const last=jobFor(active);
+ if(last&&['queued','claimed','running'].includes(last.status))
+   throw Error('Задание уже находится в очереди или рендерится; повтор запрещён');
+ if(!confirm('Передать проект «'+active.topic+'» на твой Mac в ENDLUME? Требуются готовые изображения и звук (Lumean или локальные файлы). Платная генерация НЕ запускается автоматически.'))return;
+ const {data,error}=await db.from('studio_v2_mac_jobs').insert({
+  owner_id:user.id,project_id:active.id,action:'render_endlume',
+  payload:{schema_version:1,channel:active.channel,mode:active.mode},status:'queued'
+ }).select('id,status').single();
+ if(error)throw error;
+ await savePatch({status:'ready_for_render'},'Отправлено в очередь ENDLUME: '+data.id);
+ notify('Поставлено в очередь Mac: '+data.id);
+ await refreshMac(true);
+}
+
 async function createProjects(){
  if(busy)return;
  const rows=Array.from(document.querySelectorAll('#scenarioRows .scenario-row'));
@@ -96,7 +141,8 @@ function computedStage(p){if(!p)return 0;if(p.status==='finished')return 4;if(p.
 function renderProject(){
  const p=active;$('activeChannel').textContent=p?.channel||selected;$('folderName').textContent=p?p.topic:'Выбери проект в архиве';
  $('elapsed').textContent=p?'—':'0:00:00';$('spent').textContent='по провайдеру';
- const stage=computedStage(p);$('progressPercent').textContent=p?stage+'/4':'0/4';
+ const finished=jobFor(p)?.status==='completed'&&jobFor(p)?.result?.verified_by_engine===true;
+ const stage=finished?4:computedStage(p);$('progressPercent').textContent=p?stage+'/4':'0/4';
  $('runState').textContent=p?'Статус: '+p.status:'Ожидает проекта';
  document.querySelectorAll('#phasebar .fill').forEach((f,i)=>f.style.width=p&&stage>i?'100%':'0%');
  $('stages').innerHTML='';
@@ -116,7 +162,16 @@ function renderProject(){
   if(i===0){block.append(makeBtn('План через ИИ',()=>callAI('outline'),true));block.append(makeBtn('Редактировать текст',()=>editor('script')));block.append(makeBtn('Написать главу',()=>callAI('chapter')));block.append(makeBtn('SEO',()=>callAI('seo')))}
   if(i===1){block.append(makeBtn('Расчёт Lumean',quoteVoice));block.append(makeBtn('Заказать озвучку',createVoice));block.append(makeBtn('Проверить статус',pollVoice))}
   if(i===2){block.append(makeBtn('Новый AI-кадр',makeImage));block.append(makeBtn('Проверить кадр',pollImage));block.append(makeBtn('Раскадровка AI',()=>callAI('scenes')))}
-  if(i===3){block.append(makeBtn('Экспорт манифеста',downloadManifest,true));block.append(makeBtn('Планировать дату',()=>editor('schedule')))}
+  if(i===3){
+    block.append(makeBtn('Рендер в ENDLUME на Mac',enqueueMacRender,true));
+    block.append(makeBtn('Обновить статус Mac',()=>refreshMac(true)));
+    block.append(makeBtn('Экспорт манифеста',downloadManifest));
+    block.append(makeBtn('Планировать дату',()=>editor('schedule')));
+    block.append(h('p',{},'Очередь: '+renderStatus(p)));
+    const macJob=jobFor(p);
+    if(macJob?.status==='error')block.append(h('p',{},'Ошибка: '+String(macJob.error_message||'неизвестная').slice(0,240)));
+    if(macJob?.status==='completed'&&macJob.result?.mp4_path)block.append(h('p',{},'MP4 на Mac: '+macJob.result.mp4_path));
+  }
   $('stages').append(block);
  });
  $('journal').innerHTML='';
@@ -236,7 +291,7 @@ function renderCalendar(){const sec=$('calendar'),box=sec.querySelector('.card')
 function renderSettings(){
  const card=document.querySelector('#settings .card');if(!card)return;
  let status=$('realConnections');if(!status){status=h('div',{id:'realConnections'});card.append(status)}
- const vals=[['Supabase · '+(connected?'облако':'локальный режим'),connected],['Текстовая AI-модель',!!health?.ai?.ready],['Lumean',!!health?.lumean?.ready],['FLUX',!!health?.images?.ready],['VYRON bridge',false],['ENDLUME bridge',false]];
+ const vals=[['Supabase · '+(connected?'облако':'локальный режим'),connected],['Текстовая AI-модель',!!health?.ai?.ready],['Lumean',!!health?.lumean?.ready],['FLUX',!!health?.images?.ready],['VYRON · синхронизация',channels.some(c=>!!c.vyron_channel_id)],['Mac · '+(macOnline()?.device_name||'офлайн'),!!macOnline()],['Очередь Mac (SQL 002)',macSchemaAvailable],['ENDLUME · '+(macOnline()?'работает':'офлайн'),!!macOnline()]];
  
 status.innerHTML=vals.map(x=>'<div class="list-item"><strong>'+esc(x[0])+'</strong><span class="studioPill">'+(x[1]?'Подключено':'Не подключено')+'</span></div>').join('');
 let toolsBox=$('studioManage');if(toolsBox)toolsBox.remove();
@@ -256,6 +311,13 @@ if(connected&&(local.projects||[]).length){
   localStorage.removeItem(LOCAL_KEY);notify('Перенесено в облако '+data.length+' проектов');await load();
  },true));
 }
+if(macSchemaAvailable){
+  toolsBox.append(makeBtn('Обновить Mac и очередь',()=>refreshMac(true),true));
+  const summary=h('p',{},macOnline()
+   ? ('Mac онлайн: '+macOnline().device_name+' · ENDLUME активен. Каналов VYRON: '+macOnline().vyron_channels)
+   : 'Mac / ENDLUME офлайн. Агент проверяется по heartbeat, а не по наличию папки.');
+  toolsBox.append(summary);
+}else toolsBox.append(h('p',{},'Облачный мост не настроен: необходимо выполнить SQL 002_mac_queue.sql.'));
 status.append(toolsBox);
 }
 function renderEverything(){renderProject();renderQueue();renderAnalytics();renderArchive();renderExpenses();renderChannels();renderCalendar();renderSettings();}
@@ -270,3 +332,4 @@ const activeLine=document.createElement('div');activeLine.id='studioActiveLine';
 $('scriptCount').textContent=String(count);renderRows();
 window.studioReload=load;
 renderEverything();await boot();
+setInterval(()=>{if(user&&connected)refreshMac(true).catch(()=>{});},20000);
