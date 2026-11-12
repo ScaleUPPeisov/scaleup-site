@@ -228,7 +228,26 @@ function renderSettings(){
  const card=document.querySelector('#settings .card');if(!card)return;
  let status=$('realConnections');if(!status){status=h('div',{id:'realConnections'});card.append(status)}
  const vals=[['Supabase · '+(connected?'облако':'локальный режим'),connected],['Текстовая AI-модель',!!health?.ai?.ready],['Lumean',!!health?.lumean?.ready],['FLUX',!!health?.images?.ready],['VYRON bridge',false],['ENDLUME bridge',false]];
- status.innerHTML=vals.map(x=>'<div class="list-item"><strong>'+esc(x[0])+'</strong><span class="studioPill">'+(x[1]?'Подключено':'Не подключено')+'</span></div>').join('');
+ 
+status.innerHTML=vals.map(x=>'<div class="list-item"><strong>'+esc(x[0])+'</strong><span class="studioPill">'+(x[1]?'Подключено':'Не подключено')+'</span></div>').join('');
+let toolsBox=$('studioManage');if(toolsBox)toolsBox.remove();
+toolsBox=h('div',{id:'studioManage'});toolsBox.style.marginTop='18px';
+toolsBox.append(makeBtn('Скачать резервную копию',async()=>{
+ const backup={version:2,exported_at:now(),storage:connected?'supabase':'local',projects,channels};
+ const a=h('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}));a.download='vyron-studio-backup-'+Date.now()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+}));
+const local=localGet();
+if(connected&&(local.projects||[]).length){
+ toolsBox.append(makeBtn('Перенести '+local.projects.length+' локальных проектов в облако',async()=>{
+  if(!confirm('Перенести локальные проекты в Supabase? Оригиналы в браузере останутся до подтверждения.'))return;
+  const keys=['channel','topic','project_date','duration_minutes','visual_every_seconds','mode','preset','voice','quality','status','current_stage','outline','script_text','seo','scenes','assets','jobs','usage','logs','scheduled_at'];
+  const batch=local.projects.map(p=>{const obj={owner_id:user.id};keys.forEach(k=>{if(p[k]!==undefined)obj[k]=p[k]});return obj});
+  const {data,error}=await db.from('studio_v2_projects').insert(batch).select('id');
+  if(error)throw error;
+  localStorage.removeItem(LOCAL_KEY);notify('Перенесено в облако '+data.length+' проектов');await load();
+ },true));
+}
+status.append(toolsBox);
 }
 function renderEverything(){renderProject();renderQueue();renderAnalytics();renderArchive();renderExpenses();renderChannels();renderCalendar();renderSettings();}
 $('stopBtn').style.display='none';$('logsBtn').onclick=()=>$('journal').classList.toggle('open');
