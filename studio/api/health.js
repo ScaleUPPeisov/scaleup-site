@@ -1,4 +1,4 @@
-import {ownerAuth,json,safeError} from './_shared.js';
+import {ownerAuth,json,safeError} from '../lib/shared.js';
 export async function GET(request){
  try{
   await ownerAuth(request);
