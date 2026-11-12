@@ -149,7 +149,7 @@ def rest(path: str, *, token: str, method="GET", payload=None, query=None, heade
 def uid(val: str) -> str:
     try:
         parsed = str(uuid.UUID(val))
-        if parsed != val.lower() or len(val) != 36:
+        if parsed != val or len(val) != 36:
             raise ValueError("non-canonical")
         return parsed
     except (ValueError, AttributeError, TypeError):
