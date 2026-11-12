@@ -5,6 +5,9 @@ const db=createClient(BASE,PUB,{auth:{persistSession:true,autoRefreshToken:true,
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 let user=null,projects=[],channels=[],active=null,health=null,selected='Корабли',mode='graphics',count=1,busy=false,connected=false;
+const LOCAL_KEY='vyron-ai-studio-local-v2';
+const localGet=()=>{try{return JSON.parse(localStorage.getItem(LOCAL_KEY)||'{"projects":[],"channels":[]}')}catch{return {projects:[],channels:[]}}};
+const localSave=()=>{if(!connected)localStorage.setItem(LOCAL_KEY,JSON.stringify({projects,channels}))};
 const auth=document.createElement('div');auth.id='authCover';auth.innerHTML='<div id="authCard"><h2>VYRON AI STUDIO</h2><p>Личный вход в облачные проекты</p><form id="studioLoginForm"><input type="email" required id="loginEmail" placeholder="Email Supabase" autocomplete="username"><input type="password" required id="loginPassword" placeholder="Пароль Supabase" autocomplete="current-password"><button id="loginSubmit">Войти</button></form><p id="loginError" style="color:#ff8e88"></p><small>Защита сайта Vercel + дополнительная проверка Supabase. Не передавай пароль сюда, вводи только на странице.</small></div>';
 document.body.append(auth);authShow(true);
 const editorEl=document.createElement('div');editorEl.id='studioEditor';editorEl.innerHTML='<div id="editorBox"><h2 id="editorTitle">Редактор</h2><textarea id="editorTextarea" placeholder="Сценарий..."></textarea><input id="editorDate" type="datetime-local" style="display:none"><div class="editorBtns"><button class="lime" id="editorSave">Сохранить в облаке</button><button id="editorClose">Закрыть</button></div></div>';document.body.append(editorEl);
@@ -37,7 +40,7 @@ $('studioLoginForm').addEventListener('submit',async e=>{e.preventDefault();cons
 async function load(){
  if(!user)return;
  const [p,c]=await Promise.all([db.from('studio_v2_projects').select('*').order('updated_at',{ascending:false}).limit(200),db.from('studio_v2_channels').select('*').order('name')]);
- if(p.error||c.error){connected=false;const msg='База ещё не готова. Запусти studio/sql/001_owner_tables.sql в Supabase SQL Editor. '+(p.error?.message||c.error?.message||'');$('studioStatusLine').textContent=msg;notify('Таблицы Supabase пока не созданы',true);return}
+ if(p.error||c.error){connected=false;const local=localGet();projects=local.projects||[];channels=local.channels||[];const msg='ЛОКАЛЬНЫЙ РЕЖИМ: проекты работают только в этом браузере, между устройствами не синхронизируются. Для облачной синхронизации нужна миграция studio/sql/001_owner_tables.sql в Supabase.';$('studioStatusLine').textContent=msg;notify('Облачные таблицы не настроены: включён локальный режим',true);renderEverything();return}
  connected=true;$('studioStatusLine').textContent='Облачная база подключена · Supabase · изменения видны с любого устройства';
  projects=p.data||[];channels=c.data||[];
  if(active)active=projects.find(p=>p.id===active.id)||null;
@@ -58,16 +61,15 @@ async function api(url,body,method='POST'){
  return d;
 }
 async function createProjects(){
- if(busy)return;if(!connected)return notify('Сначала подключи таблицы Supabase',true);
+ if(busy)return;
  const rows=Array.from(document.querySelectorAll('#scenarioRows .scenario-row'));
  const drafts=rows.map(row=>({topic:row.querySelector('.scenario-topic').value.trim()||'Новая история · '+selected,project_date:dateISO(row.querySelector('.scenario-date').value)}));
  if(drafts.some(d=>!d.project_date))return notify('Дата должна быть в формате ДД.ММ.ГГГГ',true);
  busy=true;$('startBtn').disabled=true;
  try{
   const items=drafts.map(d=>({owner_id:user.id,channel:selected,topic:d.topic,project_date:d.project_date,duration_minutes:Number($('duration').value),visual_every_seconds:Number($('visualStep').value),mode,preset:$('preset').value,voice:$('voice').value,quality:$('quality').value,status:'draft',logs:[{at:now(),text:'Проект создан. Платные запросы не выполнялись.'}]}));
-  const {data,error}=await db.from('studio_v2_projects').insert(items).select();
-  if(error)throw error;
-  active=data[0];notify('Создано проектов: '+data.length);await load();page('scenarios');
+  if(!connected){const data=items.map(x=>({...x,id:crypto.randomUUID(),created_at:now(),updated_at:now(),outline:'',script_text:'',jobs:[],assets:[],scenes:[],usage:[],seo:{}}));projects=[...data,...projects];active=data[0];localSave();notify('Создано локальных проектов: '+data.length+' (без синхронизации)');renderEverything();page('scenarios');}
+  else{const {data,error}=await db.from('studio_v2_projects').insert(items).select();if(error)throw error;active=data[0];notify('Создано облачных проектов: '+data.length);await load();page('scenarios');}
  }catch(e){notify('Не удалось создать проект: '+e.message,true)}finally{busy=false;$('startBtn').disabled=false}
 }
 $('startBtn').onclick=createProjects;
@@ -76,6 +78,7 @@ async function savePatch(patch,line){
  const logs=[...(active.logs||[])];
  if(line)logs.push({at:now(),text:line});
  if(line)patch.logs=logs.slice(-120);
+ if(!connected){active={...active,...patch,updated_at:now()};projects=projects.map(p=>p.id===active.id?active:p);localSave();renderEverything();return active;}
  const {data,error}=await db.from('studio_v2_projects').update(patch).eq('id',active.id).select().single();
  if(error)throw error;
  active=data;projects=projects.map(p=>p.id===data.id?data:p);renderEverything();return data;
@@ -201,7 +204,7 @@ function downloadManifest(){
 }
 function renderQueue(){const t=$('queuePreview');t.innerHTML='';const jobs=projects.filter(x=>!['finished','error'].includes(x.status)).slice(0,8);if(!jobs.length){t.textContent='Нет проектов в работе';return}jobs.forEach(p=>{const b=makeBtn(p.topic+' · '+p.status,()=>{active=p;renderProject();page('scenarios')});t.append(b)})}
 function renderArchive(){const t=$('archiveItems');t.innerHTML='';$('archiveCount').textContent=projects.length;if(!projects.length){t.textContent=connected?'Проектов пока нет':'База Supabase пока не подключена';return}
- projects.forEach(p=>{const box=h('div',{class:'studioStage'});box.append(h('h3',{},p.topic),h('p',{},p.channel+' · '+(p.project_date||'')+' · '+p.status+' · '+new Date(p.updated_at).toLocaleString('ru-RU')));box.append(makeBtn('Открыть',()=>{active=p;renderProject();page('scenarios')},true));box.append(makeBtn('Экспорт JSON',()=>{active=p;downloadManifest()}));box.append(makeBtn('Удалить',async()=>{if(!confirm('Удалить проект навсегда? '+p.topic))return;const {error}=await db.from('studio_v2_projects').delete().eq('id',p.id);if(error)throw error;if(active?.id===p.id)active=null;await load();notify('Проект удалён') }));t.append(box)})}
+ projects.forEach(p=>{const box=h('div',{class:'studioStage'});box.append(h('h3',{},p.topic),h('p',{},p.channel+' · '+(p.project_date||'')+' · '+p.status+' · '+new Date(p.updated_at).toLocaleString('ru-RU')));box.append(makeBtn('Открыть',()=>{active=p;renderProject();page('scenarios')},true));box.append(makeBtn('Экспорт JSON',()=>{active=p;downloadManifest()}));box.append(makeBtn('Удалить',async()=>{if(!confirm('Удалить проект навсегда? '+p.topic))return;if(!connected){projects=projects.filter(x=>x.id!==p.id);localSave();if(active?.id===p.id)active=null;renderEverything();}else{const {error}=await db.from('studio_v2_projects').delete().eq('id',p.id);if(error)throw error;if(active?.id===p.id)active=null;await load()}notify('Проект удалён') }));t.append(box)})}
 $('clearArchive').textContent='Обновить';$('clearArchive').onclick=load;
 function renderAnalytics(){$('statProjects').textContent=String(projects.length);$('statDone').textContent=String(projects.filter(x=>x.status==='finished').length);
  document.querySelectorAll('#analytics .summary-grid .stat-card')[2].querySelector('b').textContent=String(projects.reduce((n,p)=>n+(p.usage||[]).length,0));
@@ -215,8 +218,8 @@ function renderExpenses(){
  cards[3].querySelector('span').textContent='Достоверный итог списаний';cards[3].querySelector('b').textContent='—';cards[3].querySelector('small').textContent='Пока нет биллингового API';}
 function renderChannels(){
  const t=$('channelsList');t.innerHTML='';
- const b=makeBtn('＋ Добавить канал',async()=>{const name=prompt('Название YouTube-канала');if(!name||!name.trim())return;const {error}=await db.from('studio_v2_channels').insert({owner_id:user.id,name:name.trim()});if(error)throw error;await load();notify('Канал сохранён')},true);t.append(b);
- channels.forEach(c=>{const x=h('div',{class:'list-item'});x.append(h('strong',{},c.name),makeBtn('Удалить',async()=>{if(!confirm('Удалить канал из каталога?'))return;const {error}=await db.from('studio_v2_channels').delete().eq('id',c.id);if(error)throw error;await load()}));t.append(x)});
+ const b=makeBtn('＋ Добавить канал',async()=>{const name=prompt('Название YouTube-канала');if(!name||!name.trim())return;if(!connected){channels.push({id:crypto.randomUUID(),owner_id:user.id,name:name.trim()});localSave();renderEverything()}else{const {error}=await db.from('studio_v2_channels').insert({owner_id:user.id,name:name.trim()});if(error)throw error;await load()}notify('Канал сохранён')},true);t.append(b);
+ channels.forEach(c=>{const x=h('div',{class:'list-item'});x.append(h('strong',{},c.name),makeBtn('Удалить',async()=>{if(!confirm('Удалить канал из каталога?'))return;if(!connected){channels=channels.filter(x=>x.id!==c.id);localSave();renderEverything()}else{const {error}=await db.from('studio_v2_channels').delete().eq('id',c.id);if(error)throw error;await load()}}));t.append(x)});
  $('otherChannel').innerHTML='<option value="">Другие каналы</option>';
  channels.forEach(c=>{$('otherChannel').append(new Option(c.name,c.name))});
 }
@@ -224,7 +227,7 @@ function renderCalendar(){const sec=$('calendar'),box=sec.querySelector('.card')
 function renderSettings(){
  const card=document.querySelector('#settings .card');if(!card)return;
  let status=$('realConnections');if(!status){status=h('div',{id:'realConnections'});card.append(status)}
- const vals=[['Supabase',connected],['Текстовая AI-модель',!!health?.ai?.ready],['Lumean',!!health?.lumean?.ready],['FLUX',!!health?.images?.ready],['VYRON bridge',false],['ENDLUME bridge',false]];
+ const vals=[['Supabase · '+(connected?'облако':'локальный режим'),connected],['Текстовая AI-модель',!!health?.ai?.ready],['Lumean',!!health?.lumean?.ready],['FLUX',!!health?.images?.ready],['VYRON bridge',false],['ENDLUME bridge',false]];
  status.innerHTML=vals.map(x=>'<div class="list-item"><strong>'+esc(x[0])+'</strong><span class="studioPill">'+(x[1]?'Подключено':'Не подключено')+'</span></div>').join('');
 }
 function renderEverything(){renderProject();renderQueue();renderAnalytics();renderArchive();renderExpenses();renderChannels();renderCalendar();renderSettings();}
