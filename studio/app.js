@@ -10,6 +10,15 @@ const localGet=()=>{try{return JSON.parse(localStorage.getItem(LOCAL_KEY)||'{"pr
 const localSave=()=>{if(!connected)localStorage.setItem(LOCAL_KEY,JSON.stringify({projects,channels}))};
 const auth=document.createElement('div');auth.id='authCover';auth.innerHTML='<div id="authCard"><h2>VYRON AI STUDIO</h2><p>Личный вход в облачные проекты</p><form id="studioLoginForm"><input type="email" required id="loginEmail" placeholder="Email Supabase" autocomplete="username"><input type="password" required id="loginPassword" placeholder="Пароль Supabase" autocomplete="current-password"><button id="loginSubmit">Войти</button></form><p id="loginError" style="color:#ff8e88"></p><small>Защита сайта Vercel + дополнительная проверка Supabase. Не передавай пароль сюда, вводи только на странице.</small></div>';
 document.body.append(auth);authShow(true);
+const guestBtn=h('button',{type:'button'},'Открыть локально, без облачной синхронизации');
+guestBtn.style.cssText='background:#232d25;color:#daf2c7;border:1px solid #465346;margin-top:8px';
+guestBtn.onclick=()=>{
+ user={id:'offline-owner',email:'Локальный режим'};connected=false;const local=localGet();projects=local.projects||[];channels=local.channels||[];health=null;authShow(false);
+ $('studioStatusLine').textContent='ЛОКАЛЬНЫЙ РЕЖИМ: черновики остаются только в этом браузере. Для синхронизации с другими устройствами войди в Supabase и создай таблицы.';
+ $('studioAuthState').textContent='Локальный режим';renderEverything();notify('Открыт локальный редактор без облачной синхронизации');
+};
+$('authCard').append(guestBtn);
+
 const editorEl=document.createElement('div');editorEl.id='studioEditor';editorEl.innerHTML='<div id="editorBox"><h2 id="editorTitle">Редактор</h2><textarea id="editorTextarea" placeholder="Сценарий..."></textarea><input id="editorDate" type="datetime-local" style="display:none"><div class="editorBtns"><button class="lime" id="editorSave">Сохранить в облаке</button><button id="editorClose">Закрыть</button></div></div>';document.body.append(editorEl);
 const toast=document.createElement('div');toast.id='studioToast';document.body.append(toast);
 const logout=makeBtn('Выйти из аккаунта',async()=>{await db.auth.signOut();user=null;authShow(true)});logout.id='logoutBtn';
