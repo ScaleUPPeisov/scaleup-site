@@ -209,9 +209,17 @@ def claim(token: str, worker: str):
 
 
 def report(token: str, job: str, worker: str, status: str, result=None, error=None):
-    res = rest("rpc/studio_v2_worker_update", token=token, method="POST",
-               payload={"p_job": uid(job), "p_worker": worker, "p_status": status,
-                        "p_result": result or {}, "p_error": (error or "")[:450] or None})
+    payload = {"p_job": uid(job), "p_worker": worker, "p_status": status,
+               "p_result": result or {}, "p_error": (error or "")[:450] or None}
+    try:
+        res = rest("rpc/studio_v2_worker_update", token=token,
+                   method="POST", payload=payload)
+    except AgentError as exc:
+        if "HTTP 401" not in str(exc):
+            raise
+        refreshed, _ = access()
+        res = rest("rpc/studio_v2_worker_update", token=refreshed,
+                   method="POST", payload=payload)
     if res is not True:
         raise AgentError("Очередь не подтвердила запись статуса. Запрос не повторяем автоматически.")
 
@@ -372,6 +380,8 @@ def write_job(job: dict, proj: dict):
 
 def await_receipt(token: str, job_id: str, worker: str, metadata: dict):
     last = 0.0
+    last_renew = time.monotonic()
+    owner = (read_json(CREDS) or {}).get("owner_id")
     deadline = time.monotonic() + 12 * 3600
     result_path = RESULTS / (job_id + ".json")
     while time.monotonic() < deadline:
@@ -392,7 +402,17 @@ def await_receipt(token: str, job_id: str, worker: str, metadata: dict):
             if report_data.get("status") == "error":
                 raise AgentError("ENDLUME: " + str(report_data.get("error") or "ошибка рендера")[:300])
         if time.monotonic() - last > 20:
-            report(token, job_id, worker, "running", {"stage": "ENDLUME render", **metadata})
+            # A render can run for hours; rotate JWT well before 1h expiry.
+            try:
+                if time.monotonic() - last_renew > 2400:
+                    token, _ = access()
+                    last_renew = time.monotonic()
+                report(token, job_id, worker, "running", {"stage": "ENDLUME render", **metadata})
+                if owner:
+                    heartbeat(token, owner, worker, CHANNEL_COUNT)
+            except AgentError as exc:
+                # Temporary network loss must not stop the local ENDLUME render.
+                print("Mac agent: не удалось обновить статус:", str(exc))
             last = time.monotonic()
         time.sleep(4)
     raise AgentError("Нет результата ENDLUME 12 часов. Проверь Mac, приложение и папку результатов.")
