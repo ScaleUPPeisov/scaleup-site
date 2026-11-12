@@ -17,14 +17,16 @@ echo ""
 echo "Для скачивания TTS из Lumean требуется ключ с orders.read + orders.download."
 read -r "?Добавить Lumean ключ сейчас? (y/N): " answer
 if [[ "$answer" == "y" || "$answer" == "Y" ]]; then python3 "$AGENT" set-lumean; fi
-/usr/bin/python3 - "$AGENT" "$LAUNCH" "$APP" <<'PY'
+PYTHON_EXEC="$(command -v python3)"
+"$PYTHON_EXEC" - "$AGENT" "$LAUNCH" "$APP" "$PYTHON_EXEC" <<'PY'
 import plistlib,sys
 from pathlib import Path
-agent, target, app = map(Path, sys.argv[1:])
+agent, target, app = map(Path, sys.argv[1:4])
+python_exec=sys.argv[4]
 with target.open("wb") as file:
     plistlib.dump({
       "Label":"studio.vyron.ai.macagent",
-      "ProgramArguments":["/usr/bin/env","python3",str(agent),"daemon"],
+      "ProgramArguments":[python_exec,str(agent),"daemon"],
       "RunAtLoad":True,"KeepAlive":True,
       "StandardOutPath":str(app/"agent-out.log"),
       "StandardErrorPath":str(app/"agent-errors.log"),
