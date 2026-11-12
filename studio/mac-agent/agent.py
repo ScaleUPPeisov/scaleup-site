@@ -37,6 +37,8 @@ VALID_IMAGES = {".jpg", ".jpeg", ".png", ".webp"}
 VALID_AUDIO = {".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg", ".opus", ".aiff", ".alac"}
 VALID_VIDEOS = {".mp4", ".mov", ".m4v", ".webm"}
 LAST_HEARTBEAT = 0.0
+CHANNEL_LAST_SYNC = 0.0
+CHANNEL_COUNT = 0
 
 
 class AgentError(Exception):
@@ -335,11 +337,11 @@ def stage_assets(proj: dict, dest: Path):
             url = (link.get("data") or {}).get("url")
             if not url:
                 raise AgentError("Lumean не вернул ссылку на аудио")
-            download(url, dest / "001-voice.mp3", "audio", 350 * 1024 * 1024)
             target_seconds = float(proj.get("duration_minutes", 30)) * 60
             actual_seconds = (order.get("total_duration_ms") or 0) / 1000
             if actual_seconds and abs(target_seconds - actual_seconds) > max(70, target_seconds * 0.1):
                 raise AgentError("Длина озвучки %.0fs не совпадает с видео %.0fs. ENDLUME зациклит голос. Исправь длину и повтори." % (actual_seconds, target_seconds))
+            download(url, dest / "001-voice.mp3", "audio", 350 * 1024 * 1024)
         else:
             raise AgentError("Нет звука: нужен готовый заказ Lumean или локальные MP3/FLAC/WAV")
     audio = [p for p in dest.iterdir() if p.is_file() and p.suffix.lower() in VALID_AUDIO]
@@ -416,8 +418,11 @@ def run_once():
     token, owner = access()
     cfg = config()
     # Channel sync is best effort; API/SQL schema problems are reported, not hidden.
-    count = sync_channels(token, owner)
-    status = heartbeat(token, owner, cfg["worker_id"], count)
+    global CHANNEL_LAST_SYNC, CHANNEL_COUNT
+    if time.monotonic() - CHANNEL_LAST_SYNC > 600 or CHANNEL_LAST_SYNC == 0:
+        CHANNEL_COUNT = sync_channels(token, owner)
+        CHANNEL_LAST_SYNC = time.monotonic()
+    status = heartbeat(token, owner, cfg["worker_id"], CHANNEL_COUNT)
     print("Mac агент:", cfg["worker_id"], "| ENDLUME inbox:", status)
     job = claim(token, cfg["worker_id"])
     if job:
