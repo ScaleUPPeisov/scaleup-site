@@ -1,4 +1,4 @@
-import {ownerAuth,readBody,json,safeError} from './_shared.js';
+import {ownerAuth,readBody,json,safeError} from '../lib/shared.js';
 export const maxDuration=60;
 const SYSTEM='Ты редактор документальных, образовательных и музыкальных YouTube-видео. Пиши оригинальный русский материал, без копирования, с чёткой структурой. Никогда не заявляй, что проверил факты в интернете, если источники не были предоставлены. Спорные утверждения помечай как требующие проверки. Укажи где нужны иллюстрации; не используй чужие тексты дословно.';
 const clean=(v,max=15000)=>String(v??'').slice(0,max).trim();
