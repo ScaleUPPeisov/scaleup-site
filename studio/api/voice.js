@@ -1,4 +1,4 @@
-import {ownerAuth,readBody,json,safeError} from './_shared.js';
+import {ownerAuth,readBody,json,safeError} from '../lib/shared.js';
 export const maxDuration=60;
 const BASE='https://api.lumean.app/api/public';
 const key=()=>process.env.LUMEAN_API_KEY;
