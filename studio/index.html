@@ -154,7 +154,7 @@ function updateEstimate(){const mins=Number($('duration').value),seconds=Number(
 $('duration').onchange=updateEstimate;$('visualStep').onchange=updateEstimate;
 async function session(){const {data,error}=await db.auth.getUser();if(error||!data?.user){user=null;authShow(true);return false;}user=data.user;authShow(false);$('studioAuthState').textContent='Вход: '+(user.email||user.id);return true}
 $('studioLoginForm').addEventListener('submit',async e=>{e.preventDefault();const email=$('loginEmail').value.trim(),password=$('loginPassword').value;const b=$('loginSubmit');b.disabled=true;b.textContent='Проверяем…';const {error}=await db.auth.signInWithPassword({email,password});b.disabled=false;b.textContent='Войти';$('loginPassword').value='';if(error){$('loginError').textContent=error.message;return}await boot()});
-$('logoutBtn').onclick=async()=>{await db.auth.signOut();user=null;authShow(true);notify('Выполнен выход')};
+
 async function load(){
  if(!user)return;
  const [p,c]=await Promise.all([db.from('studio_v2_projects').select('*').order('updated_at',{ascending:false}).limit(200),db.from('studio_v2_channels').select('*').order('name')]);
