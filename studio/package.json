@@ -7,8 +7,8 @@
     "node": "22.x"
   },
   "scripts": {
-    "build": "node --check app.js && node --check api/ai.js && node --check api/voice.js && node --check api/image.js && node --check api/health.js && node --check lib/shared.js && mkdir -p public && cp index.html app.js robots.txt public/",
-    "test": "npm run build"
+    "build": "node --check app.js && node --check api/ai.js && node --check api/voice.js && node --check api/image.js && node --check api/health.js && node --check lib/shared.js && node --test tests/security.test.mjs && mkdir -p public && cp index.html app.js robots.txt public/",
+    "test": "node --test tests/security.test.mjs"
   },
   "dependencies": {}
 }
