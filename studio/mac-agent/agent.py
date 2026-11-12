@@ -186,7 +186,11 @@ def sync_channels(token: str, owner: str):
 
 
 def heartbeat(token: str, owner: str, worker: str, channel_count: int):
-    status = "ready" if (INBOX.exists() and RESULTS.exists()) else "not_detected"
+    info = read_json(ROOT / "Bridge" / "endlume-heartbeat.json", {}) or {}
+    last_ms = info.get("updated_at_ms", 0)
+    current_ms = int(time.time() * 1000)
+    status = "running" if (isinstance(last_ms, int) and
+                           0 <= current_ms - last_ms <= 15000) else "offline"
     payload = {"id": worker, "owner_id": owner,
                "device_name": config().get("device_name", "Mac"),
                "agent_version": VERSION, "endlume_status": status,
@@ -194,7 +198,7 @@ def heartbeat(token: str, owner: str, worker: str, channel_count: int):
     rest("studio_v2_mac_devices", token=token, method="POST", payload=payload,
          query={"on_conflict": "id"},
          headers={"Prefer": "resolution=merge-duplicates,return=minimal"})
-    # 'ready' means the shared folders exist; does NOT prove the modified ENDLUME app is running.
+    # 'running' is backed by a real recent heartbeat from the modified ENDLUME app.
     return status
 
 
