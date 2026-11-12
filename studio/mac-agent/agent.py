@@ -381,6 +381,7 @@ def write_job(job: dict, proj: dict):
 def await_receipt(token: str, job_id: str, worker: str, metadata: dict):
     last = 0.0
     last_renew = time.monotonic()
+    latest_progress = {}
     owner = (read_json(CREDS) or {}).get("owner_id")
     deadline = time.monotonic() + 12 * 3600
     result_path = RESULTS / (job_id + ".json")
@@ -389,6 +390,16 @@ def await_receipt(token: str, job_id: str, worker: str, metadata: dict):
             report_data = read_json(result_path)
             if not isinstance(report_data, dict) or report_data.get("job_id") != job_id:
                 raise AgentError("Некорректная квитанция ENDLUME")
+            if report_data.get("status") == "running":
+                try:
+                    pct = float(report_data.get("progress") or 0)
+                    if 0 <= pct < 100:
+                        latest_progress = {
+                            "progress": round(pct, 1),
+                            "stage": str(report_data.get("stage") or "ENDLUME render")[:150]
+                        }
+                except (TypeError, ValueError):
+                    pass
             if report_data.get("status") == "completed":
                 output = Path(report_data.get("path") or "")
                 # Always verify the output stays under the controlled render tree.
@@ -407,7 +418,7 @@ def await_receipt(token: str, job_id: str, worker: str, metadata: dict):
                 if time.monotonic() - last_renew > 2400:
                     token, _ = access()
                     last_renew = time.monotonic()
-                report(token, job_id, worker, "running", {"stage": "ENDLUME render", **metadata})
+                report(token, job_id, worker, "running", {"stage": "ENDLUME render", **metadata, **latest_progress})
                 if owner:
                     heartbeat(token, owner, worker, CHANNEL_COUNT)
             except AgentError as exc:
