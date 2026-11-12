@@ -1,0 +1,14 @@
+{
+  "name": "vyron-ai-studio-web",
+  "private": true,
+  "type": "module",
+  "version": "0.2.0",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "build": "node --check app.js && node --check api/ai.js && node --check api/voice.js && node --check api/image.js && node --check api/health.js && node --check lib/shared.js && node --test tests/security.test.mjs && python3 -m unittest discover -s mac-agent -p 'test_*.py' && mkdir -p public && cp index.html app.js robots.txt public/",
+    "test": "node --test tests/security.test.mjs && python3 -m unittest discover -s mac-agent -p 'test_*.py'"
+  },
+  "dependencies": {}
+}
