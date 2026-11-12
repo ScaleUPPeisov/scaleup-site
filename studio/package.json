@@ -1,0 +1,1 @@
+{"name":"vyron-ai-studio-web","private":true,"type":"module","version":"0.2.0","engines":{"node":">=22"},"scripts":{"test":"node --check api/ai.js && node --check api/voice.js && node --check api/image.js && node --check api/health.js && node --check lib/shared.js"},"dependencies":{}}
