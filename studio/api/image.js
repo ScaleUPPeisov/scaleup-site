@@ -1,4 +1,4 @@
-import {ownerAuth,readBody,json,safeError} from './_shared.js';
+import {ownerAuth,readBody,json,safeError} from '../lib/shared.js';
 export const maxDuration=45;
 const BASE='https://queue.fal.run/fal-ai/flux-1/schnell';
 async function upstream(path,method='GET',body){
