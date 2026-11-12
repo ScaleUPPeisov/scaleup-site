@@ -93,7 +93,11 @@ function renderStatus(p){
  const j=jobFor(p);
  if(!j)return 'Нет заданий';
  const names={queued:'Ожидает Mac',claimed:'Захвачено агентом',running:'ENDLUME рендерит',completed:'Готовый MP4',error:'Ошибка ENDLUME',cancelled:'Отменено'};
- return names[j.status]||j.status;
+ const base=names[j.status]||j.status;
+ const pct=Number(j.result?.progress);
+ return j.status==='running'&&Number.isFinite(pct)&&pct>=0&&pct<100
+  ? base+' · '+pct.toFixed(1)+'% · '+String(j.result?.stage||'').slice(0,70)
+  : base;
 }
 async function enqueueMacRender(){
  if(!active)throw Error('Создай проект');
